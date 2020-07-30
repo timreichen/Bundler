@@ -54,7 +54,7 @@ bundler bundle --name index.js index.ts
 #### postcss
   transforms css file content
 
-#### Cache
+### Cache
 Bundler uses the deno cache system. No need for a cache directory in your project!
 
 ### Example

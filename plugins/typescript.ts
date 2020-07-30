@@ -1,7 +1,7 @@
-import { CompilerOptions } from "../typescript.ts";
-import { ts } from "../deps.ts";
 import { red } from "https://deno.land/std/fmt/colors.ts";
-import { Include, Exclude, plugin } from "../plugin.ts";
+import { ts } from "../deps.ts";
+import { Exclude, Include, plugin } from "../plugin.ts";
+import { CompilerOptions } from "../typescript.ts";
 
 const defaultCompilerOptions = {
   target: "ESNext",
@@ -26,8 +26,9 @@ export function typescript(
     const { diagnostics, outputText } = ts.transpileModule(
       source,
       {
-        compilerOptions:
-          ts.convertCompilerOptionsFromJson(options.compilerOptions).options,
+        compilerOptions: ts.convertCompilerOptionsFromJson(
+          options.compilerOptions || defaultCompilerOptions,
+        ).options,
         reportDiagnostics: true,
       },
     );

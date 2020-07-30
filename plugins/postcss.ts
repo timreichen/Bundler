@@ -1,6 +1,6 @@
 import autoprefixer from "https://jspm.dev/autoprefixer";
 import postcssCore from "https://jspm.dev/postcss";
-import { Include, Exclude, plugin } from "../plugin.ts";
+import { Exclude, Include, plugin } from "../plugin.ts";
 
 export function postcss(
   config: {

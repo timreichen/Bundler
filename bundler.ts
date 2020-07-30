@@ -1,20 +1,20 @@
-import { green, blue, yellow } from "https://deno.land/std/fmt/colors.ts";
-import { fetchTextFile } from "./file.ts";
-import { traverseTextFile, CompilerOptions } from "./typescript.ts";
-import { ts } from "./deps.ts";
-import { v4 } from "https://deno.land/std/uuid/mod.ts";
+import { blue, green, yellow } from "https://deno.land/std/fmt/colors.ts";
 import {
+  ensureFile,
+  exists,
   readJson,
   writeJson,
-  exists,
-  ensureFile,
 } from "https://deno.land/std/fs/mod.ts";
 import { join, relative } from "https://deno.land/std/path/mod.ts";
+import { v4 } from "https://deno.land/std/uuid/mod.ts";
 import { resolveURLToCacheModulePath } from "./cache.ts";
+import { Change, ChangeMap, ChangeType, createChangeMap } from "./changes.ts";
+import { ts } from "./deps.ts";
+import { fetchTextFile } from "./file.ts";
 import { ImportMap } from "./import_map.ts";
-import { ChangeMap, Change, ChangeType, createChangeMap } from "./changes.ts";
-import { isURL } from "./_helpers.ts";
 import { Plugin } from "./plugin.ts";
+import { CompilerOptions, traverseTextFile } from "./typescript.ts";
+import { isURL } from "./_helpers.ts";
 
 function getImportModuleNode(node: ts.node, source: string) {
   if (ts.isImportDeclaration(node) && node.moduleSpecifier) {

@@ -1,7 +1,7 @@
 # Bundler
 Bundler transpiles Deno ```typescript``` files to ```javascript``` ```esm``` files.
 
-### Motivation
+## Motivation
 Typescript as of today does throw an error if an import has a ```.ts``` extension or a url.
 ```ts
 import { foo } from "bar.ts" // Typescript Error
@@ -34,30 +34,30 @@ import styles from "./styles.css"
 console.log(styles) // div { background: red; }
 ```
 
-### Installation
+## Installation
 ```sh
 deno install --unstable --allow-read --allow-write --allow-net --allow-env --name bundler cli.ts
 ```
 **Info**: You might need to specify ```--root /usr/local```.
-### Usage
+## Usage
 ```sh
 bundler bundle --name index.js index.ts
 ```
 
-### Plugins
-#### typescript
+## Plugins
+### typescript
   transforms ```typescript``` file content to ```javascript``` module
-#### text
+### text
   transforms file content to string export module
-#### babel
+### babel
   transforms file content with presets and plugins with babel to ```javascript``` module
-#### postcss
+### postcss
   transforms css file content
 
-### Cache
+## Cache
 Bundler uses the deno cache system. No need for a cache directory in your project!
 
-### Example
+## Example
 ```ts
 // src/a.ts
 export const a = "hello world"
@@ -70,7 +70,7 @@ console.log(a)
 ```sh
 bundler bundle --name index.js src/index.ts
 ```
-#### Output
+### Output
 - src
   - foo
     - a.ts
@@ -81,5 +81,5 @@ bundler bundle --name index.js src/index.ts
     - deps.json
     - 8277fbd0-903e-4a4b-87a7-cfa876924c7a.js
 
-### Proof of concept
+## Proof of concept
 This is a proof of concept registry. Do not use in production!

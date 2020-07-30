@@ -1,13 +1,13 @@
-import { join, dirname, isAbsolute } from "https://deno.land/std/path/mod.ts";
+import { yellow } from "https://deno.land/std/fmt/colors.ts"
+import { dirname, isAbsolute, join } from "https://deno.land/std/path/mod.ts"
+import { ts } from "./deps.ts"
+import { fetchTextFile } from "./file.ts"
 import {
   ImportMap,
-  resolveWithImportMap,
-} from "../../Desktop/bundler/import_map.ts";
-import { ts } from "./deps.ts";
-import { fetchTextFile } from "./file.ts";
-import { yellow } from "https://deno.land/std/fmt/colors.ts";
-import { traverseTextFile } from "./typescript.ts";
-import { isURL } from "./_helpers.ts";
+  resolveWithImportMap
+} from "./import_map.ts"
+import { traverseTextFile } from "./typescript.ts"
+import { isURL } from "./_helpers.ts"
 
 export interface DependencyMap {
   [path: string]: string;

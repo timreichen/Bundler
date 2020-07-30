@@ -1,1 +1,1 @@
-export { default as ts } from "https://jspm.dev/typescript"
+export { default as ts } from "https://jspm.dev/typescript";

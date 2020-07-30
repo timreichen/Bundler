@@ -1,4 +1,4 @@
-import { b } from "./sub/b.ts"
-console.log("loaded from b:", b)
+import { b } from "./sub/b.ts";
+console.log("loaded from b:", b);
 
-console.log("hello from a")
+console.log("hello from a");

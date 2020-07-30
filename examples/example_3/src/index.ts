@@ -1,1 +1,1 @@
-import "./element"
+import "./element";

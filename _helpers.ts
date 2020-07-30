@@ -5,4 +5,6 @@
  * isURL("/foo/bar") // output: false
  * ```
  */
-export function isURL(path: string) { return /^https?:\/\//.test(path) }
+export function isURL(path: string) {
+  return /^https?:\/\//.test(path);
+}

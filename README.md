@@ -36,7 +36,7 @@ console.log(styles) // div { background: red; }
 
 ## Installation
 ```sh
-deno install --unstable --allow-read --allow-write --allow-net --allow-env --name bundler cli.ts
+deno install --unstable --allow-read --allow-write --allow-net --allow-env --name bundler https://raw.githubusercontent.com/timreichen/Bundler/master/cli.ts
 ```
 **Info**: You might need to specify ```--root /usr/local```.
 ## Usage

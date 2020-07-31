@@ -17,7 +17,7 @@ export function typescript(
 ) {
   const { include, exclude, options } = {
     include: (path: string) =>
-      /^https?:\/\//.test(path) || /\.(ts|js)$/.test(path),
+      /^https?:\/\//.test(path) || /\.(tsx?|jsx?)$/.test(path),
     options: { compilerOptions: defaultCompilerOptions },
     ...config,
   };

@@ -137,6 +137,8 @@ export interface Entry {
   plugins: Plugin[];
 }
 
+const inject = (path: string) => /\.(tsx?|jsx?)$/.test(path);
+
 export class Bundler {
   depsDir: string;
   depsMapName: string;
@@ -190,7 +192,7 @@ export class Bundler {
 
         let source: string = "";
 
-        if (isURL(resolvedInput) || /\.(ts|js)$/.test(resolvedInput)) {
+        if (isURL(resolvedInput) || inject(resolvedInput)) {
           // injects dependency paths into ts or js file
           source = await injectDependencies(
             resolvedInput,

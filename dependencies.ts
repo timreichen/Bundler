@@ -6,7 +6,7 @@ import {
   ImportMap,
   resolveWithImportMap,
 } from "./import_map.ts";
-import { traverseTextFile } from "./typescript.ts";
+import { traverse } from "./typescript.ts";
 import { isURL } from "./_helpers.ts";
 
 export interface DependencyMap {
@@ -55,7 +55,7 @@ export async function getDependencies(filePath: string): Promise<string[]> {
   }
 
   const dependencies: Set<string> = new Set();
-  traverseTextFile(source, {}, (node: ts.Node) => {
+  traverse(source, (node: ts.Node) => {
     // console.log(ts.SyntaxKind[node.kind])
     const moduleNode = getImportModuleNode(node, source) ||
       getExportModuleNode(node);

@@ -13,7 +13,7 @@ import { ts } from "./deps.ts";
 import { fetchTextFile } from "./file.ts";
 import { ImportMap } from "./import_map.ts";
 import { Plugin } from "./plugin.ts";
-import { CompilerOptions, traverseTextFile } from "./typescript.ts";
+import { CompilerOptions, transpile } from "./typescript.ts";
 import { isURL } from "./_helpers.ts";
 
 function getImportModuleNode(node: ts.node, source: string) {
@@ -70,7 +70,7 @@ function injectDependenciesPlugin(
   return async (input: string, output: string | undefined, depsDir: string) => {
     const data: string = await fetchTextFile(input);
     const moduleDeps = changeMap[input];
-    const outputText = traverseTextFile(
+    const outputText = transpile(
       data,
       compilerOptions,
       (node: ts.Node) => {

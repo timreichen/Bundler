@@ -28,7 +28,7 @@ async function runBundle(
 
   const input = _.shift()!;
   name = name || basename(input || "").replace(/\.ts$/, ".js");
-  
+
   const entry = {
     input,
     name,

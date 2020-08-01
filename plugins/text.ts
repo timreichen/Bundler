@@ -10,6 +10,7 @@ export function text(
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
     return printer.printList(undefined, ts.createNodeArray([ast]), undefined);
   };
+
   return plugin({
     name: "text",
     include,

@@ -14,6 +14,7 @@ export function postcss(
     options: { use: [autoprefixer] },
     ...config,
   };
+
   const transform = async (source: string) => {
     const engine = (postcssCore as Function)();
     options.use.forEach((plugin: unknown) => engine.use(plugin));

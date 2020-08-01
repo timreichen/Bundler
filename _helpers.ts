@@ -6,5 +6,5 @@
  * ```
  */
 export function isURL(path: string) {
-  return /^https?:\/\//.test(path);
+  return /^https?:/.test(path);
 }

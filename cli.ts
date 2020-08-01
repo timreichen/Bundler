@@ -7,6 +7,15 @@ import { Program } from "https://raw.githubusercontent.com/timreichen/program/ma
 import { CompilerOptions } from "./typescript.ts";
 import { postcss } from "./plugins/postcss.ts";
 import { text } from "./plugins/text.ts";
+import { babel } from "./plugins/babel.ts";
+// import { typescript } from "./plugins/typescript.ts";
+
+import babelPresetEnv from "https://dev.jspm.io/@babel/preset-env";
+import babelPluginSyntaxTopLevelAwait from "https://dev.jspm.io/@babel/plugin-syntax-top-level-await";
+import babelPluginProposalClassProperties from "https://dev.jspm.io/@babel/plugin-proposal-class-properties";
+import babelPluginTypescript from "https://dev.jspm.io/@babel/plugin-transform-typescript";
+import babelProposalDecoratos from "https://dev.jspm.io/@babel/plugin-proposal-decorators";
+import babelPluginTransformModulesSystemjs from "https://dev.jspm.io/@babel/plugin-transform-modules-systemjs";
 
 async function runBundle(
   { _, name, dir, importmap, config, reload }: {
@@ -28,12 +37,36 @@ async function runBundle(
 
   const input = _.shift()!;
   name = name || basename(input || "").replace(/\.ts$/, ".js");
-  
+
+  const defaultPresets = [
+    [babelPresetEnv, {
+      targets: {
+        browsers: "chrome >= 59",
+      },
+      modules: "systemjs",
+    }],
+  ];
+
+  const defaultPlugins = [
+    [babelProposalDecoratos, { legacy: true }],
+    babelPluginSyntaxTopLevelAwait,
+    babelPluginProposalClassProperties,
+    // babelPluginTransformModulesSystemjs
+    // babelPluginTypescript,
+  ];
+
   const entry = {
     input,
     name,
     dir,
     plugins: [
+      babel({
+        options: {
+          presets: defaultPresets,
+          plugins: defaultPlugins,
+        },
+      } as any),
+      // typescript({ options: { compilerOptions } }),
       postcss({ options: { use: [autoprefixer] } }),
       text({ include: (path: string) => /\.css$/.test(path) }),
     ],

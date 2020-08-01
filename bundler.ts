@@ -13,43 +13,14 @@ import { ts } from "./deps.ts";
 import { fetchTextFile } from "./file.ts";
 import { ImportMap } from "./import_map.ts";
 import { Plugin } from "./plugin.ts";
-import { CompilerOptions, transpile } from "./typescript.ts";
+import {
+  CompilerOptions,
+  transpile,
+  getDynamicImportNode,
+  getImportNode,
+  getExportNode,
+} from "./typescript.ts";
 import { isURL } from "./_helpers.ts";
-
-function getImportModuleNode(node: ts.node, source: string) {
-  if (ts.isImportDeclaration(node) && node.moduleSpecifier) {
-    return node.moduleSpecifier;
-  }
-  // dynamic imports: create dep if fist argument is string literal: import("test.ts") -> "test.ts"
-  if (
-    ts.SyntaxKind[node.kind] === "CallExpression" &&
-    ts.SyntaxKind[node.expression.kind] === "ImportKeyword"
-  ) {
-    const arg = node.arguments[0];
-    if (!ts.isStringLiteral(arg)) {
-      console.warn(
-        yellow("Warning"),
-        `dynamic import argument is not a string literal: Cannot resolve ${
-          yellow(
-            `import(${
-              source.substring(
-                arg.pos,
-                node.arguments[node.arguments.length - 1].end,
-              )
-            })`,
-          )
-        } at index ${arg.pos}`,
-      );
-      return;
-    }
-    return arg;
-  }
-}
-function getExportModuleNode(node: ts.node) {
-  if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
-    return node.moduleSpecifier;
-  }
-}
 
 interface DependencyMapEntry {
   path: string;
@@ -70,51 +41,49 @@ function injectDependenciesPlugin(
   return async (input: string, output: string | undefined, depsDir: string) => {
     const data: string = await fetchTextFile(input);
     const moduleDeps = changeMap[input];
-    const outputText = transpile(
-      data,
-      compilerOptions,
-      (node: ts.Node) => {
-        // console.log(ts.SyntaxKind[node.kind]);
+    const outputText = transpile(data, compilerOptions, (node: ts.Node) => {
+      // console.log(ts.SyntaxKind[node.kind]);
 
-        const moduleNode = getImportModuleNode(node, data) ||
-          getExportModuleNode(node);
-        // if is not a import or export statement
-        if (!moduleNode) return node;
+      const moduleNode = getImportNode(node) ||
+        getDynamicImportNode(node, data) || getExportNode(node);
+      // if is not a import or export statement
+      if (!moduleNode) return node;
 
-        // ignore type imports and exports (example: import type { MyInterface } from "./_interface.ts")
-        if (node.importClause?.isTypeOnly || node.exportClause?.isTypeOnly) {
-          return node;
-        }
+      // ignore type imports and exports (example: import type { MyInterface } from "./_interface.ts")
+      if (
+        node.importClause?.isTypeOnly || node.exportClause?.isTypeOnly
+      ) {
+        return node;
+      }
 
-        const moduleNodePath = moduleNode.text;
+      const moduleNodePath = moduleNode.text;
 
-        // get relative path to dist dir
-        const resolvedPath = moduleDeps.dependencies[moduleNodePath];
+      // get relative path to dist dir
+      const resolvedPath = moduleDeps.dependencies[moduleNodePath];
 
-        // either name of transpiled file or new uuid name
+      // either name of transpiled file or new uuid name
 
-        let newPath;
-        const outputPath = outputPathMap[resolvedPath];
-        if (isURL(outputPath)) {
-          // keep url import instead of caching it
-          newPath = outputPath;
-        } else {
-          newPath = outputPathMap[resolvedPath] = outputPath ||
-            `${v4.generate()}.js`;
-          // if is named file, its dir is dist dir, else is dist/deps
-          newPath = join(output ? depsDir : ".", newPath);
-          newPath = `./${newPath}`;
-        }
-        //append relative import string
-        const newNode = ts.createStringLiteral(newPath);
-        // replace old with new node
-        // FIX: why does ts.updateNode(newNode, mduleNode) not work?
-        return ts.visitEachChild(
-          node,
-          (child: ts.Node) => child === moduleNode ? newNode : child,
-        );
-      },
-    );
+      let newPath;
+      const outputPath = outputPathMap[resolvedPath];
+      if (isURL(outputPath)) {
+        // keep url import instead of caching it
+        newPath = outputPath;
+      } else {
+        newPath = outputPathMap[resolvedPath] = outputPath ||
+          `${v4.generate()}.js`;
+        // if is named file, its dir is dist dir, else is dist/deps
+        newPath = join(output ? depsDir : ".", newPath);
+        newPath = `./${newPath}`;
+      }
+      //append relative import string
+      const newNode = ts.createStringLiteral(newPath);
+      // replace old with new node
+      // FIX: why does ts.updateNode(newNode, mduleNode) not work?
+      return ts.visitEachChild(
+        node,
+        (child: ts.Node) => child === moduleNode ? newNode : child,
+      );
+    });
 
     return outputText;
   };
@@ -129,10 +98,12 @@ function changeDescription(changes: Change[]) {
     },
     {} as { [key in ChangeType]: number },
   );
+
   const array = Object.entries(c).reduce((array, [type, number]) => {
     array.push(blue(`${type}: ${number}`));
     return array;
   }, [] as string[]);
+
   return array.join(" | ");
 }
 
@@ -169,8 +140,6 @@ export class Bundler {
     // example: dist/deps
     const depsDirPath = join(dir, this.depsDir);
     // create output path relative to depsDirPath. Example: dist/a.js -> ../a.js
-    console.log(depsDirPath, dir, name);
-
     const output = relative(depsDirPath, join(dir, name));
 
     const mapFilePath = join(depsDirPath, this.depsMapName);

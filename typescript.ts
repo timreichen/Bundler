@@ -5,10 +5,7 @@ export interface CompilerOptions {
   [key: string]: unknown;
 }
 
-export function traverse(
-  source: string,
-  receiver: (node: ts.Node) => ts.Node,
-) {
+export function traverse(source: string, receiver: (node: ts.Node) => ts.Node) {
   function transformer<T extends ts.Node>(): ts.TransformerFactory<T> {
     return (context: ts.TransformationContext) => {
       const visit: ts.Visitor = (node: ts.Node) =>
@@ -50,9 +47,7 @@ export function transpile(
   }
 
   const { diagnostics, outputText } = ts.transpileModule(source, {
-    compilerOptions: ts.convertCompilerOptionsFromJson(
-      compilerOptions,
-    ).options,
+    compilerOptions: ts.convertCompilerOptionsFromJson(compilerOptions).options,
     transformers: { before: [transformer()] },
     reportDiagnostics: true,
   });

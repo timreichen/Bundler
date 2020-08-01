@@ -93,14 +93,20 @@ function injectDependenciesPlugin(
 
         // either name of transpiled file or new uuid name
 
-        let newPath = outputPathMap[resolvedPath] =
-          outputPathMap[resolvedPath] || `${v4.generate()}.js`;
-
-        // if is named file, its dir is dist dir, else is dist/deps
-        newPath = join(output ? depsDir : ".", newPath);
-
+        let newPath;
+        const outputPath = outputPathMap[resolvedPath];
+        if (isURL(outputPath)) {
+          // keep url import instead of caching it
+          newPath = outputPath;
+        } else {
+          newPath = outputPathMap[resolvedPath] = outputPath ||
+            `${v4.generate()}.js`;
+          // if is named file, its dir is dist dir, else is dist/deps
+          newPath = join(output ? depsDir : ".", newPath);
+          newPath = `./${newPath}`;
+        }
         //append relative import string
-        const newNode = ts.createStringLiteral(`./${newPath}`);
+        const newNode = ts.createStringLiteral(newPath);
         // replace old with new node
         // FIX: why does ts.updateNode(newNode, mduleNode) not work?
         return ts.visitEachChild(
@@ -160,10 +166,11 @@ export class Bundler {
     } = {},
   ) {
     const start = performance.now();
-
     // example: dist/deps
     const depsDirPath = join(dir, this.depsDir);
     // create output path relative to depsDirPath. Example: dist/a.js -> ../a.js
+    console.log(depsDirPath, dir, name);
+
     const output = relative(depsDirPath, join(dir, name));
 
     const mapFilePath = join(depsDirPath, this.depsMapName);

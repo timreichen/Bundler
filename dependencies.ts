@@ -1,5 +1,6 @@
 import { yellow } from "https://deno.land/std/fmt/colors.ts";
 import { dirname, isAbsolute, join } from "https://deno.land/std/path/mod.ts";
+import { join as posixJoin } from "https://deno.land/std/path/posix.ts";
 import { ts } from "./deps.ts";
 import { fetchTextFile } from "./file.ts";
 import {
@@ -71,7 +72,9 @@ export function resolveDependencyPath(
   } else {
     if (parentIsUrl) {
       const fileUrl = new URL(filePath);
-      fileUrl.pathname = join(dirname(fileUrl.pathname), importMapPath);
+      // In a Windows system, this path has been joined as https://packager/\module@1.1\service
+      // and the browser can't understand this kind of path
+      fileUrl.pathname = posixJoin(dirname(fileUrl.pathname), importMapPath);
       resolvedPath = fileUrl.href;
     } else {
       resolvedPath = join(dirname(filePath), importMapPath);

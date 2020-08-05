@@ -2,8 +2,8 @@ import {
   resolveURLToCacheModulePath,
   createCacheModulePathForURL,
   cache,
-} from "./cache.ts";
-import { isURL } from "./_helpers.ts";
+} from "./cache.ts"
+import { isURL } from "./_helpers.ts"
 
 /**
  * reads either local file or caches url and reads cache file
@@ -11,10 +11,10 @@ import { isURL } from "./_helpers.ts";
  * @param reload 
  */
 export async function fetchTextFile(path: string, reload = false) {
-  const isUrlImport = isURL(path);
-  const resolvedPath = isUrlImport ? resolveURLToCacheModulePath(path) : null;
-  if (isUrlImport && !resolvedPath) return await cacheReadURLFile(path, reload);
-  return await Deno.readTextFile(resolvedPath || path);
+  const isUrlImport = isURL(path)
+  const resolvedPath = isUrlImport ? resolveURLToCacheModulePath(path) : null
+  if (isUrlImport && !resolvedPath) { return await cacheReadURLFile(path, reload) }
+  return await Deno.readTextFile(resolvedPath || path)
 }
 
 /**
@@ -23,7 +23,7 @@ export async function fetchTextFile(path: string, reload = false) {
  * @param reload 
  */
 async function cacheReadURLFile(path: string, reload = false) {
-  const cachedFilePath = createCacheModulePathForURL(path);
-  await cache(path, reload);
-  return await Deno.readTextFile(cachedFilePath);
+  const cachedFilePath = createCacheModulePathForURL(path)
+  await cache(path, reload)
+  return await Deno.readTextFile(cachedFilePath)
 }

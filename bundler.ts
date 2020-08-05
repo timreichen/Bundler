@@ -347,10 +347,10 @@ export class Bundler {
 
       }
 
-      //   console.log(createChangeDescription(changes))
-      //   console.log(green(`Update`), mapFilePath)
-      //   await ensureFile(mapFilePath)
-      //   await writeJson(mapFilePath, deps, { spaces: "  " })
+        console.log(createChangeDescription(changes))
+        console.log(green(`Update`), mapFilePath)
+        await ensureFile(mapFilePath)
+        await writeJson(mapFilePath, deps, { spaces: "  " })
 
     } else {
       console.log(green(`up-to-date`))

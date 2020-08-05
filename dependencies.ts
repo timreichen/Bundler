@@ -58,7 +58,7 @@ export function resolve(
   importMap: ImportMap = { imports: {} },
 ) {
   const importMapPath = resolveWithImportMap(relativePath, importMap);
-
+  
   const isUrl = isURL(importMapPath);
   const parentIsUrl = isURL(path);
 
@@ -66,7 +66,7 @@ export function resolve(
   if (isUrl) {
     resolvedPath = importMapPath;
   } else if (isAbsolute(importMapPath) || relativePath !== importMapPath) {
-    if (parentIsUrl) {
+    if (parentIsUrl) {      
       const fileUrl = new URL(path);
       fileUrl.pathname = importMapPath;
       resolvedPath = fileUrl.href;
@@ -75,7 +75,7 @@ export function resolve(
     }
   } else {
     if (parentIsUrl) {
-      const fileUrl = new URL(importMapPath);
+      const fileUrl = new URL(path);
       // In a Windows system, this path has been joined as https://packager/\module@1.1\service
       // and the browser can't understand this kind of path
       fileUrl.pathname = posix.join(dirname(fileUrl.pathname), importMapPath);

@@ -9,7 +9,7 @@ import { postcss } from "./plugins/postcss.ts";
 import { text } from "./plugins/text.ts";
 
 async function runBundle(
-  { _, name, dir, importmap, config, reload }: {
+  { _, name, dir="dist", importmap, config, reload }: {
     _: [string];
     name: string;
     dir: string;
@@ -26,11 +26,11 @@ async function runBundle(
       .compilerOptions
     : undefined;
 
-  const input = _.shift()!;
-  name = name || basename(input || "").replace(/\.ts$/, ".js");
+  const path = _.shift()!;
+  name = name || basename(path || "").replace(/\.ts$/, ".js");
 
   const entry = {
-    input,
+    path,
     name,
     dir,
     plugins: [

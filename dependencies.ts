@@ -1,81 +1,86 @@
-import { yellow } from "https://deno.land/std/fmt/colors.ts";
-import { dirname, isAbsolute, join } from "https://deno.land/std/path/mod.ts";
-import { ts } from "./deps.ts";
-import { fetchTextFile } from "./file.ts";
+import { dirname, isAbsolute, join, extname } from "https://deno.land/std/path/mod.ts"
+import { ts } from "./deps.ts"
+import { fetchTextFile } from "./file.ts"
 import {
   ImportMap,
   resolveWithImportMap,
-} from "./import_map.ts";
+} from "./import_map.ts"
 import {
   traverse,
   getImportNode,
   getExportNode,
   getDynamicImportNode,
-} from "./typescript.ts";
-import { isURL } from "./_helpers.ts";
+} from "./typescript.ts"
+import { isURL, ensureExtension } from "./_helpers.ts"
 
-export interface DependencyMap {
-  [path: string]: string;
+export interface Dependency {
+  path: string
+  dynamic: boolean
 }
 
 /**
- * returns array of all import and exports
+ * returns object of dependencies ```{ [relativePath]: resolvedPath }```
  */
-export async function getDependencies(filePath: string): Promise<string[]> {
-  const source = await fetchTextFile(filePath);
+export async function getDependencyMap(path: string): Promise<Dependency[]> {
 
-  const dependencies: Set<string> = new Set();
+  const source = await fetchTextFile(ensureExtension(path, ".ts"))
+
+  const dependencies: Set<Dependency> = new Set()
   traverse(source, (node: ts.Node) => {
     // console.log(ts.SyntaxKind[node.kind])
-    const moduleNode = getImportNode(node) ||
-      getDynamicImportNode(node, source) || getExportNode(node);
+    let moduleNode = getImportNode(node) || getExportNode(node) || getDynamicImportNode(node, source)
+    const dynamicModuleImport = getDynamicImportNode(node, source)
+    if (dynamicModuleImport) { moduleNode = dynamicModuleImport }
+
     if (moduleNode) {
       // ignore type imports (example: import type {MyInterface} from "./_interfaces.ts")
-      if (node.importClause?.isTypeOnly) return node;
+      if (node.importClause?.isTypeOnly) return node
 
-      const relativePath = moduleNode.text;
+      const relativePath = moduleNode.text
 
-      dependencies.add(relativePath);
+      dependencies.add({
+        path: relativePath,
+        dynamic: dynamicModuleImport !== undefined
+      })
     }
-    return node;
-  });
+    return node
+  })
 
-  return [...dependencies.values()];
+  return [...dependencies.values()]
 }
 
 /**
  * resolves relativePath relative to filePath
  */
-export function resolveDependencyPath(
-  filePath: string,
+export function resolve(
+  path: string,
   relativePath: string,
-  { importMap = { imports: {} } }: { root?: string; importMap?: ImportMap } =
-    {},
+  importMap: ImportMap = { imports: {} }
 ) {
-  const importMapPath = resolveWithImportMap(relativePath, importMap);
+  const importMapPath = resolveWithImportMap(relativePath, importMap)
 
-  const isUrl = isURL(importMapPath);
-  const parentIsUrl = isURL(filePath);
+  const isUrl = isURL(importMapPath)
+  const parentIsUrl = isURL(path)
 
-  let resolvedPath: string;
+  let resolvedPath: string
   if (isUrl) {
-    resolvedPath = importMapPath;
+    resolvedPath = importMapPath
   } else if (isAbsolute(importMapPath) || relativePath !== importMapPath) {
     if (parentIsUrl) {
-      const fileUrl = new URL(filePath);
-      fileUrl.pathname = importMapPath;
-      resolvedPath = fileUrl.href;
+      const fileUrl = new URL(path)
+      fileUrl.pathname = importMapPath
+      resolvedPath = fileUrl.href
     } else {
-      resolvedPath = importMapPath;
+      resolvedPath = importMapPath
     }
   } else {
     if (parentIsUrl) {
-      const fileUrl = new URL(filePath);
-      fileUrl.pathname = join(dirname(fileUrl.pathname), importMapPath);
-      resolvedPath = fileUrl.href;
+      const fileUrl = new URL(path)
+      fileUrl.pathname = join(dirname(fileUrl.pathname), importMapPath)
+      resolvedPath = fileUrl.href
     } else {
-      resolvedPath = join(dirname(filePath), importMapPath);
+      resolvedPath = join(dirname(path), importMapPath)
     }
   }
-  return resolvedPath;
+  return ensureExtension(resolvedPath, ".ts")
 }

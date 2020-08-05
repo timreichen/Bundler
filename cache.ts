@@ -7,7 +7,7 @@ import {
   writeJson,
   ensureFile,
 } from "https://deno.land/std/fs/mod.ts";
-import { getDependencies, resolveDependencyPath } from "./dependencies.ts";
+import { getDependencyMap, resolve as resolveDependencyPath } from "./dependencies.ts";
 import { isURL } from "./_helpers.ts";
 
 /**
@@ -88,7 +88,6 @@ export async function cache(path: string, reload = false) {
   const queue = [path];
   while (queue.length) {
     const path = queue.pop()!;
-
     const cachedFilePath = createCacheModulePathForURL(path);
 
     let source: string;
@@ -106,7 +105,8 @@ export async function cache(path: string, reload = false) {
       source = await Deno.readTextFile(cachedFilePath);
     }
 
-    const dependencies = await getDependencies(cachedFilePath);
-    queue.push(...dependencies);
+    const dependencyMap = await getDependencyMap(cachedFilePath);
+    
+    queue.push(...dependencyMap.map(dependency => resolveDependencyPath(path, dependency.path)));
   }
 }

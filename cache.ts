@@ -7,7 +7,10 @@ import {
   writeJson,
   ensureFile,
 } from "https://deno.land/std/fs/mod.ts";
-import { getDependencyMap, resolve as resolveDependencyPath } from "./dependencies.ts";
+import {
+  getDependencyMap,
+  resolve as resolveDependencyPath,
+} from "./dependencies.ts";
 import { isURL } from "./_helpers.ts";
 
 /**
@@ -106,7 +109,11 @@ export async function cache(path: string, reload = false) {
     }
 
     const dependencyMap = await getDependencyMap(cachedFilePath);
-    
-    queue.push(...dependencyMap.map(dependency => resolveDependencyPath(path, dependency.path)));
+
+    queue.push(
+      ...dependencyMap.map((dependency) =>
+        resolveDependencyPath(path, dependency.path)
+      ),
+    );
   }
 }

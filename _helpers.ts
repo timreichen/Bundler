@@ -1,5 +1,5 @@
-import { isAbsolute, extname } from "https://deno.land/std@0.63.0/path/mod.ts"
-import { yellow } from "https://deno.land/std@0.63.0/fmt/colors.ts"
+import { isAbsolute, extname } from "https://deno.land/std@0.63.0/path/mod.ts";
+import { yellow } from "https://deno.land/std@0.63.0/fmt/colors.ts";
 
 /**
  * returns true if path starts with http:// or https://, else false
@@ -9,15 +9,14 @@ import { yellow } from "https://deno.land/std@0.63.0/fmt/colors.ts"
  * ```
  */
 export function isURL(path: string) {
-  return /^https?:/.test(path)
+  return /^https?:/.test(path);
 }
 
 export function removeExtension(path: string) {
-  return path.split('.').slice(0, -1).join('.')
+  return path.split(".").slice(0, -1).join(".");
 }
 
 export function ensureExtension(path: string, extension: string) {
-
   // allow urls and absolute paths without extension
   if (
     !isURL(path) && !isAbsolute(path) &&
@@ -26,8 +25,8 @@ export function ensureExtension(path: string, extension: string) {
     console.warn(
       yellow(`Warning`),
       `import '${path}' does not have a file extension. Resolve with '.ts'`,
-    )
-    path += extension
+    );
+    path += extension;
   }
-  return path
+  return path;
 }

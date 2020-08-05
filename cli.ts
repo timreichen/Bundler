@@ -9,7 +9,7 @@ import { postcss } from "./plugins/postcss.ts";
 import { text } from "./plugins/text.ts";
 
 async function runBundle(
-  { _, name, dir="dist", importmap, config, reload }: {
+  { _, name, dir = "dist", importmap, config, reload }: {
     _: [string];
     name: string;
     dir: string;

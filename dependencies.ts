@@ -1,4 +1,4 @@
-import { dirname, isAbsolute, join, extname } from "https://deno.land/std/path/mod.ts"
+import { dirname, isAbsolute, join, extname, posix } from "https://deno.land/std/path/mod.ts"
 import { ts } from "./deps.ts"
 import { fetchTextFile } from "./file.ts"
 import {
@@ -75,9 +75,11 @@ export function resolve(
     }
   } else {
     if (parentIsUrl) {
-      const fileUrl = new URL(path)
-      fileUrl.pathname = join(dirname(fileUrl.pathname), importMapPath)
-      resolvedPath = fileUrl.href
+      const fileUrl = new URL(filePath);
+      // In a Windows system, this path has been joined as https://packager/\module@1.1\service
+      // and the browser can't understand this kind of path
+      fileUrl.pathname = posix.join(dirname(fileUrl.pathname), importMapPath);
+      resolvedPath = fileUrl.href;
     } else {
       resolvedPath = join(dirname(path), importMapPath)
     }

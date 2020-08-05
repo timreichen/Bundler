@@ -1,0 +1,1 @@
+run ```bundler bundle --name index.js src/index.ts``` and start webserver with ```dist``` as root.

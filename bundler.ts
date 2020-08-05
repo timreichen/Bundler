@@ -316,15 +316,15 @@ export class Bundler {
         // esm
 
         for (const change of changes) {
-          const { path, input, output, dependencies } = change
+          const { path, input, output, dependencies, type } = change
+          console.log(green(type), path)
           
           let source = await fetchTextFile(path)
 
           source = await transpile(input, source, compilerOptions)
-
+          
           // get local file path for url imports
           const filePath = resolveURLToCacheModulePath(path) || input
-
 
           // if named file dir name is dist, if not is dist/deps
           const outputFilePath = outputMap[path]

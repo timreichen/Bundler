@@ -36,10 +36,16 @@ interface DependencyMap {
 }
 
 async function getSplitModules(path: string, importMap: ImportMap): Promise<{ input: string, dependencies: Dependency[] }[]> {
-  const queue: any[] = [path]
+  const queue: string[] = [path]
+  const checkedPaths: {[path: string]: any } = []
+
   async function getDependencies(path: string, module: any) {
+    if (checkedPaths[path]) { return checkedPaths[path]  }
+    checkedPaths[path] = module
+
     const deps: any[] = []
     const dependencies = await getDependencyMap(path)
+    
     for (const dependency of dependencies) {
       const resolvedPath = await resolveDependencyPath(path, dependency.path, importMap)
       if (dependency.dynamic) {
@@ -56,6 +62,7 @@ async function getSplitModules(path: string, importMap: ImportMap): Promise<{ in
 
   while (queue.length) {
     const input = queue.pop()!
+
     const module = await getDependencies(input, { input, dependencies: [] })
     modules.push(module)
   }
@@ -287,7 +294,7 @@ export class Bundler {
       if (toSystem) {
 
         const modules = await getSplitModules(path, importMap)
-
+        
         for (const { input, dependencies } of modules) {
           let source = await fetchTextFile(input)
 

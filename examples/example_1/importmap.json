@@ -1,5 +1,0 @@
-{
-  "imports": {
-    "foo/": "src/sub/"
-  }
-}

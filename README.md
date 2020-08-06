@@ -1,7 +1,7 @@
 # Bundler
-Bundler transpiles Deno ```typescript``` files to ```javascript``` ```esm``` files.
+Bundler transpiles Deno ```typescript``` files to ```javascript``` ```esm``` files. <br />
 
-## Motivation
+## Why Use Bundler
 Typescript as of today does throw an error if an import has a ```.ts``` extension or a url.
 ```ts
 import { foo } from "bar.ts" // Typescript Error
@@ -12,7 +12,7 @@ Deno on the other hand do not allow the suspension of extensions
 ```ts
 import { foo } from "bar" // Deno Error
 ```
-
+ ### TypeScript
 Bundler makes it possible to transpile typescript files with ```.ts``` extension for the web.
 It automatically resolves URL paths and fetches the content.
   ```ts
@@ -24,7 +24,9 @@ console.log(foo)
 import { foo } from "./8277fbd0-903e-4a4b-87a7-cfa876924c7a.js"
 console.log(foo) // div "hello world"
 ```
-It has css import enabled by default
+
+### CSS
+Bundler has css import enabled by default.
 ```css
 /* styles.css */
 div { background: red; }
@@ -33,6 +35,20 @@ div { background: red; }
 import styles from "./styles.css"
 console.log(styles) // div { background: red; }
 ```
+
+### Babel
+Bundler transforms file content with presets and plugins with babel to ```javascript``` using Babel. <br />
+
+### Text
+Bundler transforms file content to string export module.
+```txt
+/* hello.txt */
+Hello World!
+```
+```js
+module.exports = 'Hello World!'
+```
+
 
 ## Installation
 ```sh
@@ -43,16 +59,6 @@ deno install --unstable --allow-read --allow-write --allow-net --allow-env --nam
 ```sh
 bundler bundle --name index.js index.ts
 ```
-
-## Plugins
-### typescript
-  transforms ```typescript``` file content to ```javascript``` module
-### text
-  transforms file content to string export module
-### babel
-  transforms file content with presets and plugins with babel to ```javascript``` module
-### postcss
-  transforms css file content
 
 ## Cache
 Bundler uses the deno cache system. No need for a cache directory in your project!

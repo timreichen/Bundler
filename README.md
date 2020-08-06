@@ -15,8 +15,8 @@ import { foo } from "bar" // Deno Error
 
 Bundler bundles deno syntax files (url imports, .ts extensions) for the web.
 
-### But there is ```Deno.bundle```
-Deno offers ```Deno.bundle``` to transpile a file to a standalone module. This may  work in the web for small modules, but is not not ideal for large projects where code needs to be dynamically imported.
+### But there is ```deno bundle```
+Deno offers ```deno bundle``` to transpile a file to a standalone module. This may  work in the web for small modules, but is not not ideal for large projects where code needs to be dynamically imported.
 
 ## Main features
 - transpiles deno ```typescript``` to ```javascript``` for the web
@@ -42,7 +42,6 @@ Bundler uses the Bundler API to transpile ```typescript``` files to ```javascrip
 ### Usage
 ```ts
 import { Bundler } from "https://raw.githubusercontent.com/timreichen/Bundler/master/mod.ts"
-import autoprefixer from "https://jspm.dev/autoprefixer"
 
 const entry = {
   path: "src/index.ts",

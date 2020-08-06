@@ -1,5 +1,6 @@
 # Bundler
-Bundler transpiles Deno ```typescript``` files to ```javascript``` ```esm``` files. <br />
+Bundler is a a deno lightweight alternative bundler to [webpack](https://github.com/webpack/webpack), [rollup](https://github.com/rollup/rollup), [parcel](https://github.com/parcel-bundler/parcel) etc,  <br />
+that transpiles Deno ```typescript``` files to ```javascript``` ```esm``` files. <br />
 
 ## Why Use Bundler
 Typescript as of today does throw an error if an import has a ```.ts``` extension or a url.
@@ -12,7 +13,11 @@ Deno on the other hand do not allow the suspension of extensions
 ```ts
 import { foo } from "bar" // Deno Error
 ```
- ### TypeScript
+
+**the Bundler API bundles deno syntax files (url imports, .ts extensions) for the web.** <br />
+some of the benefits of using bundler are: 
+
+### TypeScript
 Bundler makes it possible to transpile typescript files with ```.ts``` extension for the web.
 It automatically resolves URL paths and fetches the content.
   ```ts
@@ -55,37 +60,50 @@ module.exports = 'Hello World!'
 deno install --unstable --allow-read --allow-write --allow-net --allow-env --name bundler https://raw.githubusercontent.com/timreichen/Bundler/master/cli.ts
 ```
 **Info**: You might need to specify ```--root /usr/local```.
+
 ## Usage
 ```sh
 bundler bundle --name index.js index.ts
 ```
+### requirements
+- Bundler uses the Deno cache system. No need for a cache directory in your project!
+- Bundler does not require node and `package.json` file.
 
-## Cache
-Bundler uses the deno cache system. No need for a cache directory in your project!
-
-## Example
+## Example with [lit-element](https://github.com/Polymer/lit-element);
 ```ts
-// src/a.ts
-export const a = "hello world"
+// src/element.ts
+import styles from "./styles.css";
+
+@customElement("my-element")
+export class MyElement extends LitElement {
+  static styles = unsafeCSS(styles);
+
+  render() {
+    const name: string = "Click Me";
+    return html`<button @click="${this.clickHandler}">${name}</button>`;
+  }
+}
 ```
 ```ts
 // src/index.ts
-import { a } from "./foo/a.ts"
-console.log(a)
+import "./element";
 ```
+
 ```sh
 bundler bundle --name index.js src/index.ts
 ```
 ### Output
 - src
-  - foo
-    - a.ts
+  - element.ts
   - index.ts
+  - styles.css
 - dist
-  - index.js
+  - index.js (imported in index.html)
   - deps
     - deps.json
     - 8277fbd0-903e-4a4b-87a7-cfa876924c7a.js
+
+<br /> [Link](https://github.com/timreichen/Bundler/tree/master/examples/example_3) to full example 
 
 ## Proof of concept
 This is a proof of concept registry. Do not use in production!

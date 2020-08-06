@@ -1,5 +1,5 @@
 # Bundler
-Bundler is a a deno lightweight bundler that transpiles deno ```typescript``` files for the web.
+A lightweight bundler that transpiles deno ```typescript``` files for the web.
 
 ## Why Use Bundler
 Typescript as of today does throw an error if an import has a ```.ts``` extension or a url.
@@ -59,7 +59,7 @@ const bundler = new Bundler()
 await bundler.bundle(entry, { compilerOptions })
 
 ```
-
+## How does it work?
 ### TypeScript
 Bundler makes it possible to transpile typescript files with ```.ts``` extension for the web.
 It automatically resolves URL paths, fetches and caches the content.
@@ -77,7 +77,7 @@ console.log(foo)
 ```
 
 ### CSS
-Bundler has css import enabled by default.
+Bundler CLI supports css imports by default.
 
 Before
 ```css

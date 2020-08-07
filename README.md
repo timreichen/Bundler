@@ -17,6 +17,10 @@ import { foo } from "bar" // Deno Error
 **the Bundler API bundles deno syntax files (url imports, .ts extensions) for the web.** <br />
 some of the benefits of using bundler are: 
 
+### No Requirements
+- Bundler uses the Deno cache system. No need for a cache directory in your project!
+- Bundler does not require node and `package.json` file.
+
 ### TypeScript
 Bundler makes it possible to transpile typescript files with ```.ts``` extension for the web.
 It automatically resolves URL paths and fetches the content.
@@ -43,6 +47,17 @@ console.log(styles) // div { background: red; }
 
 ### Babel
 Bundler transforms file content with presets and plugins with babel to ```javascript``` using Babel. <br />
+```ts
+/* index.ts */
+const fn = () => 1;
+```
+converted to
+```js
+/* index.js */
+var fn = function fn() {
+  return 1;
+};
+```
 
 ### Text
 Bundler transforms file content to string export module.
@@ -51,13 +66,13 @@ Bundler transforms file content to string export module.
 Hello World!
 ```
 ```js
-module.exports = 'Hello World!'
+/* after bundling */
+export default 'Hello World!'
 ```
-
 
 ## Installation
 ```sh
-deno install --unstable --allow-read --allow-write --allow-net --allow-env --name bundler https://raw.githubusercontent.com/timreichen/Bundler/master/cli.ts
+deno install --unstable -A --name bundler https://raw.githubusercontent.com/timreichen/Bundler/master/cli.ts
 ```
 **Info**: You might need to specify ```--root /usr/local```.
 
@@ -65,9 +80,6 @@ deno install --unstable --allow-read --allow-write --allow-net --allow-env --nam
 ```sh
 bundler bundle --name index.js index.ts
 ```
-### requirements
-- Bundler uses the Deno cache system. No need for a cache directory in your project!
-- Bundler does not require node and `package.json` file.
 
 ## Example with [lit-element](https://github.com/Polymer/lit-element);
 ```ts

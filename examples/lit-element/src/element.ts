@@ -14,8 +14,10 @@ export class MyElement extends LitElement {
   static styles = unsafeCSS(styles);
 
   render() {
-    const name: string = "Click Me";
-    return html`<button @click="${this.clickHandler}">${name}</button>`;
+    return html`
+    <h1>Hello from LitElement</h1>
+    <button @click="${this.clickHandler}">Click Me</button>
+    `;
   }
 
   clickHandler(event) {

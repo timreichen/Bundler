@@ -1,1 +1,0 @@
-run ```bundler bundle --importmap=importmap.json --name index.js --config tsconfig.json src/index.ts``` and start webserver with ```dist``` as root.

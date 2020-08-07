@@ -1,6 +1,5 @@
 # Bundler
-Bundler is a a deno lightweight alternative bundler to [webpack](https://github.com/webpack/webpack), [rollup](https://github.com/rollup/rollup), [parcel](https://github.com/parcel-bundler/parcel) etc,  <br />
-that transpiles Deno ```typescript``` files to ```javascript``` ```esm``` files. <br />
+A lightweight bundler that transpiles deno ```typescript``` files for the web.
 
 ## Why Use Bundler
 Typescript as of today does throw an error if an import has a ```.ts``` extension or a url.
@@ -9,49 +8,101 @@ import { foo } from "bar.ts" // Typescript Error
 import * as path from "https://deno.land/std/path/mod.ts"  // Typescript Error
 ```
 
-Deno on the other hand do not allow the suspension of extensions
+Deno on the other hand does not allow the suspension of extensions.
 ```ts
 import { foo } from "bar" // Deno Error
 ```
 
-**the Bundler API bundles deno syntax files (url imports, .ts extensions) for the web.** <br />
-some of the benefits of using bundler are: 
+Bundler bundles deno syntax files (url imports, .ts extensions) for the web.
 
 ### No Requirements
-- Bundler uses the Deno cache system. No need for a cache directory in your project!
-- Bundler does not require node and `package.json` file.
+- no need for a cache folder in your project. Bundler uses the Deno cache system.
+- no need for a `node_modules` folder and a `package.json` file.
+
+### But there is ```deno bundle```
+Deno offers ```deno bundle``` to transpile a file to a standalone module. This may  work in the web for small modules, but is not not ideal for large projects where code needs to be dynamically imported.
+
+## Main features
+- transpiles deno ```typescript``` to ```javascript``` for the web
+- supports css imports by default
+
+## CLI
+
+### Installation
+Bundler is available as a CLI.
+```sh
+deno install --unstable --allow-read --allow-write --allow-net --allow-env https://raw.githubusercontent.com/timreichen/Bundler/master/cli.ts --name bundler 
+```
+**Info**: You might need to specify ```--root /usr/local```.
+
+### Usage
+```sh
+bundler bundle index.ts --name index.js
+```
+
+## Bundler API
+Bundler uses the Bundler API to transpile ```typescript``` files to ```javascript```.
+
+### Usage
+```ts
+import { Bundler } from "https://raw.githubusercontent.com/timreichen/Bundler/master/mod.ts"
+
+const entry = {
+  path: "src/index.ts",
+  name: "index.js",
+  dir: "dist",
+}
+
+const compilerOptions = {
+  target: "ESNext",
+  module: "ESNext",
+}
+
+const bundler = new Bundler()
+
+await bundler.bundle(entry, { compilerOptions })
+
+```
+## How does it work?
 
 ### TypeScript
 Bundler makes it possible to transpile typescript files with ```.ts``` extension for the web.
-It automatically resolves URL paths and fetches the content.
+It automatically resolves URL paths, fetches and caches the content.
+
+Before
   ```ts
 /* index.ts */
 import { foo } from "https://url/to/somewhere.ts"
 console.log(foo)
 ```
+After
 ```js
 import { foo } from "./8277fbd0-903e-4a4b-87a7-cfa876924c7a.js"
-console.log(foo) // div "hello world"
+console.log(foo)
 ```
 
 ### CSS
-Bundler has css import enabled by default.
+Bundler CLI supports css imports by default.
+
+Before
 ```css
 /* styles.css */
 div { background: red; }
 ```
 ```js
 import styles from "./styles.css"
+
 console.log(styles) // div { background: red; }
 ```
 
 ### Babel
 Bundler transforms file content with presets and plugins with babel to ```javascript``` using Babel. <br />
+Before
 ```ts
 /* index.ts */
 const fn = () => 1;
 ```
-converted to
+After
 ```js
 /* index.js */
 var fn = function fn() {
@@ -65,6 +116,7 @@ Bundler transforms file content to string export module.
 /* hello.txt */
 Hello World!
 ```
+After
 ```js
 /* after bundling */
 export default 'Hello World!'
@@ -81,41 +133,12 @@ deno install --unstable -A --name bundler https://raw.githubusercontent.com/timr
 bundler bundle --name index.js index.ts
 ```
 
-## Example with [lit-element](https://github.com/Polymer/lit-element);
-```ts
-// src/element.ts
-import styles from "./styles.css";
+## Examples
 
-@customElement("my-element")
-export class MyElement extends LitElement {
-  static styles = unsafeCSS(styles);
-
-  render() {
-    const name: string = "Click Me";
-    return html`<button @click="${this.clickHandler}">${name}</button>`;
-  }
-}
-```
-```ts
-// src/index.ts
-import "./element";
-```
-
-```sh
-bundler bundle --name index.js src/index.ts
-```
-### Output
-- src
-  - element.ts
-  - index.ts
-  - styles.css
-- dist
-  - index.js (imported in index.html)
-  - deps
-    - deps.json
-    - 8277fbd0-903e-4a4b-87a7-cfa876924c7a.js
-
-<br /> [Link](https://github.com/timreichen/Bundler/tree/master/examples/example_3) to full example 
+- [Hello World](https://github.com/timreichen/Bundler/tree/master/examples/hello%20world)
+- [css import](https://github.com/timreichen/Bundler/tree/master/examples/css%20import)
+- [lit-element](https://github.com/timreichen/Bundler/tree/master/examples/lit-element)
+- [React](https://github.com/timreichen/Bundler/tree/master/examples/react)
 
 ## Proof of concept
 This is a proof of concept registry. Do not use in production!

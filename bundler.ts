@@ -42,10 +42,26 @@ import {
   injectPath,
 } from "./system.ts"
 
-export interface EntryMap {
+/**
+ * Object containing input file paths as key and source code as value.
+ * ```ts
+ * const inputMap = {
+ *   "src/index.ts": `console.log("Hello World")`
+ * }
+ * ```
+ */
+export interface InputMap {
   [input: string]: string
 }
 
+/**
+ * Object containing input file paths as key and output file path as value.
+ * ```ts
+ * const inputMap = {
+ *   "src/index.ts": "dist/index.js"
+ * }
+ * ```
+ */
 export interface OutputMap {
   [input: string]: string
 }
@@ -79,7 +95,7 @@ function relativeSpecifier(specifier: string, outputMap: OutputMap) {
 }
 
 export async function bundle(
-  entries: EntryMap,
+  inputs: InputMap,
   outputMap: OutputMap,
   {
     outDir = "dist",
@@ -212,7 +228,7 @@ export async function bundle(
     }
   }
 
-  const modules: { [input: string]: string } = { ...entries }
+  const modules: { [input: string]: string } = { ...inputs }
   const loaderString = await systemLoaderString()
 
   async function getSource(specifier: string): Promise<string> {
@@ -240,7 +256,7 @@ export async function bundle(
 
   const outputModules: { [output: string]: string } = {}
 
-  const queue: string[] = Object.keys(entries)
+  const queue: string[] = Object.keys(inputs)
 
   while (queue.length) {
     const input = queue.pop()!

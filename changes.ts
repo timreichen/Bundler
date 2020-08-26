@@ -7,7 +7,7 @@ import {
   getDependencies,
   resolve as resolveDependencyPath,
 } from "./dependencies.ts";
-import { EntryMap, OutputMap } from "./bundler.ts";
+import { InputMap, OutputMap } from "./bundler.ts";
 import {
   resolve as resolveWithImportMap,
   ImportMap,
@@ -56,7 +56,7 @@ export function changeTypeName(changeType: ChangeType) {
 }
 
 export async function createChangeMap(
-  entries: EntryMap,
+  entries: InputMap,
   outputMap: OutputMap,
   { dir, importMap, reload }: {
     dir: string;

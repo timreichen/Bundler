@@ -4,7 +4,7 @@ import { Include, Exclude, plugin } from "../plugin.ts";
 export function text(
   { include, exclude }: { include: Include; exclude?: Exclude },
 ) {
-  const transform = (source: string) => {
+  const transform = (source: string, path: string) => {
     const identifier = `\`${source}\``;
     const ast = ts.createExportDefault(ts.createIdentifier(identifier));
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });

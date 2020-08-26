@@ -1,47 +1,92 @@
 import { readJsonSync } from "https://deno.land/std/fs/mod.ts";
-import { basename } from "https://deno.land/std/path/mod.ts";
-import autoprefixer from "https://jspm.dev/autoprefixer";
-import { ImportMap } from "./import_map.ts";
-import { Bundler } from "./mod.ts";
+import { basename, join } from "https://deno.land/std/path/mod.ts";
+import { ImportMap } from "https://deno.land/x/importmap@0.1.4/mod.ts";
+import { bundle } from "./mod.ts";
+// import { Program } from "https://deno.land/x/program@0.1.3/mod.ts"
 import { Program } from "https://raw.githubusercontent.com/timreichen/program/master/mod.ts";
+import { invalidSubcommandError } from "https://deno.land/x/program@0.1.3/_helpers.ts";
 import { CompilerOptions } from "./typescript.ts";
+import { terser } from "./plugins/terser.ts";
 import { postcss } from "./plugins/postcss.ts";
+import { csso } from "./plugins/csso.ts";
+import postcssPresetEnv from "https://jspm.dev/postcss-preset-env";
+// import postcssImportUrl from "https://jspm.dev/postcss-import-url";
+// import atImport from "https://jspm.dev/postcss-import";
+
+import { ensureFile } from "https://deno.land/std@0.63.0/fs/mod.ts";
 import { text } from "./plugins/text.ts";
+import { isURL } from "./_helpers.ts"
 
 async function runBundle(
-  { _, name, dir = "dist", importmap, config, reload }: {
-    _: [string];
-    name: string;
-    dir: string;
+  {
+    _,
+    "out-dir": outDir = "dist",
+    importmap: importMapPath,
+    config: configPath,
+    reload,
+  }: {
+    _: string[];
+    "out-dir": string;
     importmap: string;
     config: string;
     reload: boolean;
   },
 ) {
-  const importMap = importmap
-    ? readJsonSync(importmap) as ImportMap
-    : undefined;
-  const compilerOptions = config
-    ? (readJsonSync(config) as { compilerOptions: CompilerOptions })
-      .compilerOptions
-    : undefined;
+  const importMap =
+    (importMapPath
+      ? readJsonSync(importMapPath)
+      : { imports: {}, scopes: {} }) as ImportMap;
+  const compilerOptions =
+    (configPath
+      ? (readJsonSync(configPath) as { compilerOptions: CompilerOptions })
+        .compilerOptions
+      : {}) as CompilerOptions;
 
-  const path = _.shift()!;
-  name = name || basename(path || "").replace(/\.ts$/, ".js");
+  const entries: { [input: string]: string } = {};
+  const outputMap: { [input: string]: string } = {};
 
-  const entry = {
-    path,
-    name,
-    dir,
-    plugins: [
-      postcss({ options: { use: [autoprefixer] } }),
-      text({ include: (path: string) => /\.css$/.test(path) }),
-    ],
-  };
+  for (const inp of _) {
+    let [input, name] = inp.split("=");
+    name = name || basename(input || "").replace(/\.tsx?$/, ".js");
 
-  const bundler = new Bundler();
+    entries[input] = isURL(input) ? await fetch(input).then(data => data.text()) : await Deno.readTextFile(input);
+    outputMap[input] = join(outDir, name);
+  }
 
-  await bundler.bundle(entry, { compilerOptions, importMap, reload });
+  const depsDir = "deps";
+  
+  
+  const plugins = [
+    postcss({
+      options: {
+        use: [
+          // (atImport as any)({
+          //   // root: Deno.cwd()
+          // }),
+          // postcssImportUrl(),
+          (postcssPresetEnv as Function)({
+            stage: 2,
+            features: {
+              "nesting-rules": true,
+            },
+          }),
+        ],
+      },
+    }),
+    csso(),
+    text({ include: (path: string) => /\.css$/.test(path) }),
+  ];
+
+  const modules = await bundle(
+    entries,
+    outputMap,
+    { outDir, depsDir, compilerOptions, importMap, plugins, reload },
+  );
+
+  for (const [output, source] of Object.entries(modules)) {
+    await ensureFile(output);
+    await Deno.writeTextFile(output, source);
+  }
 }
 
 const program = new Program(
@@ -52,6 +97,7 @@ program
   .command({
     name: "bundle",
     description: "Bundle file to esm javsacript file",
+    // help: false,
     fn: runBundle,
   })
   .argument({
@@ -93,9 +139,42 @@ Examples: https://github.com/WICG/import-maps#the-import-map`,
     name: "reload",
     alias: "r",
     boolean: true,
-    description: `Reload source code (recompile TypeScript)
---reload
-  Reload everything`,
+    description: `Reload source code (recompile TypeScript)`,
+    //     description: `Reload source code (recompile TypeScript)
+    // --reload
+    //   Reload everything
+    // --reload=https://deno.land/std
+    //   Reload only standard modules
+    // --reload=https://deno.land/std/fs/utils.ts,https://deno.land/std/fmt/colors.ts
+    //   Reloads specific modules`,
+  });
+
+function help(args: any) {
+  const { _ } = args;
+
+  if (!_.length) {
+    return program.help();
+  }
+  for (const cmd of _) {
+    if (!program.commands[cmd]) {
+      return console.log(
+        invalidSubcommandError(cmd, Object.keys(program.commands)),
+      );
+    }
+  }
+  const cmd = _[0];
+  const command = program.commands[cmd];
+
+  return command.help();
+}
+
+program
+  .command({
+    name: "help",
+    description: "Prints this message or the help of the given subcommand(s)",
+    fn(args: any[]) {
+      help(args);
+    },
   });
 
 await program.parse(Deno.args);

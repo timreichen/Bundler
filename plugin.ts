@@ -10,7 +10,7 @@ export function plugin({ name, include, exclude, transform }: {
   exclude?: Exclude;
   transform: Transform;
 }): Plugin {
-  return async (path: string, source: string) => {
+  return async (source: string, path: string) => {
     if (include && !include(path)) return source;
     if (exclude && exclude(path)) return source;
     return await transform(source, path);

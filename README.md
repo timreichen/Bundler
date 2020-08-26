@@ -27,13 +27,13 @@ Deno offers ```deno bundle``` to transpile a file to a standalone module. This m
 ### Installation
 Bundler is available as a CLI.
 ```sh
-deno install --unstable --allow-read --allow-write --allow-net --allow-env https://raw.githubusercontent.com/timreichen/Bundler/master/cli.ts --name bundler 
+deno install --unstable --allow-read --allow-write --allow-net --allow-env --name bundler https://raw.githubusercontent.com/timreichen/Bundler/master/cli.ts
 ```
 **Info**: You might need to specify ```--root /usr/local```.
 
 ### Usage
 ```sh
-bundler bundle index.ts --name index.js
+bundler bundle index.ts=index.js
 ```
 
 ## Bundler API

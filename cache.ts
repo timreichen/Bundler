@@ -8,7 +8,7 @@ import {
   ensureFile,
 } from "https://deno.land/std/fs/mod.ts";
 import {
-  getDependencyMap,
+  getDependencies,
   resolve as resolveDependencyPath,
 } from "./dependencies.ts";
 import { isURL } from "./_helpers.ts";
@@ -16,7 +16,7 @@ import { isURL } from "./_helpers.ts";
 /**
  * API for rust cache_dir
  */
-export function cachedir(): string {
+function cachedir(): string {
   const env = Deno.env;
   const os = Deno.build.os;
 
@@ -56,7 +56,7 @@ export function cachedir(): string {
  * creates path to cache file of a path
  * @param url 
  */
-export function createCacheModulePathForURL(url: string) {
+function createCacheModulePathForURL(url: string) {
   const fileUrl = new URL(url);
   const hash = new Sha256().update(fileUrl.pathname).hex();
   return join(
@@ -72,7 +72,7 @@ export function createCacheModulePathForURL(url: string) {
  * resolves path to cache file of a path. Returns null if path is not cached
  * @param path 
  */
-export function resolveURLToCacheModulePath(url: string) {
+function resolveURLToCacheModulePath(url: string) {
   if (!isURL(url)) return;
   const cacheModulePath = createCacheModulePathForURL(url);
   return cacheModulePath && existsSync(cacheModulePath)
@@ -80,39 +80,40 @@ export function resolveURLToCacheModulePath(url: string) {
     : null;
 }
 
+export { resolveURLToCacheModulePath as resolve };
+
 /**
  * API for deno cache
  * Fetches path files recusively and caches them to deno cache dir.
- * @param path 
  */
-export async function cache(path: string, reload = false) {
-  if (!isURL(path)) return;
+export async function cache(specifier: string, reload = false) {
+  if (!isURL(specifier)) return;
 
-  const queue = [path];
+  const queue = [specifier];
   while (queue.length) {
-    const path = queue.pop()!;
-    const cachedFilePath = createCacheModulePathForURL(path);
+    const specifier = queue.pop()!;
+    const cachedFilePath = createCacheModulePathForURL(specifier);
 
     let source: string;
     if (reload || !await exists(cachedFilePath)) {
-      console.log(green("Download"), path);
-      const response = await fetch(path);
+      console.log(green("Download"), specifier);
+      const response = await fetch(specifier, { redirect: "follow" });
       source = await response.text();
       const headers: { [key: string]: string } = {};
       for (const [key, value] of response.headers) headers[key] = value;
       const metaFilePath = `${cachedFilePath}.metadata.json`;
       await ensureFile(cachedFilePath);
       await Deno.writeTextFile(cachedFilePath, source);
-      await writeJson(metaFilePath, { path, headers }, { spaces: "  " });
+      await writeJson(metaFilePath, { specifier, headers }, { spaces: "  " });
     } else {
       source = await Deno.readTextFile(cachedFilePath);
     }
 
-    const dependencyMap = await getDependencyMap(cachedFilePath);
+    const dependencyMap = await getDependencies(source);
 
     queue.push(
       ...dependencyMap.map((dependency) =>
-        resolveDependencyPath(path, dependency.path)
+        resolveDependencyPath(specifier, dependency)
       ),
     );
   }

@@ -1,178 +1,142 @@
+import { join } from "https://deno.land/std@0.65.0/path/mod.ts";
+import { Sha256 } from "https://deno.land/std@0.65.0/hash/sha256.ts";
+import { green } from "https://deno.land/std@0.65.0/fmt/colors.ts";
+import { exists } from "https://deno.land/std@0.63.0/fs/mod.ts";
+import { resolve as resolveCachePath } from "./cache.ts";
 import {
+  getDependencies,
   resolve as resolveDependencyPath,
-  getDependencyMap,
-  Dependency,
 } from "./dependencies.ts";
-import { green, yellow } from "https://deno.land/std/fmt/colors.ts";
-import { exists } from "https://deno.land/std/fs/mod.ts";
-import { join, extname, isAbsolute } from "https://deno.land/std/path/mod.ts";
-import { ImportMap } from "./import_map.ts";
-import { ensureExtension } from "./_helpers.ts";
+import { EntryMap, OutputMap } from "./bundler.ts";
+import {
+  resolve as resolveWithImportMap,
+  ImportMap,
+} from "https://deno.land/x/importmap@0.1.4/mod.ts";
+import { isURL } from "./_helpers.ts";
+import { resolve as resolveURLToCacheModulePath, cache } from "./cache.ts";
 
-// exclude all url imports with js extension. Browser will load them on their own
-// const exclude = (path: string) => {
-//   return /^http?s:.+\.js$/.test(path)
-// };
-
-export type ChangeType = "Create" | "Update" | "Move" | "Delete";
-
-// a file description that needs to be transpiled
+export enum ChangeType {
+  Create,
+  Change,
+  Move,
+  Delete,
+}
 export interface Change {
-  path: string;
-  // input is same as path but with ensured extension
-  input: string;
-  output?: string;
   type: ChangeType;
-  dependencies: { [path: string]: Dependency };
+  specifier: string;
+  input: string;
+  output: string;
+  source: string;
+  dependencies: string[];
 }
 
-// is a map of multiple changes
-export interface ChangeMap {
-  [path: string]: Change;
+async function fetchTextFile(specifier: string, reload = false) {
+  const isUrlImport = isURL(specifier);
+  if (isUrlImport) {
+    const resolvedSpecifier = resolveURLToCacheModulePath(specifier);
+    if (!resolvedSpecifier) {
+      await cache(specifier, reload);
+    }
+    specifier = resolveURLToCacheModulePath(specifier)!;
+  }
+  return await Deno.readTextFile(specifier);
 }
 
-export interface DependencyMap {
-  [filePath: string]: {
-    path: string;
-    input: string;
-    output: string;
-    modified: number;
-    dependencies: string[];
-  };
+export function changeTypeName(changeType: ChangeType) {
+  switch (changeType) {
+    case ChangeType.Create:
+      return "Create";
+    case ChangeType.Change:
+      return "Change";
+    case ChangeType.Move:
+      return "Move";
+    case ChangeType.Delete:
+      return "Delete";
+  }
 }
 
-async function createChange(
-  path: string,
-  output: string | undefined,
-  type: ChangeType,
-  importMap: ImportMap,
-): Promise<Change> {
-  let resolvedInput = path;
-
-  const dependencyMap = await getDependencyMap(resolvedInput);
-  const dependencies = dependencyMap.reduce(
-    (object, { path, dynamic }) => {
-      object[path] = {
-        path: resolveDependencyPath(resolvedInput, path, importMap),
-        dynamic,
-      };
-
-      return object;
-    },
-    {} as { [key: string]: Dependency },
-  );
-
-  return { path: path, input: resolvedInput, output, type, dependencies };
-}
-
-/**
- * creates map of changed files
- */
 export async function createChangeMap(
-  path: string,
-  output: string | undefined,
-  dependencyMap: DependencyMap,
-  { dir, depsDir, reload = false, importMap = { imports: {} } }: {
+  entries: EntryMap,
+  outputMap: OutputMap,
+  { dir, importMap, reload }: {
     dir: string;
-    depsDir: string;
-    reload?: boolean;
     importMap: ImportMap;
+    reload: boolean;
   },
-): Promise<ChangeMap> {
-  const outputDir = join(dir, depsDir);
+) {
+  const changes: { [input: string]: Change } = {};
 
-  const changeMap: ChangeMap = {};
-  const checkedPaths: Set<string> = new Set();
+  for (const input of Object.keys(entries)) {
+    const checkedInputs: Set<string> = new Set();
+    const queue = [input];
+    while (queue.length) {
+      const specifier = queue.pop()!;
+      if (checkedInputs.has(specifier)) continue;
+      checkedInputs.add(specifier);
+      // check if input exists
+      const resolvedSpecifier = resolveWithImportMap(specifier, importMap);
+      const input = resolveCachePath(resolvedSpecifier) || resolvedSpecifier;
 
-  const queue: { path: string; output: string | undefined }[] = [
-    { path, output },
-  ];
-
-  async function updateDependentFiles(input: string) {
-    for (const dependency of Object.values(dependencyMap)) {
-      if (dependency.dependencies.includes(input)) {
-        const change = await createChange(
-          dependency.path,
-          dependency.output,
-          "Update",
-          importMap,
-        );
-        changeMap[change.input] = change;
+      if (!isURL(input) && !await exists(input)) {
+        throw Error(`file '${specifier}' does not exist`);
       }
-    }
-  }
 
-  // check if input file and deps exist and are up to date. If not create changes for each
-  async function check(path: string, output: string | undefined) {
-    if (checkedPaths.has(path)) return;
+      // console.table({
+      //   specifier,
+      //   input,
+      //   resolvedSpecifier,
+      // })
 
-    checkedPaths.add(path);
-    const file = dependencyMap[path];
-    if (!file) {
-      const change = await createChange(path, output, "Create", importMap);
-      changeMap[change.input] = change;
-      for (const dependency of Object.values(change.dependencies)) {
-        queue.push({ path: dependency.path, output: undefined });
-      }
-      return;
-    }
+      const output = outputMap[resolvedSpecifier] =
+        outputMap[resolvedSpecifier] ||
+        `${join(dir, new Sha256().update(input).hex())}.js`;
 
-    const outputPath = join(outputDir, file.output);
+      const source = entries[input] || await fetchTextFile(input);
 
-    const inputFileExists = await exists(file.input);
+      const dependencies = await getDependencies(source);
+      queue.push(
+        ...dependencies.map((dependency) =>
+          resolveDependencyPath(specifier, dependency, importMap)
+        ),
+      );
 
-    const outputFileExists = await exists(outputPath);
-
-    if (!inputFileExists) {
-      console.log(yellow(`Error`), `file '${file.input}' not found`);
-      return;
-    }
-
-    const fileModified = inputFileExists &&
-      (await Deno.stat(file.input)).mtime!.getTime() > file.modified;
-    const changed = inputFileExists && outputFileExists ? fileModified : true;
-
-    if (!outputFileExists) {
-      const change = await createChange(path, output, "Create", importMap);
-      changeMap[change.input] = change;
-      await updateDependentFiles(path);
-    } else if (output && file.output !== output) {
-      await Deno.remove(outputPath);
-      const change = await createChange(path, output, "Move", importMap);
-      changeMap[change.input] = change;
-      await updateDependentFiles(path);
-    } else if (changed) {
-      const change = await createChange(path, output, "Update", importMap);
-      changeMap[change.input] = change;
-    } else {
-      if (reload) {
-        if (outputFileExists) {
-          // console.log(yellow(`Delete`), outputPath)
-          await Deno.remove(outputPath);
-        }
-        const change = await createChange(path, output, "Create", importMap);
-        changeMap[change.input] = change;
+      if (!output || !await exists(output)) {
+        changes[input] = {
+          type: ChangeType.Create,
+          specifier: specifier,
+          input,
+          output,
+          source,
+          dependencies,
+        };
+      } else if (output && output !== output) {
+        changes[input] = {
+          type: ChangeType.Move,
+          specifier: specifier,
+          input,
+          output,
+          source,
+          dependencies,
+        };
+      } else if (
+        reload ||
+        (await Deno.stat(input)).mtime!.getTime() >=
+          (await Deno.stat(output)).mtime!.getTime()
+      ) {
+        // check if output changed
+        changes[input] = {
+          type: ChangeType.Change,
+          specifier: specifier,
+          input,
+          output,
+          source,
+          dependencies,
+        };
       } else {
-        console.log(green(`Check`), path);
+        console.log(green(`Check`), specifier);
       }
     }
-
-    queue.push(...file.dependencies.map((dependency) => ({
-      path: dependency,
-      output: undefined,
-    })));
   }
 
-  // loop through input file and deps
-  while (queue.length) {
-    const { path: input, output } = queue.pop()!;
-    // if (exclude(input)) {
-    //   outputMap[input] = input;
-    //   continue;
-    // }
-
-    await check(input, output);
-  }
-
-  return changeMap;
+  return changes;
 }

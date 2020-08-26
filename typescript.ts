@@ -2,7 +2,8 @@ import { ts } from "./deps.ts";
 import { yellow } from "https://deno.land/std/fmt/colors.ts";
 
 export interface CompilerOptions {
-  [key: string]: unknown;
+  target?: "esnext" | "ES5";
+  module?: "esnext" | "system";
 }
 
 export function traverse(source: string, receiver: (node: ts.Node) => ts.Node) {
@@ -32,37 +33,6 @@ export function traverse(source: string, receiver: (node: ts.Node) => ts.Node) {
     sourceFile,
   );
 }
-
-// export function transpile(
-//   source: string,
-//   compilerOptions: CompilerOptions,
-//   { before, after, } = { before: (node: ts.Node) => ts.Node, after: (node: ts.Node) => ts.Node }
-// ) {
-//   function beforeTransformer<T extends ts.Node>(): ts.TransformerFactory<T> {
-//     return (context: ts.TransformationContext) => {
-//       const visit: ts.Visitor = (node: ts.Node) =>
-//         ts.visitEachChild(before(node), visit, context)
-//       return (node: ts.Node) => ts.visitNode(node, visit)
-//     }
-//   }
-//   function afterTransformer<T extends ts.Node>(): ts.TransformerFactory<T> {
-//     return (context: ts.TransformationContext) => {
-//       const visit: ts.Visitor = (node: ts.Node) =>
-//         ts.visitEachChild(after(node), visit, context)
-//       return (node: ts.Node) => ts.visitNode(node, visit)
-//     }
-//   }
-
-//   const { diagnostics, outputText } = ts.transpileModule(source, {
-//     compilerOptions: ts.convertCompilerOptionsFromJson(compilerOptions).options,
-//     transformers: {
-//       before: [beforeTransformer()],
-//       after: [afterTransformer()]
-//     },
-//     reportDiagnostics: true,
-//   })
-//   return outputText
-// }
 
 export function getImportNode(node: ts.Node) {
   if (ts.isImportDeclaration(node) && node.moduleSpecifier) {

@@ -1,6 +1,6 @@
-import postcssCore from "https://jspm.dev/postcss";
+import cssoCore from "https://jspm.dev/csso";
 import { Exclude, Include, plugin } from "../plugin.ts";
-export function postcss(
+export function csso(
   config: {
     include?: Include;
     exclude?: Exclude;
@@ -9,19 +9,19 @@ export function postcss(
 ) {
   const { include, exclude, options } = {
     include: (path: string) => /\.css$/.test(path),
-    options: { use: [] },
+    options: {},
     ...config,
   };
 
   const transform = async (source: string, path: string) => {
-    const engine = (postcssCore as Function)();
-    options.use.forEach((plugin: unknown) => engine.use(plugin));
-    const result = await engine.process(source, { from: undefined });
-    return result.css;
+    const syntax = (cssoCore as { syntax: any }).syntax;
+    const ast = syntax.parse(source);
+    const compressedAst = syntax.compress(ast).ast;
+    return syntax.generate(compressedAst);
   };
 
   return plugin({
-    name: "postcss",
+    name: "csso",
     include,
     exclude,
     transform,

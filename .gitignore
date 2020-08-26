@@ -1,5 +1,0 @@
-.vscode
-.DS_Store
-examples/**/dist/deps
-examples/**/dist/.cache
-examples/**/dist/**/*.js

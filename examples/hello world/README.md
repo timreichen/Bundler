@@ -3,7 +3,7 @@
 ## 1. Bundle
 Run
 ```sh
-bundler bundle src/index.ts --name index.js
+bundler bundle src/index.ts=index.js
 ```
 
 ## 2. Serve

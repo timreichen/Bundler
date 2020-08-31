@@ -1,5 +1,6 @@
 import { Include, Exclude, Plugin, PluginType } from "../plugin.ts";
 import * as Terser from "https://jspm.dev/terser";
+
 const minify = Terser.minify;
 
 export function terser(
@@ -10,14 +11,15 @@ export function terser(
   } = {},
 ) {
   const transform = async (source: string, path: string) => {
-    const { code, error } = await minify(source, { ...options.config });
-
-    if (error) {
+    try {
+      const { code } = await minify(source, { ...options.config }) as {
+        code: string;
+      };
+      return code;
+    } catch (error) {
       console.error(error);
       return source;
     }
-
-    return code;
   };
 
   return new Plugin({

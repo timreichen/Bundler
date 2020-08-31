@@ -1,5 +1,5 @@
-import { isAbsolute, extname } from "https://deno.land/std@0.63.0/path/mod.ts";
-import { yellow } from "https://deno.land/std@0.63.0/fmt/colors.ts";
+import { isAbsolute, extname } from "https://deno.land/std@0.66.0/path/mod.ts";
+import { yellow } from "https://deno.land/std@0.66.0/fmt/colors.ts";
 
 /**
  * returns true if path starts with http:// or https://, else false

@@ -3,7 +3,7 @@
 ## 1. Bundle
 Run
 ```sh
-bundler bundle src/index.ts=index.js
+deno run --unstable --allow-read --allow-net --allow-write bundler.ts
 ```
 
 ## 2. Serve

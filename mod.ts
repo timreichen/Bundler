@@ -1,1 +1,1 @@
-export { Bundler } from "./bundler.ts";
+export { bundle } from "./bundler.ts";

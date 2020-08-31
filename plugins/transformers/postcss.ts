@@ -1,29 +1,27 @@
-import autoprefixer from "https://jspm.dev/autoprefixer";
 import postcssCore from "https://jspm.dev/postcss";
-import { Exclude, Include, plugin } from "../plugin.ts";
-
+import { Exclude, Include, PluginType, Plugin } from "../plugin.ts";
 export function postcss(
   config: {
     include?: Include;
     exclude?: Exclude;
     options?: { use: unknown[] };
-  },
+  } = {},
 ) {
   const { include, exclude, options } = {
     include: (path: string) => /\.css$/.test(path),
-    options: { use: [autoprefixer] },
+    options: { use: [] },
     ...config,
   };
 
-  const transform = async (source: string) => {
+  const transform = async (source: string, path: string) => {
     const engine = (postcssCore as Function)();
     options.use.forEach((plugin: unknown) => engine.use(plugin));
-    return await engine.process(source, { from: undefined }).then((
-      result: { css: string },
-    ) => result.css);
+    const result = await engine.process(source, { from: path });
+    return result.css;
   };
 
-  return plugin({
+  return new Plugin({
+    type: PluginType.transformer,
     name: "postcss",
     include,
     exclude,

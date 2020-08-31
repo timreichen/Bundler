@@ -2,19 +2,17 @@ import babelCore from "https://dev.jspm.io/@babel/core";
 import babelPresetEnv from "https://dev.jspm.io/@babel/preset-env";
 import babelPluginSyntaxTopLevelAwait from "https://dev.jspm.io/@babel/plugin-syntax-top-level-await";
 import babelPluginProposalClassProperties from "https://dev.jspm.io/@babel/plugin-proposal-class-properties";
-import babelPluginTypescript from "https://dev.jspm.io/@babel/plugin-transform-typescript";
 import babelProposalDecoratos from "https://dev.jspm.io/@babel/plugin-proposal-decorators";
-import { Include, Exclude, plugin } from "../plugin.ts";
+import { Include, Exclude, Plugin, PluginType } from "../plugin.ts";
 
 const defaultPresets = [
-  [babelPresetEnv, { targets: { esmodules: true } }],
+  [babelPresetEnv, { modules: false, targets: { esmodules: true } }],
 ];
 
 const defaultPlugins = [
   [babelProposalDecoratos, { legacy: true }],
   babelPluginSyntaxTopLevelAwait,
   babelPluginProposalClassProperties,
-  babelPluginTypescript,
 ];
 
 export function babel(
@@ -22,20 +20,32 @@ export function babel(
     include?: Include;
     exclude?: Exclude;
     options?: { presets: unknown[]; plugins: unknown[] };
-  },
+  } = {},
 ) {
-  const { include, exclude, options } = {
-    include: (path: string) =>
+  const {
+    include = (path: string) =>
       !/^https?:\/\//.test(path) && /\.(ts|js)$/.test(path),
-    options: { presets: defaultPresets, plugins: defaultPlugins },
-    ...config,
+    exclude,
+    options = { presets: defaultPresets, plugins: defaultPlugins },
+  } = { ...config };
+
+  const transform = async (source: string, path: string) => {
+    const result = await (babelCore as {
+      transform: (...args: unknown[]) => Promise<{ code: string }>;
+    }).transform(
+      source,
+      {
+        presets: defaultPresets,
+        plugins: defaultPlugins,
+      },
+    );
+    console.log("result", result);
+
+    return result.code;
   };
 
-  const transform = async (source: string) =>
-    await (babelCore as { transform: Function }).transform(source, options)
-      .code;
-
-  return plugin({
+  return new Plugin({
+    type: PluginType.transformer,
     name: "babel",
     include,
     exclude,

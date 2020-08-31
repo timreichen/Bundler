@@ -3,7 +3,7 @@
 ## 1. Bundle
 Run
 ```sh
-bundler bundle --config tsconfig.json src/index.ts --name index.js
+bundler bundle --config tsconfig.json src/index.tsx=index.js
 ```
 
 ## 2. Serve

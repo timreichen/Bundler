@@ -1,5 +1,5 @@
 import cssoCore from "https://jspm.dev/csso";
-import { Exclude, Include, plugin } from "../plugin.ts";
+import { Exclude, Include, Plugin, PluginType } from "../plugin.ts";
 export function csso(
   config: {
     include?: Include;
@@ -14,13 +14,16 @@ export function csso(
   };
 
   const transform = async (source: string, path: string) => {
-    const syntax = (cssoCore as { syntax: any }).syntax;
+    const syntax = (cssoCore as {
+      syntax: { parse: Function; compress: Function; generate: Function };
+    }).syntax;
     const ast = syntax.parse(source);
     const compressedAst = syntax.compress(ast).ast;
     return syntax.generate(compressedAst);
   };
 
-  return plugin({
+  return new Plugin({
+    type: PluginType.optimizer,
     name: "csso",
     include,
     exclude,

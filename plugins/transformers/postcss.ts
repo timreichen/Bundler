@@ -1,5 +1,5 @@
 import postcssCore from "https://jspm.dev/postcss";
-import { Exclude, Include, plugin } from "../plugin.ts";
+import { Exclude, Include, PluginType, Plugin } from "../plugin.ts";
 export function postcss(
   config: {
     include?: Include;
@@ -16,11 +16,12 @@ export function postcss(
   const transform = async (source: string, path: string) => {
     const engine = (postcssCore as Function)();
     options.use.forEach((plugin: unknown) => engine.use(plugin));
-    const result = await engine.process(source, { from: undefined });
+    const result = await engine.process(source, { from: path });
     return result.css;
   };
 
-  return plugin({
+  return new Plugin({
+    type: PluginType.transformer,
     name: "postcss",
     include,
     exclude,

@@ -3,7 +3,7 @@ import babelPresetEnv from "https://dev.jspm.io/@babel/preset-env";
 import babelPluginSyntaxTopLevelAwait from "https://dev.jspm.io/@babel/plugin-syntax-top-level-await";
 import babelPluginProposalClassProperties from "https://dev.jspm.io/@babel/plugin-proposal-class-properties";
 import babelProposalDecoratos from "https://dev.jspm.io/@babel/plugin-proposal-decorators";
-import { Include, Exclude, plugin } from "../plugin.ts";
+import { Include, Exclude, Plugin, PluginType } from "../plugin.ts";
 
 const defaultPresets = [
   [babelPresetEnv, { modules: false, targets: { esmodules: true } }],
@@ -30,7 +30,9 @@ export function babel(
   } = { ...config };
 
   const transform = async (source: string, path: string) => {
-    const result = await (babelCore as { transform: Function }).transform(
+    const result = await (babelCore as {
+      transform: (...args: unknown[]) => Promise<{ code: string }>;
+    }).transform(
       source,
       {
         presets: defaultPresets,
@@ -42,7 +44,8 @@ export function babel(
     return result.code;
   };
 
-  return plugin({
+  return new Plugin({
+    type: PluginType.transformer,
     name: "babel",
     include,
     exclude,

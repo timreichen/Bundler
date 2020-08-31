@@ -1,5 +1,5 @@
-import { ts } from "../deps.ts";
-import { Include, Exclude, plugin } from "../plugin.ts";
+import { ts } from "../../deps.ts";
+import { Include, Exclude, Plugin, PluginType } from "../plugin.ts";
 
 export function text(
   { include, exclude }: { include: Include; exclude?: Exclude },
@@ -11,7 +11,8 @@ export function text(
     return printer.printList(undefined, ts.createNodeArray([ast]), undefined);
   };
 
-  return plugin({
+  return new Plugin({
+    type: PluginType.transformer,
     name: "text",
     include,
     exclude,

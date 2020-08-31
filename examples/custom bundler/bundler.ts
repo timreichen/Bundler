@@ -8,7 +8,7 @@ const source = await Deno.readTextFile(input);
 const inputMap = { [input]: source };
 const outputMap = { [input]: output };
 const compilerOptions = { target: "ES5" } as CompilerOptions;
-const modules = await bundle(inputMap, outputMap, { compilerOptions });
+const { modules } = await bundle(inputMap, outputMap, { compilerOptions });
 
 for (const [output, source] of Object.entries(modules)) {
   await ensureFile(output);

@@ -1,73 +1,103 @@
-import { ts } from "./deps.ts";
-import { yellow } from "https://deno.land/std/fmt/colors.ts";
+import { ts, colors } from "./deps.ts";
+
+const { yellow } = colors;
 
 export interface CompilerOptions {
   target?: "esnext" | "ES5";
   module?: "esnext" | "system";
 }
 
-export function traverse(source: string, receiver: (node: ts.Node) => ts.Node) {
-  function transformer<T extends ts.Node>(): ts.TransformerFactory<T> {
+export function isImportNode(node: ts.Node) {
+  return ts.isImportDeclaration(node);
+}
+export function getImportNode(node: ts.Node) {
+  return node.moduleSpecifier;
+}
+
+export function isDynamicImportNode(node: ts.Node) {
+  return ts.SyntaxKind[node.kind] === "CallExpression" &&
+    ts.SyntaxKind[node.expression.kind] === "ImportKeyword";
+}
+export function getDynamicImportNode(node: ts.Node, source: string) {
+  const arg = node.arguments[0];
+  if (!ts.isStringLiteral(arg)) {
+    console.warn(
+      yellow("Warning"),
+      `dynamic import argument is not a static string: Cannot resolve ${
+        yellow(
+          `import(${
+            source.substring(
+              arg.pos,
+              node.arguments[node.arguments.length - 1].end,
+            )
+          })`,
+        )
+      } at index ${arg.pos}`,
+    );
+    return;
+  }
+  return arg;
+}
+
+export function isExportNode(node: ts.Node) {
+  return ts.isExportDeclaration(node) && node.moduleSpecifier;
+}
+export function getExportNode(node: ts.node) {
+  return node.moduleSpecifier;
+}
+
+export function getSpecifierNodeMap(
+  source: string,
+): {
+  imports: { [specifier: string]: ts.Node };
+  exports: { [specifier: string]: ts.Node };
+} {
+  const imports: { [specifier: string]: ts.Node } = {};
+  let exports: { [specifier: string]: ts.Node } = {};
+
+  const compilerOptions = {
+    target: "ESNext",
+    module: "ESNext",
+  };
+
+  function transformer() {
     return (context: ts.TransformationContext) => {
-      const visit: ts.Visitor = (node: ts.Node) =>
-        ts.visitEachChild(receiver(node), visit, context);
-      return (node: ts.Node) => ts.visitNode(node, visit);
+      const visit: ts.Visitor = (node: ts.Node) => {
+        let specifierNode;
+        if (isImportNode(node)) {
+          if (node.importClause?.isTypeOnly) return node;
+          specifierNode = getImportNode(node);
+        }
+        if (isExportNode(node)) {
+          if (node.importClause?.isTypeOnly) return node;
+          specifierNode = getExportNode(node);
+        }
+        if (isDynamicImportNode(node)) {
+          specifierNode = getDynamicImportNode(node, source);
+        }
+        if (specifierNode) {
+          imports[specifierNode.text] = node;
+          return node;
+        }
+        return ts.visitEachChild(node, visit, context);
+      };
+      return (node: ts.Node) => {
+        if (node.symbol) {
+          exports = Object.fromEntries(node.symbol.exports.entries());
+        }
+        return ts.visitNode(node, visit);
+      };
     };
   }
 
-  const sourceFile = ts.createSourceFile(
-    "x.ts",
-    source,
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS,
-  );
-  const result = ts.transform(sourceFile, [transformer()]);
-  const transformedNodes = result.transformed[0];
-  const printer: ts.Printer = ts.createPrinter(
-    { newLine: ts.NewLineKind.LineFeed, removeComments: false },
-  );
-  return printer.printNode(
-    ts.EmitHint.SourceFile,
-    transformedNodes,
-    sourceFile,
-  );
-}
+  const { diagnostics, outputText } = ts.transpileModule(source, {
+    compilerOptions: ts.convertCompilerOptionsFromJson(compilerOptions).options,
+    transformers: {
+      before: [transformer()],
+    },
+    reportDiagnostics: true,
+  });
+  // diagnostics.forEach((diagnostic: any) => console.log(diagnostic))
 
-export function getImportNode(node: ts.Node) {
-  if (ts.isImportDeclaration(node) && node.moduleSpecifier) {
-    return node.moduleSpecifier;
-  }
-}
-
-export function getDynamicImportNode(node: ts.Node, source: string) {
-  if (
-    ts.SyntaxKind[node.kind] === "CallExpression" &&
-    ts.SyntaxKind[node.expression.kind] === "ImportKeyword"
-  ) {
-    const arg = node.arguments[0];
-    if (!ts.isStringLiteral(arg)) {
-      console.warn(
-        yellow("Warning"),
-        `dynamic import argument is not a static string: Cannot resolve ${
-          yellow(
-            `import(${
-              source.substring(
-                arg.pos,
-                node.arguments[node.arguments.length - 1].end,
-              )
-            })`,
-          )
-        } at index ${arg.pos}`,
-      );
-      return;
-    }
-    return arg;
-  }
-}
-
-export function getExportNode(node: ts.node) {
-  if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
-    return node.moduleSpecifier;
-  }
+  return { imports, exports };
 }

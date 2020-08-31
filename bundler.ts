@@ -1,46 +1,33 @@
+import { ts, fs, path, colors, Sha256, ImportMap } from "./deps.ts";
 import {
-  join,
-  relative,
-  dirname,
-} from "https://deno.land/std@0.65.0/path/mod.ts"
-import { ts } from "./deps.ts"
-import {
-  getImportNode,
-  getExportNode,
-  getDynamicImportNode,
   CompilerOptions,
-} from "./typescript.ts"
-import { green, blue } from "https://deno.land/std@0.65.0/fmt/colors.ts"
-import {
-  exists,
-  ensureDir,
-  ensureFile,
-  readJson,
-  writeJson,
-} from "https://deno.land/std@0.63.0/fs/mod.ts"
-import { Sha256 } from "https://deno.land/std@0.65.0/hash/sha256.ts"
-import {
-  Change,
-  createChangeMap,
-  changeTypeName,
-  ChangeType,
-} from "./changes.ts"
-import { ImportMap } from "https://deno.land/x/importmap@0.1.4/mod.ts"
+  getSpecifierNodeMap,
+  isDynamicImportNode,
+  getDynamicImportNode,
+  isImportNode,
+  getImportNode,
+  isExportNode,
+  getExportNode,
+} from "./typescript.ts";
+
 import {
   resolve as resolveDependencyPath,
-  getDependencies,
-} from "./dependencies.ts"
-import { Plugin } from "./plugin.ts"
-import { isURL } from "./_helpers.ts"
-import { resolve as resolveCachedPath, cache } from "./cache.ts"
+} from "./dependencies.ts";
+import { Plugin, PluginType } from "./plugins/plugin.ts";
+import { isURL } from "./_helpers.ts";
+import { resolve as resolveCachedPath, cache } from "./cache.ts";
 import {
-  systemLoaderString,
   instantiateString,
-  defaultExportString,
-  exportString,
-  createExportString,
-  injectPath,
-} from "./system.ts"
+  createSystemExports,
+  injectInstantiateName,
+  systemLoader,
+} from "./system.ts";
+
+const { green, blue } = colors;
+
+interface ModuleMap {
+  [input: string]: string;
+}
 
 /**
  * Object containing input file paths as key and source code as value.
@@ -51,7 +38,7 @@ import {
  * ```
  */
 export interface InputMap {
-  [input: string]: string
+  [input: string]: string;
 }
 
 /**
@@ -63,327 +50,379 @@ export interface InputMap {
  * ```
  */
 export interface OutputMap {
-  [input: string]: string
+  [input: string]: string;
 }
 
 export interface CacheMap {
   [outputFile: string]: {
-    input: string
-    output: string
-    imports: string[]
-  }
+    input: string;
+    output: string;
+    imports: string[];
+  };
 }
 
-function resolveSpecifier(
-  baseURL: string,
+async function getSource(
   specifier: string,
-  importMap: ImportMap,
-) {
-  const resolvedImportPath = resolveDependencyPath(
-    baseURL,
-    specifier,
+  modules: InputMap,
+): Promise<string> {
+  return modules[specifier] = modules[specifier] ||
+    (isURL(specifier)
+      ? await fetch(specifier).then((data) => data.text())
+      : await Deno.readTextFile(specifier));
+}
+
+function injectOutputsTranformer(
+  input: string,
+  source: string,
+  {
+    graph,
     importMap,
-  )
+  }: {
+    graph: Graph;
+    importMap: ImportMap;
+  },
+) {
+  return (context: ts.TransformationContext) => {
+    const visit: ts.Visitor = (node: ts.Node) => {
+      let specifierNode: ts.Node = null;
+      let specifier: string | null = null;
+      if (isImportNode(node)) {
+        specifierNode = getImportNode(node);
+        const specifierText = specifierNode.text;
+        const resolvedSpecifier = resolveDependencyPath(
+          input,
+          specifierText,
+          importMap,
+        );
+        specifier = graph[resolvedSpecifier].output;
+      }
+      if (isDynamicImportNode(node)) {
+        specifierNode = getDynamicImportNode(node, source);
+        const specifierText = specifierNode.text;
+        const resolvedSpecifier = resolveDependencyPath(
+          input,
+          specifierText,
+          importMap,
+        );
+        specifier = graph[resolvedSpecifier].output;
+        const relativeOutput = path.relative(
+          path.dirname(graph[input].output),
+          specifier,
+        );
+        specifier = `./${relativeOutput}`;
+      }
+      if (isExportNode(node)) {
+        specifierNode = getExportNode(node);
+        const specifierText = specifierNode.text;
+        const resolvedSpecifier = resolveDependencyPath(
+          input,
+          specifierText,
+          importMap,
+        );
+        specifier = graph[resolvedSpecifier].output;
+      }
 
-  return resolvedImportPath
+      if (specifierNode) {
+        const newNode = ts.createStringLiteral(specifier);
+
+        return ts.visitEachChild(
+          node,
+          (child: ts.Node) => child === specifierNode ? newNode : child,
+          context,
+        );
+      }
+
+      return ts.visitEachChild(node, visit, context);
+    };
+
+    return (node: ts.Node) => {
+      return ts.visitNode(node, visit);
+    };
+  };
 }
 
-function relativeSpecifier(specifier: string, outputMap: OutputMap) {
-  const output = outputMap[specifier] = outputMap[specifier] ||
-    `${new Sha256().update(specifier).hex()}.js`
-  return output
+function transpile(
+  input: string,
+  source: string,
+  { graph, importMap, compilerOptions }: {
+    graph: Graph;
+    importMap: ImportMap;
+    compilerOptions: CompilerOptions;
+  },
+) {
+  compilerOptions = {
+    target: "esnext",
+    ...compilerOptions,
+    module: "system",
+  };
+  const output = graph[input].output;
+
+  const { diagnostics, outputText } = ts.transpileModule(source, {
+    compilerOptions: ts.convertCompilerOptionsFromJson(compilerOptions).options,
+    transformers: {
+      before: [injectOutputsTranformer(input, source, { graph, importMap })],
+      after: [injectInstantiateName(output)],
+    },
+    reportDiagnostics: true,
+  });
+
+  for (const diagnostic of diagnostics) {
+    console.error(`error during transpilation: ${diagnostic.messageText}`);
+  }
+
+  return outputText;
 }
+
+const systemLoaderWrapper = await systemLoader();
 
 export async function bundle(
-  inputs: InputMap,
+  inputMap: InputMap,
   outputMap: OutputMap,
   {
     outDir = "dist",
     depsDir = "deps",
+    cacheDir = ".cache",
     compilerOptions = {},
     importMap = { imports: {}, scopes: {} },
-    plugins = [],
+    graph: initialGraph = {},
+    transformers = [],
+    optimizers = [],
     reload = false,
+    optimize = false,
   }: {
-    outDir?: string
-    depsDir?: string
-    compilerOptions?: CompilerOptions
-    importMap?: ImportMap
-    plugins?: Plugin[]
-    reload?: boolean
+    outDir?: string;
+    depsDir?: string;
+    cacheDir?: string;
+    compilerOptions?: CompilerOptions;
+    importMap?: ImportMap;
+    graph?: Graph;
+    transformers?: Plugin[];
+    optimizers?: Plugin[];
+    reload?: boolean;
+    optimize?: boolean;
   } = {},
-) {
-  const checkedInputs: Set<string> = new Set()
+): Promise<{ modules: ModuleMap; graph: Graph }> {
+  const start = performance.now();
 
-  const depsDirPath = join(outDir, depsDir)
+  const { graph, sourceMap } = await createGraph(
+    inputMap,
+    initialGraph,
+    { outDir, depsDir, cacheDir, importMap, outputMap, reload },
+  );
 
-  async function transpile(
-    input: string,
-    source: string,
-    compilerOptions: CompilerOptions,
-  ) {
-    compilerOptions = {
-      target: "esnext",
-      ...compilerOptions,
-      module: "system",
+  const modules: OutputMap = {};
+
+  const inputs = Object.keys(inputMap);
+
+  const queue: string[] = inputs;
+  while (queue.length) {
+    const input = queue.pop()!;
+    if (modules[input]) continue;
+
+    console.log(blue(`Bundle`), input);
+
+    let bundleModified = false;
+
+    const { output } = graph[input];
+
+    const exist = await fs.exists(output);
+    const modified = exist &&
+      Deno.statSync(input).mtime! > Deno.statSync(output).mtime!;
+    const { imports, exports } = graph[input];
+
+    const dependencies = Object.entries({
+      [input]: {
+        input,
+        dynamic: false,
+      },
+      ...imports,
+    });
+
+    // if output file does not exist or input file changed
+    if (!exist || modified) {
+      bundleModified = true;
     }
 
-    const imports: Set<string> = new Set()
-    const dynamicImports: Set<string> = new Set()
-    const exports: Set<string> = new Set()
+    let string = ``;
+    string += systemLoaderWrapper;
 
-    function importReceiver(specifier: string) {
-      const resolvedSpecifier = resolveSpecifier(input, specifier, importMap)
-      imports.add(resolvedSpecifier)
-      return outputMap[resolvedSpecifier] = outputMap[resolvedSpecifier] ||
-        `${join(depsDirPath, new Sha256().update(resolvedSpecifier).hex())}.js`
-    }
+    const checkedDependencies = new Set();
+    while (dependencies.length) {
+      const [dependency, { input, dynamic }] = dependencies.pop()!;
+      if (checkedDependencies.has(dependency)) continue;
+      checkedDependencies.add(dependency);
+      if (dynamic) {
+        queue.push(dependency);
+      } else {
+        const { imports, cacheOutput } = graph[dependency];
+        dependencies.push(...Object.entries(imports));
+        const exist = await fs.exists(cacheOutput);
+        const modified = exist &&
+          Deno.statSync(input).mtime! > Deno.statSync(cacheOutput).mtime!;
+        if (exist && !modified) {
+          console.log(green(`Check`), dependency);
+          string += `\n`;
+          string += await Deno.readTextFile(cacheOutput);
+        } else {
+          bundleModified = true;
+          let source = await getSource(input, sourceMap);
+          for (const transformer of transformers) {
+            source = await transformer.run(source, input);
+          }
 
-    function dynamicImportReceiver(specifier: string) {
-      const resolvedSpecifier = resolveSpecifier(input, specifier, importMap)
-      dynamicImports.add(resolvedSpecifier)
-      outputMap[resolvedSpecifier] = outputMap[resolvedSpecifier] ||
-        `${join(depsDirPath, new Sha256().update(resolvedSpecifier).hex())}.js`
-      return `./${
-        relative(dirname(outputMap[input]), outputMap[resolvedSpecifier])
-        }`
-    }
+          source = transpile(
+            dependency,
+            source,
+            { graph, importMap, compilerOptions },
+          );
+          if (!exist) {
+            console.log(green(`Create`), dependency);
+          } else {
+            console.log(green(`Update`), dependency);
+          }
 
-    function exportReceiver(specifier: string) {
-      const resolvedSpecifier = resolveSpecifier(input, specifier, importMap)
-      imports.add(resolvedSpecifier)
-      return outputMap[resolvedSpecifier] = outputMap[resolvedSpecifier] ||
-        `${join(depsDirPath, new Sha256().update(resolvedSpecifier).hex())}.js`
-    }
+          await fs.ensureFile(cacheOutput);
+          await Deno.writeTextFile(cacheOutput, source);
 
-    function injectOutputsTranformer(
-      input: string,
-      source: string,
-      imports: any,
-      exports: any,
-    ) {
-      return (context: ts.TransformationContext) => {
-        const visit: ts.Visitor = (node: ts.Node) => {
-          let moduleNode: ts.Node
-          let specifier
-          const importNode = getImportNode(node)
-          if (importNode) {
-            specifier = importReceiver(importNode.text)
-            moduleNode = importNode
-          }
-          const exportNode = getExportNode(node)
-
-          if (exportNode) {
-            specifier = exportReceiver(exportNode.text)
-            moduleNode = exportNode
-          }
-          const dynamicModuleNode = getDynamicImportNode(node, source)
-          if (dynamicModuleNode) {
-            specifier = dynamicImportReceiver(dynamicModuleNode.text)
-            moduleNode = dynamicModuleNode
-          }
-          // ignore type imports and exports (example: import type { MyInterface } from "./_interface.ts")
-          if (
-            specifier &&
-            !(node.importClause?.isTypeOnly || node.exportClause?.isTypeOnly)
-          ) {
-            // append relative import string
-            const newNode = ts.createStringLiteral(specifier)
-            // FIX: why does ts.updateNode(newNode, mduleNode) not work?
-            return ts.visitEachChild(
-              node,
-              (child: ts.Node) => child === moduleNode ? newNode : child,
-            )
-          }
-          return ts.visitEachChild(node, visit, context)
-        }
-        return (node: ts.Node) => {
-          if (node.symbol) {
-            for (const [key, value] of node.symbol.exports) exports.add(key)
-          }
-          return ts.visitNode(node, visit)
+          string += `\n`;
+          string += source;
         }
       }
     }
 
-    for (const plugin of plugins) {
-      source = await plugin(source, input)
+    string += `\n`;
+    string += instantiateString(output);
+    string += createSystemExports(Object.keys(exports));
+
+    if (optimize) {
+      for (const optimizer of optimizers) {
+        string = await optimizer.run(string, input);
+      }
     }
 
-    const { diagnostics, outputText } = ts.transpileModule(source, {
-      compilerOptions:
-        ts.convertCompilerOptionsFromJson(compilerOptions).options,
-      transformers: {
-        before: [injectOutputsTranformer(input, source, imports, exports)],
-        after: [injectPath(outputMap[input])],
-      },
-      reportDiagnostics: true,
-    })
+    modules[output] = string;
 
-    return {
-      outputText,
-      imports: [...imports.values()],
-      dynamicImports: [...dynamicImports.values()],
-      exports: [...exports.values()],
+    if (bundleModified) {
+      console.log(blue(`Update`), output);
+      await fs.ensureFile(output);
+      await Deno.writeTextFile(output, string);
+    } else {
+      console.log(blue(`up-to-date`), output);
     }
   }
 
-  const modules: { [input: string]: string } = { ...inputs }
-  const loaderString = await systemLoaderString()
+  console.log(blue(`${Math.ceil(performance.now() - start)}ms`));
 
-  async function getSource(specifier: string): Promise<string> {
-    return modules[specifier] = modules[specifier] ||
-      (isURL(specifier)
-        ? await fetch(specifier).then((data) => data.text())
-        : await Deno.readTextFile(specifier))
-  }
+  return { modules, graph };
+}
 
-  const cacheFile = "cache.json"
-  const cacheDir = ".cache"
-  const cacheDirPath = join(outDir, cacheDir)
-  const cacheFilePath = join(cacheDirPath, cacheFile)
-  const cacheMap: CacheMap =
-    (await exists(cacheFilePath)
-      ? await readJson(cacheFilePath)
-      : {}) as CacheMap
-  outputMap = {
-    ...Object.values(cacheMap).reduce((object, { input, output }) => {
-      object[input] = output
-      return object
-    }, {} as OutputMap),
-    ...outputMap,
-  }
+export interface Graph {
+  [path: string]: {
+    input: string;
+    output: string;
+    cacheOutput: string;
+    imports: { [path: string]: { input: string; dynamic: boolean } };
+    exports: { [name: string]: string };
+  };
+}
 
-  const outputModules: { [output: string]: string } = {}
+async function createGraph(
+  inputMap: InputMap,
+  initialGraph: Graph,
+  { outDir, depsDir, cacheDir, importMap, outputMap, reload }: {
+    outDir: string;
+    depsDir: string;
+    cacheDir: string;
+    importMap: ImportMap;
+    outputMap: OutputMap;
+    reload: boolean;
+  },
+) {
+  const depsDirPath = path.join(outDir, depsDir);
+  const cacheDirPath = path.join(outDir, cacheDir);
+  const graph: Graph = {};
+  const sourceMap: InputMap = { ...inputMap };
 
-  const queue: string[] = Object.keys(inputs)
+  const queue = Object.keys(inputMap).reduce((array, key) => {
+    array.push({ input: key, path: key });
+    return array;
+  }, [] as { input: string; path: string }[]);
+  const checkedInputs: Set<string> = new Set();
 
   while (queue.length) {
-    const input = queue.pop()!
-    if (checkedInputs.has(input)) continue
-    const start = performance.now()
+    const { input, path: inputPath } = queue.pop()!;
+    if (checkedInputs.has(input)) continue;
+    checkedInputs.add(input);
 
-    checkedInputs.add(input)
-    console.log(blue(`Bundle`), input)
+    const entry = initialGraph[inputPath];
 
-    const source = await getSource(input)
+    let needsUpdate = false;
+    if (!reload && entry) {
+      const { input, cacheOutput } = entry;
+      const inputModified = Deno.statSync(input).mtime!.getTime();
+      const exists = await fs.exists(cacheOutput);
+      const outputModified = exists &&
+        Deno.statSync(cacheOutput).mtime!.getTime();
 
-    let { outputText, imports, dynamicImports, exports } = await transpile(
-      input,
-      source,
-      compilerOptions,
-    )
-    queue.push(...dynamicImports)
-
-    let needsUpdate = false
-
-    const dependencySources: string[] = []
-    const dependencies: string[] = imports as string[]
-    const checkedDependencies = new Set()
-    while (dependencies.length) {
-      const dependency = dependencies.pop()!
-      if (checkedDependencies.has(dependency)) continue
-      checkedDependencies.add(dependency)
-
-      const output = outputMap[dependency]
-
-      let resolvedImport = resolveCachedPath(dependency)
-
-      if (isURL(dependency) && !resolvedImport) {
-        await cache(dependency)
-        resolvedImport = resolveCachedPath(dependency)!
-      }
-
-      const resolvedDependency = resolvedImport || dependency
-
-      const dependencyExists = await exists(resolvedDependency)
-      const modified = dependencyExists
-        ? await Deno.statSync(resolvedDependency).mtime
-        : null
-
-      const cacheFile = `${new Sha256().update(output).hex()}`
-      const cacheOutput = join(cacheDirPath, cacheFile)
-      const cacheFileExists = await exists(cacheOutput)
-
-      const cacheModified = cacheFileExists
-        ? await Deno.statSync(cacheOutput).mtime
-        : null
-
-      let code = ""
-
-      if (!dependencyExists) {
-        throw Error(`file ${resolvedDependency} does not exist`)
-      }
-
-      if (
-        reload || !cacheFileExists ||
-        cacheFileExists && modified!.getTime() > cacheModified!.getTime() ||
-        !cacheMap[cacheFile]
-      ) {
-        console.log(green(`Cache`), dependency)
-        needsUpdate = true
-        const resolvedDependency = await resolveCachedPath(dependency) ||
-          dependency
-        const source = await getSource(resolvedDependency)
-        let { outputText, imports, dynamicImports } = await transpile(
-          dependency,
-          source,
-          compilerOptions,
-        )
-
-        cacheMap[cacheFile] = {
-          input: dependency,
-          output: outputMap[dependency],
-          imports,
-        }
-
-        await ensureFile(cacheOutput)
-        await Deno.writeTextFile(cacheOutput, outputText)
-
-        dependencies.push(...imports)
-        queue.push(...dynamicImports)
-
-        code = outputText
-      } else {
-        console.log(green(`Check`), dependency)
-        const { imports } = cacheMap[cacheFile]
-        dependencies.push(...imports)
-        code = await Deno.readTextFile(cacheOutput)
-      }
-
-      dependencySources.push(code)
-    }
-
-    const output = outputMap[input]
-
-    // if deps changed or output file does not exist or is not up-to-date
-    needsUpdate = needsUpdate || (await exists(output) ? Deno.statSync(output).mtime! < Deno.statSync(input).mtime! : true)
-
-    let string = ``
-    if (needsUpdate) {
-      string += loaderString
-      string += `\n`
-      string += outputText
-      dependencySources.forEach((source) => {
-        string += `\n`
-        string += source
-      })
-      string += `\n`
-      string += instantiateString(outputMap[input])
-      string += `\n`
-      string += createExportString([...exports])
+      needsUpdate = !exists || inputModified > outputModified;
     } else {
-      string = await Deno.readTextFile(output)
-      console.log(green(`up-to-date`))
+      needsUpdate = true;
     }
 
-    outputModules[output] = string
+    if (needsUpdate) {
+      // console.log(green(`Create`), inputPath)
+      const source = await getSource(input, sourceMap);
+      const { imports: importNodeMap, exports: exportNodeMap } =
+        await getSpecifierNodeMap(source);
+      const imports: { [path: string]: { input: string; dynamic: boolean } } =
+        {};
+      for (const [specifier, node] of Object.entries(importNodeMap)) {
+        const resolvedFilePath = await resolveDependencyPath(
+          inputPath,
+          specifier,
+          importMap,
+        );
+        const cachedFilePath = resolveCachedPath(resolvedFilePath);
+        if (isURL(resolvedFilePath) && !await fs.exists(cachedFilePath)) {
+          await cache(resolvedFilePath);
+        }
+        const input = cachedFilePath || resolvedFilePath;
+        imports[resolvedFilePath] = {
+          input,
+          dynamic: isDynamicImportNode(node),
+        };
+        queue.push({ input, path: resolvedFilePath });
+      }
 
-    console.log(blue(`${Math.ceil(performance.now() - start)}ms`))
+      const exports: { [name: string]: string } = {};
+
+      for (const [symbol, node] of Object.entries(exportNodeMap)) {
+        exports[symbol] = symbol;
+      }
+
+      const output = outputMap[inputPath] ||
+        path.posix.join(depsDirPath, `${new Sha256().update(input).hex()}.js`);
+      const cacheOutput = path.join(
+        cacheDirPath,
+        new Sha256().update(input).hex(),
+      );
+
+      const entry = {
+        input,
+        output,
+        cacheOutput,
+        imports,
+        exports,
+      };
+      graph[inputPath] = entry;
+    } else {
+      // console.log(green(`Check`), inputPath)
+      graph[inputPath] = entry;
+      Object.entries(entry.imports).forEach(([filePath, { input }]) =>
+        queue.push({ input, path: filePath })
+      );
+    }
   }
 
-  await ensureFile(cacheFilePath)
-  await writeJson(cacheFilePath, cacheMap, { spaces: " " })
-
-  return outputModules
+  return { graph, sourceMap };
 }

@@ -1,19 +1,21 @@
-import { join } from "https://deno.land/std@0.65.0/path/mod.ts";
-import { Sha256 } from "https://deno.land/std@0.65.0/hash/sha256.ts";
-import { green } from "https://deno.land/std@0.65.0/fmt/colors.ts";
-import { exists } from "https://deno.land/std@0.63.0/fs/mod.ts";
-import { resolve as resolveCachePath } from "./cache.ts";
+import { path, colors, fs, Sha256 } from "./deps.ts";
+import { resolve as resolveCachePath, cache } from "./cache.ts";
+import {
+  resolveWithImportMap,
+  ImportMap,
+} from "./deps.ts";
+
+const { join } = path;
+const { green } = colors;
+const { exists } = fs;
+
 import {
   getDependencies,
   resolve as resolveDependencyPath,
 } from "./dependencies.ts";
 import { InputMap, OutputMap } from "./bundler.ts";
-import {
-  resolve as resolveWithImportMap,
-  ImportMap,
-} from "https://deno.land/x/importmap@0.1.4/mod.ts";
+
 import { isURL } from "./_helpers.ts";
-import { resolve as resolveURLToCacheModulePath, cache } from "./cache.ts";
 
 export enum ChangeType {
   Create,
@@ -33,11 +35,11 @@ export interface Change {
 async function fetchTextFile(specifier: string, reload = false) {
   const isUrlImport = isURL(specifier);
   if (isUrlImport) {
-    const resolvedSpecifier = resolveURLToCacheModulePath(specifier);
+    const resolvedSpecifier = resolveCachePath(specifier);
     if (!resolvedSpecifier) {
-      await cache(specifier, reload);
+      await cache(specifier, { reload });
     }
-    specifier = resolveURLToCacheModulePath(specifier)!;
+    specifier = resolveCachePath(specifier)!;
   }
   return await Deno.readTextFile(specifier);
 }

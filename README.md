@@ -15,7 +15,7 @@ import { foo } from "bar" // Deno Error
 
 Bundler bundles deno syntax files (url imports, .ts extensions) for the web.
 
-### Copare to `deno bundle`…
+### Compare to `deno bundle`…
 Deno offers `deno bundle` to transpile a file to a standalone module. This might work in some occations but is limited.
 Bundler works in a similar way to `deno bundle` but splits dynamic imports to separate files and injects paths.
 
@@ -63,11 +63,7 @@ const outputMap = {
   "src/index.ts": "dist/index.js"
 }
 
-const options = {
-  outDir
-}
-
-const fileMap = await bundle(inputMap, outputMap, options)
+const fileMap = await bundle(inputMap, outputMap)
 ```
 
 ### CSS imports

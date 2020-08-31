@@ -13,7 +13,7 @@ import {
 import {
   resolve as resolveDependencyPath,
 } from "./dependencies.ts";
-import { Plugin, PluginType } from "./plugins/plugin.ts";
+import { Plugin } from "./plugins/plugin.ts";
 import { isURL } from "./_helpers.ts";
 import { resolve as resolveCachedPath, cache } from "./cache.ts";
 import {
@@ -76,9 +76,11 @@ function injectOutputsTranformer(
   source: string,
   {
     graph,
+    outDir,
     importMap,
   }: {
     graph: Graph;
+    outDir: string;
     importMap: ImportMap;
   },
 ) {
@@ -107,8 +109,9 @@ function injectOutputsTranformer(
         specifier = graph[resolvedSpecifier].output;
         const relativeOutput = path.relative(
           path.dirname(graph[input].output),
-          specifier,
+          path.join(outDir, specifier),
         );
+        
         specifier = `./${relativeOutput}`;
       }
       if (isExportNode(node)) {
@@ -144,9 +147,10 @@ function injectOutputsTranformer(
 function transpile(
   input: string,
   source: string,
-  { graph, importMap, compilerOptions }: {
+  { graph, importMap, outDir, compilerOptions }: {
     graph: Graph;
     importMap: ImportMap;
+    outDir: string
     compilerOptions: CompilerOptions;
   },
 ) {
@@ -160,7 +164,7 @@ function transpile(
   const { diagnostics, outputText } = ts.transpileModule(source, {
     compilerOptions: ts.convertCompilerOptionsFromJson(compilerOptions).options,
     transformers: {
-      before: [injectOutputsTranformer(input, source, { graph, importMap })],
+      before: [injectOutputsTranformer(input, source, { graph, outDir, importMap })],
       after: [injectInstantiateName(output)],
     },
     reportDiagnostics: true,
@@ -239,7 +243,7 @@ export async function bundle(
     });
 
     // if output file does not exist or input file changed
-    if (!exist || modified) {
+    if (reload || !exist || modified) {
       bundleModified = true;
     }
 
@@ -259,7 +263,7 @@ export async function bundle(
         const exist = await fs.exists(cacheOutput);
         const modified = exist &&
           Deno.statSync(input).mtime! > Deno.statSync(cacheOutput).mtime!;
-        if (exist && !modified) {
+        if (!reload && exist && !modified) {
           console.log(green(`Check`), dependency);
           string += `\n`;
           string += await Deno.readTextFile(cacheOutput);
@@ -273,7 +277,7 @@ export async function bundle(
           source = transpile(
             dependency,
             source,
-            { graph, importMap, compilerOptions },
+            { graph, importMap, outDir, compilerOptions },
           );
           if (!exist) {
             console.log(green(`Create`), dependency);

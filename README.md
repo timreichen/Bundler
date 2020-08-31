@@ -30,7 +30,7 @@ Bundler works in a similar way to `deno bundle` but splits dynamic imports to se
 ### Installation
 Bundler is available as a CLI.
 ```sh
-deno install --unstable --allow-read --allow-write --allow-net --allow-env --name bundler https://raw.githubusercontent.com/timreichen/Bundler/master/cli.ts
+deno install --unstable --allow-read --allow-write --allow-net --allow-env --name bundler deno.land/x/bundler/cli.ts
 ```
 **Info**: You might need to specify `--root /usr/local`.
 

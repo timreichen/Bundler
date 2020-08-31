@@ -151,7 +151,7 @@ function transpile(
   },
 ) {
   compilerOptions = {
-    target: "esnext",
+    target: "es2015",
     ...compilerOptions,
     module: "system",
   };

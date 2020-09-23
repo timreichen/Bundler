@@ -42,15 +42,15 @@ deno install --unstable --allow-read --allow-write --allow-net --allow-env --nam
 bundler bundle index.ts=index.js
 ```
 #### Options
-| Option  | Description | default | 
-|---:|---|---|
-| -c, --config \<FILE> | Load tsconfig.json configuration file| {}
-| --out-dir \<DIR> | Name of out_dir | "dist"
-| -h, --help | Prints help information | -
-| --importmap \<FILE> | UNSTABLE: Load import map file | {}
-| --optimize | Minify source code | false
-| -r, --reload | Reload source code | false
-| --watch | Watch files and re-bundle on change | false
+| Option              | Description                           | default |
+|---------------------|---------------------------------------|---------|
+| -c, --config <FILE> | Load tsconfig.json configuration file | {}      |
+| --out-dir <DIR>     | Name of out_dir                       | "dist"  |
+| -h, --help          | Prints help information               |         |
+| --importmap <FILE>  | UNSTABLE: Load import map file        | {}      |
+| --optimize          | Minify source code                    | false   |
+| -r, --reload        | Reload source code                    | false   |
+| --watch             | Watch files and re-bundle on change   | false   |
 
 
 ## Bundler API

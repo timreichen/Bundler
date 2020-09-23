@@ -43,7 +43,7 @@ bundler bundle index.ts=index.js
 ```
 #### Options
 | Option              | Description                           | Default |
-|---------------------|---------------------------------------|---------|
+|---------------------:|---------------------------------------|---------|
 | -c, --config <FILE> | Load tsconfig.json configuration file | {}      |
 | --out-dir <DIR>     | Name of out_dir                       | "dist"  |
 | -h, --help          | Prints help information               |         |

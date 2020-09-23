@@ -4,7 +4,7 @@ const printer: ts.Printer = ts.createPrinter(
   { newLine: ts.NewLineKind.LineFeed, removeComments: false },
 );
 
-export function instantiateString(path: string) {
+export function createInstantiateString(path: string) {
   const __exp = ts.createVariableStatement(
     undefined,
     ts.createVariableDeclarationList(
@@ -76,61 +76,111 @@ export function createSystemExports(exports: string[]) {
   return string;
 }
 
-export async function systemLoader() {
+export async function createSystemLoader() {
   // return await fetch(
   //   "https://raw.githubusercontent.com/denoland/deno/master/cli/system_loader.js",
   // ).then((data) => data.text());
 
-  // minified content of https://raw.githubusercontent.com/denoland/deno/master/cli/system_loader.js
-  return `"use strict";let System,__instantiate;(()=>{const e=new Map;function t(t,n){return{id:t,import:n=>async function(t,n){let r=t.replace(/\.\w+$/i,"");if(r.includes("./")){const[e,...t]=r.split("/").reverse(),[,...s]=n.split("/").reverse(),i=[e];let o,f=0;for(;o=t.shift();)if(".."===o)f++;else{if("."===o)break;i.push(o)}f<s.length&&i.push(...s.slice(f)),r=i.reverse().join("/")}return e.has(r)?s(r):import(t)}(n,t),meta:{url:t,main:n}}}function n(e){return(t,n)=>{n="string"==typeof t?{[t]:n}:t;for(const[t,s]of Object.entries(n))Object.defineProperty(e,t,{value:s,writable:!0,enumerable:!0})}}async function s(t){if(!e.has(t))return;const n=e.get(t);if(n.s){const{d:e,e:t,s:r}=n;delete n.s,delete n.e;for(let t=0;t<r.length;t++)r[t](await s(e[t]));const i=t();i&&await i}return n.exp}System={register(t,n,s){e.set(t,{d:n,f:s,exp:{}})}},__instantiate=(r,i)=>(System=__instantiate=void 0,function(s){for(const[r,i]of e.entries()){const{f:e,exp:o}=i,{execute:f,setters:c}=e(n(o),t(r,r===s));delete i.f,i.e=f,i.s=c}}(r),i?s(r):function t(n){if(!e.has(n))return;const s=e.get(n);if(s.s){const{d:e,e:n,s:r}=s;delete s.s,delete s.e;for(let n=0;n<r.length;n++)r[n](t(e[n]));n()}return s.exp}(r))})();`;
-}
+  // content of https://raw.githubusercontent.com/denoland/deno/master/cli/system_loader.js
+  return `// Copyright 2018-2020 the Deno authors. All rights reserved. MIT license.
 
-export function systemLoaderWrapperInit() {
-  const systemLoaderWrapperInit = [
-    ts.createImportDeclaration(
-      undefined,
-      undefined,
-      ts.createImportClause(
-        ts.createIdentifier("init"),
-        undefined,
-        false,
-      ),
-      ts.createStringLiteral("./loader.js"),
-    ),
-    ts.createVariableStatement(
-      undefined,
-      ts.createVariableDeclarationList(
-        [ts.createVariableDeclaration(
-          ts.createObjectBindingPattern([
-            ts.createBindingElement(
-              undefined,
-              undefined,
-              ts.createIdentifier("System"),
-              undefined,
-            ),
-            ts.createBindingElement(
-              undefined,
-              undefined,
-              ts.createIdentifier("__instantiate"),
-              undefined,
-            ),
-          ]),
-          undefined,
-          ts.createCall(
-            ts.createIdentifier("init"),
-            undefined,
-            [],
-          ),
-        )],
-        ts.NodeFlags.Let,
-      ),
-    ),
-  ];
-  return printer.printNode(
-    ts.EmitHint.Unspecified,
-    systemLoaderWrapperInit,
-    undefined,
-  );
+  // This is a specialised implementation of a System module loader.
+  
+  "use strict";
+  
+  // @ts-nocheck
+  /* eslint-disable */
+  let System, __instantiate;
+  (() => {
+    const r = new Map();
+  
+    System = {
+      register(id, d, f) {
+        r.set(id, { d, f, exp: {} });
+      },
+    };
+    async function dI(mid, src) {
+      let id = mid.replace(/\.\w+$/i, "");
+      if (id.includes("./")) {
+        const [o, ...ia] = id.split("/").reverse(),
+          [, ...sa] = src.split("/").reverse(),
+          oa = [o];
+        let s = 0,
+          i;
+        while ((i = ia.shift())) {
+          if (i === "..") s++;
+          else if (i === ".") break;
+          else oa.push(i);
+        }
+        if (s < sa.length) oa.push(...sa.slice(s));
+        id = oa.reverse().join("/");
+      }
+      return r.has(id) ? gExpA(id) : import(mid);
+    }
+  
+    function gC(id, main) {
+      return {
+        id,
+        import: (m) => dI(m, id),
+        meta: { url: id, main },
+      };
+    }
+  
+    function gE(exp) {
+      return (id, v) => {
+        v = typeof id === "string" ? { [id]: v } : id;
+        for (const [id, value] of Object.entries(v)) {
+          Object.defineProperty(exp, id, {
+            value,
+            writable: true,
+            enumerable: true,
+          });
+        }
+      };
+    }
+  
+    function rF(main) {
+      for (const [id, m] of r.entries()) {
+        const { f, exp } = m;
+        const { execute: e, setters: s } = f(gE(exp), gC(id, id === main));
+        delete m.f;
+        m.e = e;
+        m.s = s;
+      }
+    }
+  
+    async function gExpA(id) {
+      if (!r.has(id)) return;
+      const m = r.get(id);
+      if (m.s) {
+        const { d, e, s } = m;
+        delete m.s;
+        delete m.e;
+        for (let i = 0; i < s.length; i++) s[i](await gExpA(d[i]));
+        const r = e();
+        if (r) await r;
+      }
+      return m.exp;
+    }
+  
+    function gExp(id) {
+      if (!r.has(id)) return;
+      const m = r.get(id);
+      if (m.s) {
+        const { d, e, s } = m;
+        delete m.s;
+        delete m.e;
+        for (let i = 0; i < s.length; i++) s[i](gExp(d[i]));
+        e();
+      }
+      return m.exp;
+    }
+    __instantiate = (m, a) => {
+      System = __instantiate = undefined;
+      rF(m);
+      return a ? gExpA(m) : gExp(m);
+    };
+  })();`;
 }
 
 export function injectInstantiateName(specifier: string) {

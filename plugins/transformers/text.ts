@@ -1,21 +1,30 @@
 import { ts } from "../../deps.ts";
-import { Include, Exclude, Plugin, PluginType } from "../plugin.ts";
+import type { Graph } from "../../graph.ts";
+import { Plugin, PluginTest } from "../plugin.ts";
+
+interface Config {
+  test: PluginTest;
+}
+
+const printer: ts.Printer = ts.createPrinter({ removeComments: false });
 
 export function text(
-  { include, exclude }: { include: Include; exclude?: Exclude },
+  { test }: Config,
 ) {
-  const transform = (source: string, path: string) => {
+  const fn = (input: string, source: string, { graph }: { graph: Graph }) => {
     const identifier = `\`${source}\``;
     const ast = ts.createExportDefault(ts.createIdentifier(identifier));
-    const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-    return printer.printList(undefined, ts.createNodeArray([ast]), undefined);
+    const string = printer.printList(
+      undefined,
+      ts.createNodeArray([ast]),
+      undefined,
+    );
+    graph[input].exports["default"] = { input };
+    return string;
   };
 
   return new Plugin({
-    type: PluginType.transformer,
-    name: "text",
-    include,
-    exclude,
-    transform,
+    test,
+    fn,
   });
 }

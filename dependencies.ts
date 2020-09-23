@@ -1,7 +1,5 @@
 import { path, resolveWithImportMap, ImportMap } from "./deps.ts";
-import {
-  getSpecifierNodeMap,
-} from "./typescript.ts";
+
 import { isURL, ensureExtension } from "./_helpers.ts";
 
 const {
@@ -10,14 +8,6 @@ const {
   join,
   posix,
 } = path;
-
-/**
- * returns array of dependencies
- */
-export async function getDependencies(source: string): Promise<string[]> {
-  const { imports } = getSpecifierNodeMap(source);
-  return Object.keys(imports);
-}
 
 /**
  * resolves specifier relative to filePath
@@ -52,8 +42,6 @@ export function resolve(
   } else {
     if (parentIsUrl) {
       const fileUrl = new URL(path);
-      // In a Windows system, this path has been joined as https://packager/\module@1.1\service
-      // and the browser can't understand this kind of path
       fileUrl.pathname = posix.join(dirname(fileUrl.pathname));
       resolvedPath = fileUrl.href;
     } else {

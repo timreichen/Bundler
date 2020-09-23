@@ -1,37 +1,51 @@
-import { path, fs, colors } from "./deps.ts";
-import { Md5 } from "https://deno.land/std/hash/md5.ts";
+import { path, fs, colors, ImportMap, Args } from "./deps.ts";
+import { Sha256 } from "./deps.ts";
 
-import { ImportMap } from "./deps.ts";
-import { bundle } from "./mod.ts";
+import { bundle } from "./bundler.ts";
 import { Program, invalidSubcommandError } from "./deps.ts";
-import { CompilerOptions } from "./typescript.ts";
 
-import { postcss } from "./plugins/transformers/postcss.ts";
-import { csso } from "./plugins/optimizers/csso.ts";
+import { cssToModule } from "./plugins/transformers/css_to_module.ts";
 import postcssPresetEnv from "https://jspm.dev/postcss-preset-env";
-import { terser } from "./plugins/optimizers/terser.ts";
 
-import { text } from "./plugins/transformers/text.ts";
 import { isURL } from "./_helpers.ts";
-import { Graph } from "./bundler.ts";
-
-const { basename, join } = path;
-const { readJsonSync, ensureFile } = fs;
+import { cssLoader } from "./plugins/loaders/css.ts";
+import { typescriptLoader } from "./plugins/loaders/typescript.ts";
+import { typescriptInjectSpecifiers } from "./plugins/transformers/typescript_inject_specifiers.ts";
+import { terser } from "./plugins/transformers/terser.ts";
+import type { CompilerOptions } from "./typescript.ts";
+import type { FileMap, Graph } from "./graph.ts";
 
 interface Meta {
+  options: {
+    fileMap: FileMap;
+    options: {
+      optimize: boolean;
+    };
+  };
   graph: Graph;
 }
 
+const postCSSPlugins = [
+  (postcssPresetEnv as Function)({
+    stage: 2,
+    features: {
+      "nesting-rules": true,
+    },
+  }),
+];
+
+const loaders = [
+  typescriptLoader({
+    test: (input: string) =>
+      input.startsWith("http") || /\.(tsx?|jsx?)$/.test(input),
+  }),
+  cssLoader({
+    use: postCSSPlugins,
+  }),
+];
+
 async function runBundle(
-  options: {
-    _: string[];
-    "out-dir": string;
-    importmap: string;
-    config: string;
-    optimize: boolean;
-    reload: boolean;
-    watch: boolean;
-  },
+  options: any,
 ) {
   const {
     _,
@@ -41,46 +55,41 @@ async function runBundle(
     optimize,
     reload,
     watch,
+    "log-level": logLevel,
+    quiet,
   } = options;
 
   const importMap =
     (importMapPath
-      ? readJsonSync(importMapPath)
+      ? JSON.parse(await Deno.readTextFile(importMapPath))
       : { imports: {}, scopes: {} }) as ImportMap;
   const compilerOptions =
     (configPath
-      ? (readJsonSync(configPath) as { compilerOptions: CompilerOptions })
+      ? (JSON.parse(await Deno.readTextFile(configPath)) as {
+        compilerOptions: CompilerOptions;
+      })
         .compilerOptions
       : {}) as CompilerOptions;
-
-  const inputMap: { [input: string]: string } = {};
-  const outputMap: { [input: string]: string } = {};
 
   const depsDir = "deps";
   const cacheDir = ".cache";
   const graphFilePath = path.join(outDir, cacheDir, "meta.json");
-  const meta: Meta =
-    ((await fs.exists(graphFilePath) && await fs.readJson(graphFilePath)) ||
-      { options: {}, graph: {} }) as Meta;
-
-  const { graph: initialGraph } = meta;
 
   const transformers = [
-    postcss({
-      options: {
-        use: [
-          (postcssPresetEnv as Function)({
-            stage: 2,
-            features: {
-              "nesting-rules": true,
-            },
-          }),
-        ],
+    cssToModule({
+      use: postCSSPlugins,
+    }),
+    typescriptInjectSpecifiers({
+      test: (input: string) =>
+        input.startsWith("http") || /\.(css|tsx?|jsx?)$/.test(input),
+      compilerOptions: {
+        target: "es2015",
+        ...compilerOptions,
+        module: "system",
       },
     }),
-    csso(),
-    text({ include: (path: string) => /\.css$/.test(path) }),
   ];
+
   const optimizers = [
     terser(),
   ];
@@ -88,26 +97,38 @@ async function runBundle(
   const hashes: { [file: string]: string } = {};
 
   async function main() {
+    const inputMap: { [input: string]: string } = {};
+
+    const time = performance.now();
+
+    const fileMap: FileMap = {};
+
     for (const inp of _) {
       let [input, name] = inp.split("=");
-      name = name || basename(input || "").replace(/\.tsx?$/, ".js");
+      name = name ||
+        path.basename(input || "").replace(/\.(css|tsx?|jsx?)$/, ".js");
 
       inputMap[input] = isURL(input)
         ? await fetch(input).then((data) => data.text())
         : await Deno.readTextFile(input);
-      outputMap[input] = join(outDir, name);
+      fileMap[input] = path.join(outDir, name);
     }
 
-    const { modules, graph } = await bundle(
+    const { graph: initialGraph }: Meta =
+      ((await fs.exists(graphFilePath) &&
+        JSON.parse(await Deno.readTextFile(graphFilePath))) ||
+        { options: {}, graph: {} }) as Meta;
+
+    const { outputMap, cacheMap, graph } = await bundle(
       inputMap,
-      outputMap,
+      fileMap,
       {
         outDir,
         depsDir,
         cacheDir,
-        compilerOptions,
         importMap,
         graph: initialGraph,
+        loaders,
         transformers,
         optimizers,
         reload,
@@ -116,17 +137,37 @@ async function runBundle(
     );
 
     await fs.ensureFile(graphFilePath);
-    await fs.writeJson(graphFilePath, { options, graph }, { spaces: " " });
+    await Deno.writeTextFile(
+      graphFilePath,
+      JSON.stringify(
+        {
+          options: {
+            fileMap,
+            optimize: options.optimize,
+          },
+          graph,
+        },
+        null,
+        " ",
+      ),
+    );
 
-    for (const [output, source] of Object.entries(modules)) {
-      await ensureFile(output);
+    for (const [output, source] of Object.entries(cacheMap)) {
+      await fs.ensureFile(output);
       await Deno.writeTextFile(output, source);
     }
 
-    const paths = Object.values(graph).map((entry) => entry.input);
+    for (const [output, source] of Object.entries(outputMap)) {
+      await fs.ensureFile(output);
+      await Deno.writeTextFile(output, source);
+    }
+
+    console.log(colors.blue(`${Math.ceil(performance.now() - time)}ms`));
+
+    const paths = Object.values(graph).map((entry) => entry.path);
     for (const path of paths) {
       if (!hashes[path]) {
-        hashes[path] = new Md5().update(await Deno.readFile(path)).toString();
+        hashes[path] = new Sha256().update(await Deno.readFile(path)).hex();
       }
     }
 
@@ -140,7 +181,7 @@ async function runBundle(
         // checks if actual file content changed
         if (kind === "modify") {
           for (const path of paths) {
-            const hash = new Md5().update(await Deno.readFile(path)).toString();
+            const hash = new Sha256().update(await Deno.readFile(path)).hex();
             if (hashes[path] !== hash) {
               hashes[path] = hash;
               needsUpdate = true;
@@ -150,10 +191,12 @@ async function runBundle(
         } else {
           needsUpdate = true;
         }
-
         if (needsUpdate) {
           setTimeout(() => main(), 100);
-          console.log(colors.yellow(`Change`), paths.join(", "));
+          console.log(
+            colors.blue(`Watcher`),
+            `File change detected! Restarting!`,
+          );
           break loop;
         }
       }
@@ -184,9 +227,8 @@ program
     description: "Load tsconfig.json configuration file",
   })
   .option({
-    name: "dir",
+    name: "out-dir",
     args: [{ name: "DIR" }],
-    alias: "d",
     description: "Name of out_dir",
   })
   .option({
@@ -211,7 +253,6 @@ Examples: https://github.com/WICG/import-maps#the-import-map`,
   // })
   .option({
     name: "optimize",
-    alias: "o",
     boolean: true,
     description: `Minify source code`,
   })
@@ -230,7 +271,6 @@ Examples: https://github.com/WICG/import-maps#the-import-map`,
   })
   .option({
     name: "watch",
-    alias: "w",
     boolean: true,
     description: `Watch files and re-bundle on change`,
   });
@@ -258,7 +298,7 @@ program
   .command({
     name: "help",
     description: "Prints this message or the help of the given subcommand(s)",
-    fn(args: unknown[]) {
+    fn(args: Args) {
       help(args);
     },
   });

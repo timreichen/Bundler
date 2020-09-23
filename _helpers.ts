@@ -9,7 +9,7 @@ import { yellow } from "https://deno.land/std@0.66.0/fmt/colors.ts";
  * ```
  */
 export function isURL(path: string) {
-  return /^https?:/.test(path);
+  return path.startsWith("http");
 }
 
 export function removeExtension(path: string) {

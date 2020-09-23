@@ -8,12 +8,12 @@ import {
 } from "./deps.ts";
 
 import {
-  getDependencies,
-  resolve as resolveDependencyPath,
+  resolve as resolveDependencySpecifier,
 } from "./dependencies.ts";
 import { isURL } from "./_helpers.ts";
+import { getImportExports } from "./typescript.ts";
 
-const { exists, existsSync, writeJson, ensureFile } = fs;
+const { exists, writeJson, ensureFile } = fs;
 const { green } = colors;
 
 /**
@@ -123,11 +123,11 @@ export async function cache(
       source = await Deno.readTextFile(cachedFilePath);
     }
 
-    const dependencyMap = await getDependencies(source);
+    const { imports } = await getImportExports(source);
 
     queue.push(
-      ...dependencyMap.map((dependency) =>
-        resolveDependencyPath(specifier, dependency)
+      ...Object.keys(imports).map((dependency) =>
+        resolveDependencySpecifier(specifier, dependency)
       ),
     );
   }

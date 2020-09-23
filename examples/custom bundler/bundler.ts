@@ -1,16 +1,26 @@
 import { bundle } from "../../mod.ts";
-import { ensureFile } from "https://deno.land/std@0.66.0/fs/mod.ts";
-import { CompilerOptions } from "../../typescript.ts";
+import { fs } from "../../deps.ts";
+import type { CompilerOptions } from "../../typescript.ts";
+import { typescriptLoader } from "../../plugins/loaders/typescript.ts";
+import { typescript } from "../../plugins/transformers/typescript.ts";
 
 const input = `src/index.ts`;
 const output = `dist/index.js`;
 const source = await Deno.readTextFile(input);
 const inputMap = { [input]: source };
-const outputMap = { [input]: output };
-const compilerOptions = { target: "ES5" } as CompilerOptions;
-const { modules } = await bundle(inputMap, outputMap, { compilerOptions });
+const fileMap = { [input]: output };
+const compilerOptions = { target: "es5" } as CompilerOptions;
 
-for (const [output, source] of Object.entries(modules)) {
-  await ensureFile(output);
+const { outputMap } = await bundle(inputMap, fileMap, {
+  loaders: [
+    typescriptLoader(),
+  ],
+  transformers: [
+    typescript({ compilerOptions }),
+  ],
+});
+
+for (const [output, source] of Object.entries(outputMap)) {
+  await fs.ensureFile(output);
   await Deno.writeTextFile(output, source);
 }

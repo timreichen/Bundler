@@ -212,8 +212,8 @@ export function getImportNode(node: ts.Node) {
 }
 
 export function isDynamicImportNode(node: ts.Node) {
-  return ts.SyntaxKind[node.kind] === "CallExpression" &&
-    ts.SyntaxKind[node.expression.kind] === "ImportKeyword";
+  return node.kind === ts.SyntaxKind.CallExpression &&
+    node.expression.kind === ts.SyntaxKind.ImportKeyword;
 }
 export function getDynamicImportNode(node: ts.Node, source: string) {
   const arg = node.arguments[0];
@@ -237,25 +237,20 @@ export function getDynamicImportNode(node: ts.Node, source: string) {
 }
 
 export function isExportNode(node: ts.Node) {
-  return ts.isExportDeclaration(node) && node.moduleSpecifier;
+  return ts.isExportDeclaration(node);
 }
 export function getExportNode(node: ts.node) {
   return node.moduleSpecifier;
 }
 
-export function getSpecifierNodeMap(
+export function getImportExports(
   source: string,
 ): {
-  imports: { [specifier: string]: ts.Node };
-  exports: { [specifier: string]: ts.Node };
+  imports: { [specifier: string]: { dynamic: boolean } };
+  exports: string[];
 } {
   const imports: { [specifier: string]: ts.Node } = {};
-  let exports: { [specifier: string]: ts.Node } = {};
-
-  const compilerOptions = {
-    target: "ESNext",
-    module: "ESNext",
-  };
+  let exports: string[] = [];
 
   function transformer() {
     return (context: ts.TransformationContext) => {
@@ -265,12 +260,12 @@ export function getSpecifierNodeMap(
           if (node.importClause?.isTypeOnly) return node;
           specifierNode = getImportNode(node);
         }
+        if (isDynamicImportNode(node)) {
+          specifierNode = getDynamicImportNode(node, source);
+        }
         if (isExportNode(node)) {
           if (node.importClause?.isTypeOnly) return node;
           specifierNode = getExportNode(node);
-        }
-        if (isDynamicImportNode(node)) {
-          specifierNode = getDynamicImportNode(node, source);
         }
         if (specifierNode) {
           imports[specifierNode.text] = node;
@@ -280,12 +275,17 @@ export function getSpecifierNodeMap(
       };
       return (node: ts.Node) => {
         if (node.symbol) {
-          exports = Object.fromEntries(node.symbol.exports.entries());
+          exports = Object.keys(node.symbol.exports);
         }
         return ts.visitNode(node, visit);
       };
     };
   }
+
+  const compilerOptions = {
+    target: "ESNext",
+    module: "ESNext",
+  };
 
   const { diagnostics, outputText } = ts.transpileModule(source, {
     compilerOptions: ts.convertCompilerOptionsFromJson(compilerOptions).options,
@@ -294,7 +294,6 @@ export function getSpecifierNodeMap(
     },
     reportDiagnostics: true,
   });
-  // diagnostics.forEach((diagnostic: any) => console.log(diagnostic))
 
   return { imports, exports };
 }

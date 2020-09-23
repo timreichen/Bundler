@@ -1,34 +1,27 @@
-export type Include = (path: string) => boolean;
-export type Exclude = (path: string) => boolean;
-export type Transform = (path: string, source: string) => Promise<string>;
+import type { FileMap, Graph } from "../graph.ts";
+import type { ImportMap } from "../deps.ts";
 
-export enum PluginType {
-  transformer,
-  optimizer,
-}
+export type PluginTest = (path: string) => boolean;
+export type PluginFunction = (
+  path: string,
+  source: string,
+  { graph, fileMap, importMap, outDir, depsDir }: {
+    graph: Graph;
+    fileMap: FileMap;
+    importMap: ImportMap;
+    outDir: string;
+    depsDir: string;
+  },
+) => Promise<string> | string;
 
 export class Plugin {
-  type: PluginType;
-  name: string;
-  include: Include | undefined;
-  exclude: Exclude | undefined;
-  transform: Transform;
-  constructor({ type, name, include, exclude, transform }: {
-    type: PluginType;
-    name: string;
-    include?: Include;
-    exclude?: Exclude;
-    transform: Transform;
+  test: PluginTest;
+  fn: PluginFunction;
+  constructor({ test, fn }: {
+    test: PluginTest;
+    fn: PluginFunction;
   }) {
-    this.type = type;
-    this.name = name;
-    this.include = include;
-    this.exclude = exclude;
-    this.transform = transform;
-  }
-  async run(source: string, path: string) {
-    if (this.include && !this.include(path)) return source;
-    if (this.exclude && this.exclude(path)) return source;
-    return await this.transform(source, path);
+    this.test = test;
+    this.fn = fn;
   }
 }

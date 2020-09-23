@@ -1,194 +1,45 @@
-import { ts, fs, path, colors, Sha256, ImportMap } from "./deps.ts";
+import { colors, fs, ImportMap, path, Sha256 } from "./deps.ts";
 import {
-  CompilerOptions,
-  getSpecifierNodeMap,
-  isDynamicImportNode,
-  getDynamicImportNode,
-  isImportNode,
-  getImportNode,
-  isExportNode,
-  getExportNode,
-} from "./typescript.ts";
-
-import {
-  resolve as resolveDependencyPath,
-} from "./dependencies.ts";
-import { Plugin } from "./plugins/plugin.ts";
-import { isURL } from "./_helpers.ts";
-import { resolve as resolveCachedPath, cache } from "./cache.ts";
-import {
-  instantiateString,
+  createInstantiateString,
   createSystemExports,
-  injectInstantiateName,
-  systemLoader,
+  createSystemLoader,
 } from "./system.ts";
+import type { Plugin } from "./plugins/plugin.ts";
+import type { Loader } from "./plugins/loader.ts";
+import {
+  createGraph,
+  getSource,
+  getOutput,
+  Graph,
+  FileMap,
+  InputMap,
+} from "./graph.ts";
 
-const { green, blue } = colors;
-
-interface ModuleMap {
-  [input: string]: string;
-}
-
-/**
- * Object containing input file paths as key and source code as value.
- * ```ts
- * const inputMap = {
- *   "src/index.ts": `console.log("Hello World")`
- * }
- * ```
- */
-export interface InputMap {
-  [input: string]: string;
-}
-
-/**
- * Object containing input file paths as key and output file path as value.
- * ```ts
- * const inputMap = {
- *   "src/index.ts": "dist/index.js"
- * }
- * ```
- */
 export interface OutputMap {
-  [input: string]: string;
+  [output: string]: string;
 }
 
 export interface CacheMap {
-  [outputFile: string]: {
-    input: string;
-    output: string;
-    imports: string[];
-  };
+  [output: string]: string;
 }
 
-async function getSource(
-  specifier: string,
-  modules: InputMap,
-): Promise<string> {
-  return modules[specifier] = modules[specifier] ||
-    (isURL(specifier)
-      ? await fetch(specifier).then((data) => data.text())
-      : await Deno.readTextFile(specifier));
-}
-
-function injectOutputsTranformer(
-  input: string,
-  source: string,
-  {
-    graph,
-    outDir,
-    importMap,
-  }: {
-    graph: Graph;
-    outDir: string;
-    importMap: ImportMap;
-  },
-) {
-  return (context: ts.TransformationContext) => {
-    const visit: ts.Visitor = (node: ts.Node) => {
-      let specifierNode: ts.Node = null;
-      let specifier: string | null = null;
-      if (isImportNode(node)) {
-        specifierNode = getImportNode(node);
-        const specifierText = specifierNode.text;
-        const resolvedSpecifier = resolveDependencyPath(
-          input,
-          specifierText,
-          importMap,
-        );
-        specifier = graph[resolvedSpecifier].output;
-      }
-      if (isDynamicImportNode(node)) {
-        specifierNode = getDynamicImportNode(node, source);
-        const specifierText = specifierNode.text;
-        const resolvedSpecifier = resolveDependencyPath(
-          input,
-          specifierText,
-          importMap,
-        );
-        specifier = graph[resolvedSpecifier].output;
-        const relativeOutput = path.relative(
-          path.dirname(graph[input].output),
-          path.join(outDir, specifier),
-        );
-        
-        specifier = `./${relativeOutput}`;
-      }
-      if (isExportNode(node)) {
-        specifierNode = getExportNode(node);
-        const specifierText = specifierNode.text;
-        const resolvedSpecifier = resolveDependencyPath(
-          input,
-          specifierText,
-          importMap,
-        );
-        specifier = graph[resolvedSpecifier].output;
-      }
-
-      if (specifierNode) {
-        const newNode = ts.createStringLiteral(specifier);
-
-        return ts.visitEachChild(
-          node,
-          (child: ts.Node) => child === specifierNode ? newNode : child,
-          context,
-        );
-      }
-
-      return ts.visitEachChild(node, visit, context);
-    };
-
-    return (node: ts.Node) => {
-      return ts.visitNode(node, visit);
-    };
-  };
-}
-
-function transpile(
-  input: string,
-  source: string,
-  { graph, importMap, outDir, compilerOptions }: {
-    graph: Graph;
-    importMap: ImportMap;
-    outDir: string
-    compilerOptions: CompilerOptions;
-  },
-) {
-  compilerOptions = {
-    target: "es2015",
-    ...compilerOptions,
-    module: "system",
-  };
-  const output = graph[input].output;
-
-  const { diagnostics, outputText } = ts.transpileModule(source, {
-    compilerOptions: ts.convertCompilerOptionsFromJson(compilerOptions).options,
-    transformers: {
-      before: [injectOutputsTranformer(input, source, { graph, outDir, importMap })],
-      after: [injectInstantiateName(output)],
-    },
-    reportDiagnostics: true,
-  });
-
-  for (const diagnostic of diagnostics) {
-    console.error(`error during transpilation: ${diagnostic.messageText}`);
+async function getCacheSource(cacheOutput: string, cacheMap: CacheMap) {
+  if (!cacheMap[cacheOutput]) {
+    cacheMap[cacheOutput] = await Deno.readTextFile(cacheOutput);
   }
-
-  return outputText;
+  return cacheMap[cacheOutput];
 }
-
-const systemLoaderWrapper = await systemLoader();
 
 export async function bundle(
   inputMap: InputMap,
-  outputMap: OutputMap,
+  fileMap: FileMap,
   {
     outDir = "dist",
     depsDir = "deps",
     cacheDir = ".cache",
-    compilerOptions = {},
-    importMap = { imports: {}, scopes: {} },
     graph: initialGraph = {},
+    importMap = { imports: {}, scopes: {} },
+    loaders = [],
     transformers = [],
     optimizers = [],
     reload = false,
@@ -197,236 +48,164 @@ export async function bundle(
     outDir?: string;
     depsDir?: string;
     cacheDir?: string;
-    compilerOptions?: CompilerOptions;
-    importMap?: ImportMap;
     graph?: Graph;
+    importMap?: ImportMap;
+    loaders?: Loader[];
     transformers?: Plugin[];
     optimizers?: Plugin[];
     reload?: boolean;
     optimize?: boolean;
   } = {},
-): Promise<{ modules: ModuleMap; graph: Graph }> {
-  const start = performance.now();
+) {
+  const outputMap: OutputMap = {};
 
-  const { graph, sourceMap } = await createGraph(
+  const depsPath = path.join(outDir, depsDir);
+  const cacheDirPath = path.join(outDir, cacheDir);
+  const cacheMap: CacheMap = {};
+
+  const inputs: string[] = Object.keys(inputMap);
+
+  fileMap = { ...fileMap };
+
+  const graph = await createGraph(
     inputMap,
-    initialGraph,
-    { outDir, depsDir, cacheDir, importMap, outputMap, reload },
+    loaders,
+    { graph: initialGraph, fileMap, importMap, baseURL: depsPath },
   );
 
-  const modules: OutputMap = {};
-
-  const inputs = Object.keys(inputMap);
-
-  const queue: string[] = inputs;
-  while (queue.length) {
-    const input = queue.pop()!;
-    if (modules[input]) continue;
-
-    console.log(blue(`Bundle`), input);
-
-    let bundleModified = false;
-
-    const { output } = graph[input];
-
-    const exist = await fs.exists(output);
-    const modified = exist &&
-      Deno.statSync(input).mtime! > Deno.statSync(output).mtime!;
-    const { imports, exports } = graph[input];
-
-    const dependencies = Object.entries({
-      [input]: {
-        input,
-        dynamic: false,
-      },
-      ...imports,
-    });
-
-    // if output file does not exist or input file changed
-    if (reload || !exist || modified) {
-      bundleModified = true;
-    }
-
-    let string = ``;
-    string += systemLoaderWrapper;
-
-    const checkedDependencies = new Set();
-    while (dependencies.length) {
-      const [dependency, { input, dynamic }] = dependencies.pop()!;
-      if (checkedDependencies.has(dependency)) continue;
-      checkedDependencies.add(dependency);
-      if (dynamic) {
-        queue.push(dependency);
-      } else {
-        const { imports, cacheOutput } = graph[dependency];
-        dependencies.push(...Object.entries(imports));
-        const exist = await fs.exists(cacheOutput);
-        const modified = exist &&
-          Deno.statSync(input).mtime! > Deno.statSync(cacheOutput).mtime!;
-        if (!reload && exist && !modified) {
-          console.log(green(`Check`), dependency);
-          string += `\n`;
-          string += await Deno.readTextFile(cacheOutput);
-        } else {
-          bundleModified = true;
-          let source = await getSource(input, sourceMap);
-          for (const transformer of transformers) {
-            source = await transformer.run(source, input);
-          }
-
-          source = transpile(
-            dependency,
-            source,
-            { graph, importMap, outDir, compilerOptions },
-          );
-          if (!exist) {
-            console.log(green(`Create`), dependency);
-          } else {
-            console.log(green(`Update`), dependency);
-          }
-
-          await fs.ensureFile(cacheOutput);
-          await Deno.writeTextFile(cacheOutput, source);
-
-          string += `\n`;
-          string += source;
-        }
-      }
-    }
-
-    string += `\n`;
-    string += instantiateString(output);
-    string += createSystemExports(Object.keys(exports));
-
-    if (optimize) {
-      for (const optimizer of optimizers) {
-        string = await optimizer.run(string, input);
-      }
-    }
-
-    modules[output] = string;
-
-    if (bundleModified) {
-      console.log(blue(`Update`), output);
-      await fs.ensureFile(output);
-      await Deno.writeTextFile(output, string);
-    } else {
-      console.log(blue(`up-to-date`), output);
-    }
-  }
-
-  console.log(blue(`${Math.ceil(performance.now() - start)}ms`));
-
-  return { modules, graph };
-}
-
-export interface Graph {
-  [path: string]: {
-    input: string;
-    output: string;
-    cacheOutput: string;
-    imports: { [path: string]: { input: string; dynamic: boolean } };
-    exports: { [name: string]: string };
-  };
-}
-
-async function createGraph(
-  inputMap: InputMap,
-  initialGraph: Graph,
-  { outDir, depsDir, cacheDir, importMap, outputMap, reload }: {
-    outDir: string;
-    depsDir: string;
-    cacheDir: string;
-    importMap: ImportMap;
-    outputMap: OutputMap;
-    reload: boolean;
-  },
-) {
-  const depsDirPath = path.join(outDir, depsDir);
-  const cacheDirPath = path.join(outDir, cacheDir);
-  const graph: Graph = {};
-  const sourceMap: InputMap = { ...inputMap };
-
-  const queue = Object.keys(inputMap).reduce((array, key) => {
-    array.push({ input: key, path: key });
-    return array;
-  }, [] as { input: string; path: string }[]);
   const checkedInputs: Set<string> = new Set();
-
-  while (queue.length) {
-    const { input, path: inputPath } = queue.pop()!;
+  while (inputs.length) {
+    const input = inputs.pop()!;
     if (checkedInputs.has(input)) continue;
     checkedInputs.add(input);
+    const entry = graph[input];
 
-    const entry = initialGraph[inputPath];
-
-    let needsUpdate = false;
-    if (!reload && entry) {
-      const { input, cacheOutput } = entry;
-      const inputModified = Deno.statSync(input).mtime!.getTime();
-      const exists = await fs.exists(cacheOutput);
-      const outputModified = exists &&
-        Deno.statSync(cacheOutput).mtime!.getTime();
-
-      needsUpdate = !exists || inputModified > outputModified;
-    } else {
-      needsUpdate = true;
-    }
-
-    if (needsUpdate) {
-      // console.log(green(`Create`), inputPath)
-      const source = await getSource(input, sourceMap);
-      const { imports: importNodeMap, exports: exportNodeMap } =
-        await getSpecifierNodeMap(source);
-      const imports: { [path: string]: { input: string; dynamic: boolean } } =
-        {};
-      for (const [specifier, node] of Object.entries(importNodeMap)) {
-        const resolvedFilePath = await resolveDependencyPath(
-          inputPath,
-          specifier,
-          importMap,
-        );
-        const cachedFilePath = resolveCachedPath(resolvedFilePath);
-        if (isURL(resolvedFilePath) && !await fs.exists(cachedFilePath)) {
-          await cache(resolvedFilePath);
-        }
-        const input = cachedFilePath || resolvedFilePath;
-        imports[resolvedFilePath] = {
-          input,
-          dynamic: isDynamicImportNode(node),
-        };
-        queue.push({ input, path: resolvedFilePath });
+    const queue: string[] = [];
+    Object.entries(entry.imports).forEach(([input, { dynamic }]) => {
+      if (dynamic) {
+        inputs.push(input);
+      } else {
+        queue.push(input);
       }
+    });
 
-      const exports: { [name: string]: string } = {};
+    const strings: string[] = [];
+    strings.push(await createSystemLoader());
 
-      for (const [symbol, node] of Object.entries(exportNodeMap)) {
-        exports[symbol] = symbol;
+    let bundleNeedsUpdate = false;
+
+    const { imports } = graph[input];
+
+    const dependencies = [input];
+
+    Object.entries(imports).forEach(([input, { dynamic }]) => {
+      if (dynamic) {
+        inputs.push(input);
+      } else {
+        dependencies.push(input);
       }
+    });
 
-      const output = outputMap[inputPath] ||
-        path.posix.join(depsDirPath, `${new Sha256().update(input).hex()}.js`);
+    const checkedDependencies: Set<string> = new Set();
+    while (dependencies.length) {
+      const dependency = dependencies.pop()!;
+      if (checkedDependencies.has(dependency)) continue;
+      checkedDependencies.add(dependency);
+
+      const { imports, exports, path: filePath } = graph[dependency];
+
       const cacheOutput = path.join(
         cacheDirPath,
-        new Sha256().update(input).hex(),
+        new Sha256().update(dependency).hex(),
       );
 
-      const entry = {
-        input,
-        output,
-        cacheOutput,
-        imports,
-        exports,
-      };
-      graph[inputPath] = entry;
+      Object.entries(imports).forEach(([input, { dynamic }]) => {
+        if (dynamic) {
+          inputs.push(input);
+        } else {
+          dependencies.push(input);
+        }
+      });
+      dependencies.push(...Object.values(exports).map(({ input }) => input));
+
+      const cacheFileExists = await fs.exists(cacheOutput);
+
+      const modified = cacheFileExists &&
+        Deno.statSync(filePath).mtime! > Deno.statSync(cacheOutput).mtime!;
+      // if cache file is up to date, get source from that cache file
+      if (!reload && cacheFileExists && !modified) {
+        console.log(colors.green(`Check`), dependency);
+        strings.push(await getCacheSource(cacheOutput, cacheMap));
+      } else {
+        // if cache file does not exist or is out of date create apply transformers to source and create new cache file
+        bundleNeedsUpdate = true;
+
+        let source = await getSource(filePath, inputMap, importMap);
+        for (const transformer of transformers) {
+          if (await transformer.test(dependency)) {
+            source = await transformer.fn(
+              dependency,
+              source,
+              { graph, fileMap, importMap, outDir, depsDir },
+            );
+          }
+        }
+
+        // Bundle file has special log. Only log dependency files
+        if (filePath !== input) {
+          if (!cacheFileExists) {
+            console.log(colors.green(`Create`), dependency);
+          } else {
+            console.log(colors.green(`Update`), dependency);
+          }
+        }
+
+        cacheMap[cacheOutput] = source;
+
+        strings.push(source);
+      }
+    }
+
+    const output = getOutput(input, fileMap, depsPath);
+
+    const outputFileExists = await fs.exists(output);
+
+    if (!outputFileExists) {
+      bundleNeedsUpdate = true;
+    }
+
+    if (bundleNeedsUpdate) {
+      strings.push(createInstantiateString(output));
+      strings.push(createSystemExports(Object.keys(entry.exports)));
+
+      let string = strings.join("\n");
+
+      if (optimize) {
+        for (const optimizer of optimizers) {
+          if (optimizer.test(input)) {
+            string = await optimizer.fn(
+              input,
+              string,
+              { graph, fileMap, importMap, outDir, depsDir },
+            );
+          }
+        }
+      }
+
+      if (!outputFileExists) {
+        console.log(colors.blue(`Create`), input);
+      } else {
+        console.log(colors.blue(`Update`), input);
+      }
+      outputMap[output] = string;
     } else {
-      // console.log(green(`Check`), inputPath)
-      graph[inputPath] = entry;
-      Object.entries(entry.imports).forEach(([filePath, { input }]) =>
-        queue.push({ input, path: filePath })
-      );
+      console.log(colors.blue(`up-to-date`), input);
     }
   }
 
-  return { graph, sourceMap };
+  return {
+    outputMap,
+    cacheMap,
+    graph,
+  };
 }

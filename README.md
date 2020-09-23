@@ -42,7 +42,7 @@ deno install --unstable --allow-read --allow-write --allow-net --allow-env --nam
 bundler bundle index.ts=index.js
 ```
 #### Options
-| Option              | Description                           | default |
+| Option              | Description                           | Default |
 |---------------------|---------------------------------------|---------|
 | -c, --config <FILE> | Load tsconfig.json configuration file | {}      |
 | --out-dir <DIR>     | Name of out_dir                       | "dist"  |

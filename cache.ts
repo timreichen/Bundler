@@ -13,7 +13,6 @@ import {
 import { isURL } from "./_helpers.ts";
 import { getImportExports } from "./typescript.ts";
 
-const { exists, writeJson, ensureFile } = fs;
 const { green } = colors;
 
 /**
@@ -105,19 +104,18 @@ export async function cache(
     const cachedFilePath = createCacheModulePathForURL(resolvedSpecifier);
 
     let source: string;
-    if (needsReload(resolvedSpecifier) || !await exists(cachedFilePath)) {
+    if (needsReload(resolvedSpecifier) || !await fs.exists(cachedFilePath)) {
       console.log(green("Download"), resolvedSpecifier);
       const response = await fetch(resolvedSpecifier, { redirect: "follow" });
       source = await response.text();
       const headers: { [key: string]: string } = {};
       for (const [key, value] of response.headers) headers[key] = value;
       const metaFilePath = `${cachedFilePath}.metadata.json`;
-      await ensureFile(cachedFilePath);
+      await fs.ensureFile(cachedFilePath);
       await Deno.writeTextFile(cachedFilePath, source);
-      await writeJson(
+      await Deno.writeTextFile(
         metaFilePath,
-        { url: resolvedSpecifier, headers },
-        { spaces: "  " },
+        JSON.stringify({ url: resolvedSpecifier, headers }, null, " ")
       );
     } else {
       source = await Deno.readTextFile(cachedFilePath);

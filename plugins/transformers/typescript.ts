@@ -8,8 +8,8 @@ interface Config {
   test?: PluginTest;
   compilerOptions?: CompilerOptions;
   transformers?: {
-    before?: any[];
-    after?: any[];
+    before?: unknown[];
+    after?: unknown[];
   };
 }
 

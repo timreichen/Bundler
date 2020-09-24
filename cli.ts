@@ -45,9 +45,7 @@ const loaders = [
 ];
 
 async function runBundle(
-  options: any,
-) {
-  const {
+  {
     _,
     "out-dir": outDir = "dist",
     importmap: importMapPath,
@@ -55,10 +53,20 @@ async function runBundle(
     optimize,
     reload,
     watch,
-    "log-level": logLevel,
-    quiet,
-  } = options;
-
+    // "log-level": logLevel,
+    // quiet,
+  }: {
+      _: string[],
+      "out-dir": string,
+      importmap: string,
+      config: string,
+      optimize: boolean,
+      reload:boolean,
+      watch: boolean,
+      // "log-level": number,
+      // quiet: boolean,
+  },
+) {
   const importMap =
     (importMapPath
       ? JSON.parse(await Deno.readTextFile(importMapPath))
@@ -142,7 +150,7 @@ async function runBundle(
         {
           options: {
             fileMap,
-            optimize: options.optimize,
+            optimize,
           },
           graph,
         },
@@ -274,7 +282,7 @@ Examples: https://github.com/WICG/import-maps#the-import-map`,
     description: `Watch files and re-bundle on change`,
   });
 
-function help(args: { [key: string]: any }) {
+function help(args: { [key: string]: string }) {
   const { _ } = args;
 
   if (!_.length) {

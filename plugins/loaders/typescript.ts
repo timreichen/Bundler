@@ -61,7 +61,7 @@ export function typescriptLoader(
           if (node.exportClause) {
             if (node.exportClause.isTypeOnly) return node;
             if (node.exportClause.elements) {
-              // example: export { foo as bar }
+              // example: export { foo as bar }
               for (const element of node.exportClause.elements) {
                 const symbol = element.name.escapedText;
                 const specifier = node.moduleSpecifier

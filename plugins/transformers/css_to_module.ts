@@ -18,7 +18,7 @@ function removeImports() {
   return {
     postcssPlugin: "remove-imports",
     AtRule: {
-      import(atRule: { remove: () => {} }) {
+      import(atRule: { remove: () => unknown }) {
         atRule.remove();
       },
     },

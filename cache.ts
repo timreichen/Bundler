@@ -115,7 +115,7 @@ export async function cache(
       await Deno.writeTextFile(cachedFilePath, source);
       await Deno.writeTextFile(
         metaFilePath,
-        JSON.stringify({ url: resolvedSpecifier, headers }, null, " ")
+        JSON.stringify({ url: resolvedSpecifier, headers }, null, " "),
       );
     } else {
       source = await Deno.readTextFile(cachedFilePath);

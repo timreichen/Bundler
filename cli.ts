@@ -114,10 +114,9 @@ async function runBundle(
       fileMap[input] = path.join(outDir, name);
     }
 
-    const { graph: initialGraph }: Meta =
-      ((await fs.exists(graphFilePath) &&
-        JSON.parse(await Deno.readTextFile(graphFilePath))) ||
-        { options: {}, graph: {} }) as Meta;
+    const { graph: initialGraph }: Meta = ((await fs.exists(graphFilePath) &&
+      JSON.parse(await Deno.readTextFile(graphFilePath))) ||
+      { options: {}, graph: {} }) as Meta;
 
     const { outputMap, cacheMap, graph } = await bundle(
       inputMap,

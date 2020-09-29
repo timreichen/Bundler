@@ -1,6 +1,6 @@
 {
   "imports": {
-    "lit-element": "https://cdn.skypack.dev/lit-element",
-    "lit-html/": "https://cdn.skypack.dev/lit-html/"
+    "lit-element": "https://jspm.dev/lit-element",
+    "lit-html/": "https://jspm.dev/lit-html/"
   }
 }

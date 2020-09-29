@@ -1,5 +1,5 @@
 import { cache, resolve as resolveWithCache } from "./cache.ts";
-import { path, Sha256, ImportMap } from "./deps.ts";
+import { path, Sha256, ImportMap, fs } from "./deps.ts";
 import type { Loader } from "./plugins/loader.ts";
 import { isURL } from "./_helpers.ts";
 
@@ -7,7 +7,7 @@ export interface Imports {
   [input: string]: { dynamic: boolean };
 }
 export interface Exports {
-  [input: string]: { input: string };
+  [input: string]: string[];
 }
 
 export interface GraphEntry {
@@ -53,11 +53,18 @@ export async function getSource(
 export async function createGraph(
   inputMap: InputMap,
   loaders: Loader[],
-  { graph = {}, fileMap = {}, baseURL = "", importMap = { imports: {} } }: {
+  {
+    graph = {},
+    fileMap = {},
+    baseURL = "",
+    importMap = { imports: {} },
+    reload = false,
+  }: {
     graph?: Graph;
     fileMap?: FileMap;
     baseURL?: string;
     importMap?: ImportMap;
+    reload?: boolean;
   } = {},
 ) {
   const queue = Object.keys(inputMap);
@@ -71,12 +78,10 @@ export async function createGraph(
     const resolvedPath = isURL(input) ? resolveWithCache(input) : input;
 
     let entry = graph[input];
-    if (entry) {
+    if (!reload && entry) {
       queue.push(...Object.keys(entry.imports));
       queue.push(
-        ...Object.values(entry.exports).map(({ input }: { input: string }) =>
-          input
-        ),
+        ...Object.keys(entry.exports),
       );
     } else {
       const source = await getSource(input, inputMap, importMap);
@@ -90,12 +95,18 @@ export async function createGraph(
             exports: {},
             ...result,
           };
-          queue.push(...Object.keys(entry.imports));
-          queue.push(
-            ...Object.values(entry.exports).map((
-              { input }: { input: string },
-            ) => input),
-          );
+          for (const dependency of Object.keys(entry.imports)) {
+            if (!isURL(dependency) && !await fs.exists(dependency)) {
+              throw Error(`file '${input}' import not found: '${dependency}'`);
+            }
+            queue.push(dependency);
+          }
+          for (const dependency of Object.keys(entry.exports)) {
+            if (!isURL(dependency) && !await fs.exists(dependency)) {
+              throw Error(`file '${input}' export not found: '${dependency}'`);
+            }
+            queue.push(dependency);
+          }
           continue loop;
         }
       }

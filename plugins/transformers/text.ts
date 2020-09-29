@@ -19,7 +19,9 @@ export function text(
       ts.createNodeArray([ast]),
       undefined,
     );
-    graph[input].exports["default"] = { input };
+    const entry = graph[input];
+    entry.exports[input] = entry.exports[input] || [];
+    entry.exports[input].push("default");
     return string;
   };
 

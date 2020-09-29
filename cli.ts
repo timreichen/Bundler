@@ -18,9 +18,7 @@ import type { FileMap, Graph } from "./graph.ts";
 interface Meta {
   options: {
     fileMap: FileMap;
-    options: {
-      optimize: boolean;
-    };
+    optimize: boolean;
   };
   graph: Graph;
 }
@@ -53,19 +51,10 @@ async function runBundle(
     optimize,
     reload,
     watch,
-    // "log-level": logLevel,
-    // quiet,
-  }: {
-      _: string[],
-      "out-dir": string,
-      importmap: string,
-      config: string,
-      optimize: boolean,
-      reload:boolean,
-      watch: boolean,
-      // "log-level": number,
-      // quiet: boolean,
-  },
+    // "log-level": number,
+    quiet,
+  }: // "log-level": logLevel,
+    Args,
 ) {
   const importMap =
     (importMapPath
@@ -81,7 +70,7 @@ async function runBundle(
 
   const depsDir = "deps";
   const cacheDir = ".cache";
-  const graphFilePath = path.join(outDir, cacheDir, "meta.json");
+  const metaFilePath = path.join(outDir, cacheDir, "meta.json");
 
   const transformers = [
     cssToModule({
@@ -102,6 +91,10 @@ async function runBundle(
     terser(),
   ];
 
+  const { graph: initialGraph }: Meta = await fs.exists(metaFilePath)
+    ? JSON.parse(await Deno.readTextFile(metaFilePath))
+    : {};
+
   const hashes: { [file: string]: string } = {};
 
   async function main() {
@@ -112,7 +105,7 @@ async function runBundle(
     const fileMap: FileMap = {};
 
     for (const inp of _) {
-      let [input, name] = inp.split("=");
+      let [input, name] = String(inp).split("=");
       name = name ||
         path.basename(input || "").replace(/\.(css|tsx?|jsx?)$/, ".js");
 
@@ -122,30 +115,27 @@ async function runBundle(
       fileMap[input] = path.join(outDir, name);
     }
 
-    const { graph: initialGraph }: Meta = ((await fs.exists(graphFilePath) &&
-      JSON.parse(await Deno.readTextFile(graphFilePath))) ||
-      { options: {}, graph: {} }) as Meta;
-
     const { outputMap, cacheMap, graph } = await bundle(
       inputMap,
-      fileMap,
       {
         outDir,
         depsDir,
         cacheDir,
         importMap,
         graph: initialGraph,
+        fileMap,
         loaders,
         transformers,
         optimizers,
         reload,
         optimize,
+        quiet,
       },
     );
 
-    await fs.ensureFile(graphFilePath);
+    await fs.ensureFile(metaFilePath);
     await Deno.writeTextFile(
-      graphFilePath,
+      metaFilePath,
       JSON.stringify(
         {
           options: {
@@ -169,7 +159,9 @@ async function runBundle(
       await Deno.writeTextFile(output, source);
     }
 
-    console.log(colors.blue(`${Math.ceil(performance.now() - time)}ms`));
+    if (!quiet) {
+      console.log(colors.blue(`${Math.ceil(performance.now() - time)}ms`));
+    }
 
     const paths = Object.values(graph).map((entry) => entry.path);
     for (const path of paths) {
@@ -181,19 +173,30 @@ async function runBundle(
     const watcher = Deno.watchFs(paths);
 
     if (watch) {
-      console.log(colors.yellow(`Watch`), `${paths.length} files`);
+      // only reload on first time when watched
+      reload = false;
+      console.log(
+        colors.blue(`Watcher`),
+        `Process terminated! Restarting on file change...`,
+      );
+
+      // console.log(colors.yellow(`Watch`), `${paths.length} files`)
       loop:
       for await (const { kind, paths } of watcher) {
         let needsUpdate = false;
         // checks if actual file content changed
         if (kind === "modify") {
-          for (const path of paths) {
-            const hash = new Sha256().update(await Deno.readFile(path)).hex();
-            if (hashes[path] !== hash) {
-              hashes[path] = hash;
+          for (const filePath of paths) {
+            const hash = new Sha256().update(await Deno.readFile(filePath))
+              .hex();
+            if (hashes[filePath] !== hash) {
+              hashes[filePath] = hash;
               needsUpdate = true;
-              break;
             }
+
+            const relativeFilePath = path.relative(path.resolve(), filePath);
+            delete initialGraph[relativeFilePath];
+            delete inputMap[relativeFilePath];
           }
         } else {
           needsUpdate = true;
@@ -262,6 +265,11 @@ Examples: https://github.com/WICG/import-maps#the-import-map`,
     name: "optimize",
     boolean: true,
     description: `Minify source code`,
+  })
+  .option({
+    name: "quiet",
+    alias: "q",
+    description: "Suppress diagnostic output",
   })
   .option({
     name: "reload",

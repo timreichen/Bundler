@@ -1,5 +1,6 @@
 import { Plugin, PluginTest } from "../plugin.ts";
 import * as Terser from "https://jspm.dev/terser";
+import { colors } from "../../deps.ts";
 
 const minify = Terser.minify;
 
@@ -19,7 +20,8 @@ export function terser(
       };
       return code;
     } catch (error) {
-      throw error;
+      console.error(colors.red("Error"), error);
+      return source;
     }
   };
 

@@ -88,7 +88,7 @@ article {
 
 ```js
 /* src/index.ts */
-import styles from "styles.css"
+import styles from "./styles.css"
 console.log(styles) // article > p { color: red; }
 ```
 

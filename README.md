@@ -80,8 +80,8 @@ You can import css files directly in your typescript files. Bundler will convert
 ```css
 /* src/styles.css */
 article {
-  & p {
-    color: #333;
+  & > p {
+    color: red;
   }
 }
 ```
@@ -89,7 +89,7 @@ article {
 ```js
 /* src/index.ts */
 import styles from "styles.css"
-console.log(styles) // div { background: red; }
+console.log(styles) // article > p { color: red; }
 ```
 
 ## Examples

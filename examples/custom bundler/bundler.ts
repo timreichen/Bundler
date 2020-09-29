@@ -3,7 +3,6 @@ import { fs } from "../../deps.ts";
 import type { CompilerOptions } from "../../typescript.ts";
 import { typescriptLoader } from "../../plugins/loaders/typescript.ts";
 import { typescript } from "../../plugins/transformers/typescript.ts";
-import type { OutputMap } from "../../bundler.ts";
 
 const input = `src/index.ts`;
 const output = `dist/index.js`;
@@ -12,7 +11,8 @@ const inputMap = { [input]: source };
 const fileMap = { [input]: output };
 const compilerOptions = { target: "es5" } as CompilerOptions;
 
-const { outputMap }: OutputMap = await bundle(inputMap, fileMap, {
+const { outputMap } = await bundle(inputMap, {
+  fileMap,
   loaders: [
     typescriptLoader(),
   ],

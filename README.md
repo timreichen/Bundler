@@ -69,7 +69,7 @@ const fileMap = {
   "src/index.ts": "dist/index.js"
 }
 
-const { outputMap, cacheMap, graph } = await bundle(inputMap, fileMap)
+const { outputMap, cacheMap, graph } = await bundle(inputMap, { fileMap })
 ```
 
 ### CSS imports

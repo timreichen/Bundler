@@ -59,7 +59,7 @@ export async function bundle(
     optimize?: boolean;
     quiet?: boolean;
   } = {},
-) {
+): Promise<{ outputMap: OutputMap, cacheMap: CacheMap, graph: Graph }> {
   const outputMap: OutputMap = {};
 
   const depsPath = path.join(outDir, depsDir);

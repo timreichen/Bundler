@@ -19,9 +19,10 @@ import { typescript } from "./typescript.ts";
 function injectOutputsTranformer(
   input: string,
   source: string,
-  { importMap, fileMap, depsPath }: {
+  { importMap, fileMap, depsPath, outDir }: {
     importMap: ImportMap;
     fileMap: FileMap;
+    outDir: string;
     depsPath: string;
   },
 ) {
@@ -48,8 +49,10 @@ function injectOutputsTranformer(
           importMap,
         );
         specifier = getOutput(resolvedSpecifier, fileMap, depsPath);
+
         const relativeOutput = path.relative(
-          path.dirname(getOutput(input, fileMap, depsPath)),
+          // path.dirname(getOutput(input, fileMap, depsPath)),
+          outDir,
           specifier!,
         );
 
@@ -113,7 +116,7 @@ export function typescriptInjectSpecifiers(
         injectOutputsTranformer(
           input,
           source,
-          { importMap, fileMap, depsPath },
+          { importMap, fileMap, outDir, depsPath },
         ),
       ],
       after: [injectInstantiateName(output)],

@@ -98,9 +98,13 @@ export async function cache(
   }
 
   const queue = [specifier];
+  const checkedSpecifiers: Set<string> = new Set();
   while (queue.length) {
     const specifier = queue.pop()!;
     const resolvedSpecifier = resolveWithImportMap(specifier, importMap);
+    if (checkedSpecifiers.has(resolvedSpecifier)) continue;
+    checkedSpecifiers.add(resolvedSpecifier);
+
     const cachedFilePath = createCacheModulePathForURL(resolvedSpecifier);
 
     let source: string;

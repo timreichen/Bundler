@@ -12,7 +12,7 @@ export type LoaderTest = (path: string) => boolean;
 export type LoaderFunction = (
   input: string,
   source: string,
-  { importMap }: { importMap?: ImportMap },
+  options?: { importMap?: ImportMap },
 ) => Promise<LoaderResult>;
 
 export class Loader {

@@ -31,30 +31,33 @@ async function getCacheSource(cacheOutput: string, cacheMap: CacheMap) {
 }
 
 export async function bundle(
-  inputMap: InputMap,
-  fileMap: FileMap,
+  inputMap: InputMap = {},
   {
     outDir = "dist",
     depsDir = "deps",
     cacheDir = ".cache",
     graph: initialGraph = {},
+    fileMap = {},
     importMap = { imports: {}, scopes: {} },
     loaders = [],
     transformers = [],
     optimizers = [],
     reload = false,
     optimize = false,
+    quiet = false,
   }: {
     outDir?: string;
     depsDir?: string;
     cacheDir?: string;
     graph?: Graph;
+    fileMap?: FileMap;
     importMap?: ImportMap;
     loaders?: Loader[];
     transformers?: Plugin[];
     optimizers?: Plugin[];
     reload?: boolean;
     optimize?: boolean;
+    quiet?: boolean;
   } = {},
 ) {
   const outputMap: OutputMap = {};
@@ -63,15 +66,15 @@ export async function bundle(
   const cacheDirPath = path.join(outDir, cacheDir);
   const cacheMap: CacheMap = {};
 
-  const inputs: string[] = Object.keys(inputMap);
-
   fileMap = { ...fileMap };
 
   const graph = await createGraph(
     inputMap,
     loaders,
-    { graph: initialGraph, fileMap, importMap, baseURL: depsPath },
+    { graph: initialGraph, fileMap, importMap, baseURL: depsPath, reload },
   );
+
+  const inputs = Object.keys(inputMap);
 
   const checkedInputs: Set<string> = new Set();
   while (inputs.length) {
@@ -79,15 +82,6 @@ export async function bundle(
     if (checkedInputs.has(input)) continue;
     checkedInputs.add(input);
     const entry = graph[input];
-
-    const queue: string[] = [];
-    Object.entries(entry.imports).forEach(([input, { dynamic }]) => {
-      if (dynamic) {
-        inputs.push(input);
-      } else {
-        queue.push(input);
-      }
-    });
 
     const strings: string[] = [];
     strings.push(await createSystemLoader());
@@ -126,7 +120,7 @@ export async function bundle(
           dependencies.push(input);
         }
       });
-      dependencies.push(...Object.values(exports).map(({ input }) => input));
+      dependencies.push(...Object.keys(exports));
 
       const cacheFileExists = await fs.exists(cacheOutput);
 
@@ -134,7 +128,9 @@ export async function bundle(
         Deno.statSync(filePath).mtime! > Deno.statSync(cacheOutput).mtime!;
       // if cache file is up to date, get source from that cache file
       if (!reload && cacheFileExists && !modified) {
-        console.log(colors.green(`Check`), dependency);
+        if (filePath !== input) {
+          if (!quiet) console.log(colors.green(`Check`), dependency);
+        }
         strings.push(await getCacheSource(cacheOutput, cacheMap));
       } else {
         // if cache file does not exist or is out of date create apply transformers to source and create new cache file
@@ -154,9 +150,9 @@ export async function bundle(
         // Bundle file has special log. Only log dependency files
         if (filePath !== input) {
           if (!cacheFileExists) {
-            console.log(colors.green(`Create`), dependency);
+            if (!quiet) console.log(colors.green(`Create`), dependency);
           } else {
-            console.log(colors.green(`Update`), dependency);
+            if (!quiet) console.log(colors.green(`Update`), dependency);
           }
         }
 
@@ -191,15 +187,10 @@ export async function bundle(
           }
         }
       }
-
-      if (!outputFileExists) {
-        console.log(colors.blue(`Create`), input);
-      } else {
-        console.log(colors.blue(`Update`), input);
-      }
+      if (!quiet) console.log(colors.blue(`Bundle`), input);
       outputMap[output] = string;
     } else {
-      console.log(colors.blue(`up-to-date`), input);
+      if (!quiet) console.log(colors.blue(`up-to-date`), input);
     }
   }
 

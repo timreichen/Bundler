@@ -23,23 +23,24 @@ export function typescriptLoader(
       { importMap }: { importMap?: ImportMap } = {},
     ) => {
       const imports: { [specifier: string]: { dynamic: boolean } } = {};
-      const exports: { [specifier: string]: { input: string } } = {};
+      const exports: { [input: string]: string[] } = {};
 
       const visit: ts.Visitor = (node: ts.Node) => {
         // console.log(ts.SyntaxKind[node.kind])
 
         // import declarations
         if (node.kind === ts.SyntaxKind.ImportDeclaration) {
-          if (node.importClause?.isTypeOnly) return node;
-          if (node.moduleSpecifier) {
-            const specifier = node.moduleSpecifier.text;
-            const resolvedSpecifier = resolveDependencySpecifier(
-              input,
-              specifier,
-              importMap,
-            );
-            imports[resolvedSpecifier] = imports[resolvedSpecifier] ||
-              { dynamic: false };
+          if (!node.importClause?.isTypeOnly) {
+            if (node.moduleSpecifier) {
+              const specifier = node.moduleSpecifier.text;
+              const resolvedSpecifier = resolveDependencySpecifier(
+                input,
+                specifier,
+                importMap,
+              );
+              imports[resolvedSpecifier] = imports[resolvedSpecifier] ||
+                { dynamic: false };
+            }
           }
         }
         // dynamic imports
@@ -59,11 +60,25 @@ export function typescriptLoader(
         // exports declarations
         if (node.kind === ts.SyntaxKind.ExportDeclaration) {
           if (node.exportClause) {
-            if (node.exportClause.isTypeOnly) return node;
-            if (node.exportClause.elements) {
-              // example: export { foo as bar }
-              for (const element of node.exportClause.elements) {
-                const symbol = element.name.escapedText;
+            if (!node.exportClause.isTypeOnly) {
+              if (node.exportClause.elements) {
+                // example: export { foo as bar }
+                for (const element of node.exportClause.elements) {
+                  const symbol = element.name.escapedText;
+                  const specifier = node.moduleSpecifier
+                    ? resolveDependencySpecifier(
+                      input,
+                      node.moduleSpecifier.text,
+                      importMap,
+                    )
+                    : input;
+                  exports[specifier] = exports[specifier] || [];
+                  exports[specifier].push(symbol);
+                }
+              } else {
+                // example: export * as foo from "./bar.ts"
+                const symbol = node.exportClause.name.escapedText;
+
                 const specifier = node.moduleSpecifier
                   ? resolveDependencySpecifier(
                     input,
@@ -71,20 +86,22 @@ export function typescriptLoader(
                     importMap,
                   )
                   : input;
-                exports[symbol] = { input: specifier };
+                exports[specifier] = exports[specifier] || [];
+                exports[specifier].push(symbol);
               }
-            } else {
-              // example: export * as foo from "./bar.ts"
-              const symbol = node.exportClause.name.escapedText;
-              const specifier = node.moduleSpecifier
-                ? resolveDependencySpecifier(
-                  input,
-                  node.moduleSpecifier.text,
-                  importMap,
-                )
-                : input;
-              exports[symbol] = { input: specifier };
             }
+          } else {
+            // example: export * from "./foo.ts"
+            const symbol = "*";
+            const specifier = node.moduleSpecifier
+              ? resolveDependencySpecifier(
+                input,
+                node.moduleSpecifier.text,
+                importMap,
+              )
+              : input;
+            exports[specifier] = exports[specifier] || [];
+            exports[specifier].push(symbol);
           }
         }
         // export values
@@ -95,18 +112,21 @@ export function typescriptLoader(
               if (declaration.elements) {
                 for (const element of declaration.elements) {
                   const symbol = element.escapedText;
-                  exports[symbol] = { input };
+                  exports[input] = exports[input] || [];
+                  exports[input].push(symbol);
                 }
               } else if (declaration.name) {
                 const symbol = declaration.name.text;
-                exports[symbol] = { input };
+                exports[input] = exports[input] || [];
+                exports[input].push(symbol);
               }
             }
           } else {
             // example: export function foo() {}
             // example: export class bar {}
             const symbol = node.name.escapedText;
-            exports[symbol] = { input };
+            exports[input] = exports[input] || [];
+            exports[input].push(symbol);
           }
         }
 

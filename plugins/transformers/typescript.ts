@@ -1,8 +1,6 @@
-import { ImportMap, path, ts } from "../../deps.ts";
+import { ts } from "../../deps.ts";
 import type { CompilerOptions } from "../../typescript.ts";
 import { Plugin, PluginTest } from "../plugin.ts";
-import { injectInstantiateName } from "../../system.ts";
-import type { FileMap, Graph } from "../../graph.ts";
 
 interface Config {
   test?: PluginTest;
@@ -23,13 +21,6 @@ export function typescript(
   const fn = (
     input: string,
     source: string,
-    { graph, importMap, fileMap, outDir, depsDir }: {
-      graph: Graph;
-      importMap: ImportMap;
-      fileMap: FileMap;
-      outDir: string;
-      depsDir: string;
-    },
   ) => {
     const { diagnostics, outputText } = ts.transpileModule(source, {
       compilerOptions:

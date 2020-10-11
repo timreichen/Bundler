@@ -259,6 +259,7 @@ export function getImportExports(
         if (isImportNode(node)) {
           if (node.importClause?.isTypeOnly) return node;
           specifierNode = getImportNode(node);
+          return node;
         }
         if (isDynamicImportNode(node)) {
           specifierNode = getDynamicImportNode(node, source);
@@ -266,6 +267,7 @@ export function getImportExports(
         if (isExportNode(node)) {
           if (node.importClause?.isTypeOnly) return node;
           specifierNode = getExportNode(node);
+          return node;
         }
         if (specifierNode) {
           imports[specifierNode.text] = node;
@@ -282,18 +284,7 @@ export function getImportExports(
     };
   }
 
-  const compilerOptions = {
-    target: "ESNext",
-    module: "ESNext",
-  };
-
-  const { diagnostics, outputText } = ts.transpileModule(source, {
-    compilerOptions: ts.convertCompilerOptionsFromJson(compilerOptions).options,
-    transformers: {
-      before: [transformer()],
-    },
-    reportDiagnostics: true,
-  });
+  ts.transform(source, [transformer]);
 
   return { imports, exports };
 }

@@ -1,6 +1,6 @@
-import { path, resolveWithImportMap, ImportMap } from "./deps.ts";
+import { ImportMap, path, resolveWithImportMap } from "./deps.ts";
 
-import { isURL, ensureExtension } from "./_helpers.ts";
+import { ensureExtension, isURL } from "./_util.ts";
 
 const {
   dirname,

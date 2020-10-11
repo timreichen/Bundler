@@ -1,9 +1,7 @@
 import { ImportMap, ts } from "../../deps.ts";
 import { Loader, LoaderTest } from "../loader.ts";
 import { getDynamicImportNode } from "../../typescript.ts";
-import {
-  resolve as resolveDependencySpecifier,
-} from "../../dependencies.ts";
+import { resolve as resolveDependencySpecifier } from "../../dependencies.ts";
 function hasExportModifier(node: ts.Node) {
   return node.modifiers &&
     ts.getCombinedModifierFlags(node as ts.Declaration) &

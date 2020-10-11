@@ -1,8 +1,6 @@
 import postcssCore from "https://jspm.dev/postcss";
 import postcssPresetEnv from "https://jspm.dev/postcss-preset-env";
-import {
-  resolve as resolveDependencySpecifier,
-} from "../../dependencies.ts";
+import { resolve as resolveDependencySpecifier } from "../../dependencies.ts";
 import type { ImportMap } from "../../deps.ts";
 import type { Imports } from "../../graph.ts";
 import { Loader, LoaderTest } from "../loader.ts";

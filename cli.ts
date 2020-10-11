@@ -1,13 +1,13 @@
-import { path, fs, colors, ImportMap, Args } from "./deps.ts";
+import { Args, colors, fs, ImportMap, path } from "./deps.ts";
 import { Sha256 } from "./deps.ts";
 
 import { bundle } from "./bundler.ts";
-import { Program, invalidSubcommandError } from "./deps.ts";
+import { invalidSubcommandError, Program } from "./deps.ts";
 
 import { cssToModule } from "./plugins/transformers/css_to_module.ts";
 import postcssPresetEnv from "https://jspm.dev/postcss-preset-env";
 
-import { isURL } from "./_helpers.ts";
+import { isURL } from "./_util.ts";
 import { cssLoader } from "./plugins/loaders/css.ts";
 import { typescriptLoader } from "./plugins/loaders/typescript.ts";
 import { typescriptInjectSpecifiers } from "./plugins/transformers/typescript_inject_specifiers.ts";
@@ -93,7 +93,7 @@ async function runBundle(
 
   const { graph: initialGraph }: Meta = await fs.exists(metaFilePath)
     ? JSON.parse(await Deno.readTextFile(metaFilePath))
-    : {};
+    : { graph: {} };
 
   const hashes: { [file: string]: string } = {};
 

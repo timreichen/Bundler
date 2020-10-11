@@ -8,10 +8,10 @@ import type { Plugin } from "./plugins/plugin.ts";
 import type { Loader } from "./plugins/loader.ts";
 import {
   createGraph,
-  getSource,
-  getOutput,
-  Graph,
   FileMap,
+  getOutput,
+  getSource,
+  Graph,
   InputMap,
 } from "./graph.ts";
 
@@ -81,6 +81,7 @@ export async function bundle(
     const input = inputs.pop()!;
     if (checkedInputs.has(input)) continue;
     checkedInputs.add(input);
+
     const entry = graph[input];
 
     const strings: string[] = [];
@@ -127,7 +128,9 @@ export async function bundle(
       const modified = cacheFileExists &&
         Deno.statSync(filePath).mtime! > Deno.statSync(cacheOutput).mtime!;
       // if cache file is up to date, get source from that cache file
-      if (!reload && cacheFileExists && !modified) {
+      if (
+        ((!reload && cacheFileExists) || cacheMap[cacheOutput]) && !modified
+      ) {
         if (filePath !== input) {
           if (!quiet) console.log(colors.green(`Check`), dependency);
         }

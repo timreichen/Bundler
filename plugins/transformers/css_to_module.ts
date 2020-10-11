@@ -6,7 +6,7 @@ import { cssInjectImports } from "./css_inject_imports.ts";
 import { cssInjectSpecifiers } from "./css_inject_specifiers.ts";
 import { text } from "./text.ts";
 import type { ImportMap } from "../../deps.ts";
-import type { Graph, FileMap } from "../../graph.ts";
+import type { FileMap, Graph } from "../../graph.ts";
 
 interface Config {
   test?: PluginTest;

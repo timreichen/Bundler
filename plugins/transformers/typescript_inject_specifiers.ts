@@ -1,18 +1,16 @@
-import { ImportMap, ts, path } from "../../deps.ts";
+import { ImportMap, path, ts } from "../../deps.ts";
 import { FileMap, getOutput, Graph } from "../../graph.ts";
 import {
-  isImportNode,
+  CompilerOptions,
+  getDynamicImportNode,
+  getExportNode,
   getImportNode,
   isDynamicImportNode,
-  getDynamicImportNode,
   isExportNode,
-  getExportNode,
-  CompilerOptions,
+  isImportNode,
 } from "../../typescript.ts";
-import {
-  resolve as resolveDependencySpecifier,
-} from "../../dependencies.ts";
-import { PluginTest, Plugin } from "../plugin.ts";
+import { resolve as resolveDependencySpecifier } from "../../dependencies.ts";
+import { Plugin, PluginTest } from "../plugin.ts";
 import { injectInstantiateName } from "../../system.ts";
 import { typescript } from "./typescript.ts";
 

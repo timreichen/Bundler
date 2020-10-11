@@ -1,4 +1,4 @@
-import { ts, colors } from "./deps.ts";
+import { colors, ts } from "./deps.ts";
 
 const { yellow } = colors;
 

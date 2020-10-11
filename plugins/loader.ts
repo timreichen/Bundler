@@ -1,4 +1,4 @@
-import type { Imports, Exports } from "../graph.ts";
+import type { Exports, Imports } from "../graph.ts";
 import type { ImportMap } from "../deps.ts";
 
 interface LoaderResult {

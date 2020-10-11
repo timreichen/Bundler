@@ -1,7 +1,7 @@
 import { cache, resolve as resolveWithCache } from "./cache.ts";
-import { path, Sha256, ImportMap, fs } from "./deps.ts";
+import { fs, ImportMap, path, Sha256 } from "./deps.ts";
 import type { Loader } from "./plugins/loader.ts";
-import { isURL } from "./_helpers.ts";
+import { isURL } from "./_util.ts";
 
 export interface Imports {
   [input: string]: { dynamic: boolean };
@@ -70,6 +70,8 @@ export async function createGraph(
   const queue = Object.keys(inputMap);
   const checkedInputs: Set<string> = new Set();
 
+  const sources: InputMap = { ...inputMap };
+
   loop:
   while (queue.length) {
     const input = queue.pop()!;
@@ -84,7 +86,7 @@ export async function createGraph(
         ...Object.keys(entry.exports),
       );
     } else {
-      const source = await getSource(input, inputMap, importMap);
+      const source = await getSource(input, sources, importMap);
       for (const loader of loaders) {
         if (loader.test(input)) {
           const result = await loader.fn(input, source, { importMap });

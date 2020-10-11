@@ -1,4 +1,4 @@
-import { isAbsolute, extname } from "https://deno.land/std@0.66.0/path/mod.ts";
+import { extname, isAbsolute } from "https://deno.land/std@0.66.0/path/mod.ts";
 import { yellow } from "https://deno.land/std@0.66.0/fmt/colors.ts";
 
 /**

@@ -1,16 +1,14 @@
 import {
-  path,
   colors,
   fs,
-  Sha256,
   ImportMap,
+  path,
   resolveWithImportMap,
+  Sha256,
 } from "./deps.ts";
 
-import {
-  resolve as resolveDependencySpecifier,
-} from "./dependencies.ts";
-import { isURL } from "./_helpers.ts";
+import { resolve as resolveDependencySpecifier } from "./dependencies.ts";
+import { isURL } from "./_util.ts";
 import { getImportExports } from "./typescript.ts";
 
 const { green } = colors;

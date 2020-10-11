@@ -8,13 +8,11 @@ Deno.test({
     const source = `
     import a from "./a.css"
     import * as b from "./b.css"
-    const c = await import("./c.css")
   `;
     const { imports } = await typescriptLoader().fn(input, source);
     assertEquals(imports, {
       "testdata/src/a.css": { dynamic: false },
       "testdata/src/b.css": { dynamic: false },
-      "testdata/src/c.css": { dynamic: true },
     });
   },
 });
@@ -24,6 +22,8 @@ Deno.test({
   fn: async () => {
     const input = "testdata/src/a.ts";
     const source = `
+    const c = await import("./c.css")
+
     const imports = {
       en: () => import("./localisation/en.ts"),
       de: () => import("./localisation/de.ts"),
@@ -31,6 +31,7 @@ Deno.test({
   `;
     const { imports } = await typescriptLoader().fn(input, source);
     assertEquals(imports, {
+      "testdata/src/c.css": { dynamic: true },
       "testdata/src/localisation/en.ts": { dynamic: true },
       "testdata/src/localisation/de.ts": { dynamic: true },
     });

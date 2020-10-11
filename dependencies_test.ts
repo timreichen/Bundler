@@ -12,6 +12,7 @@ Deno.test("dependencies resolve path", async () => {
   const resolvedInput = resolve(path, specifier, importMap);
   assertEquals(resolvedInput, "my/path/child.ts");
 });
+
 Deno.test("dependencies resolve url", async () => {
   const importMap = {
     imports: {

@@ -7,7 +7,7 @@ import {
 import type { Plugin } from "./plugins/plugin.ts";
 import type { Loader } from "./plugins/loader.ts";
 import {
-  createGraph,
+  create as createGraph,
   FileMap,
   getOutput,
   getSource,
@@ -175,7 +175,9 @@ export async function bundle(
 
     if (bundleNeedsUpdate) {
       strings.push(createInstantiateString(output));
-      strings.push(createSystemExports(Object.keys(entry.exports)));
+      for (const exports of Object.values(entry.exports)) {
+        strings.push(createSystemExports(exports));
+      }
 
       let string = strings.join("\n");
 

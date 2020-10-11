@@ -6,13 +6,17 @@ A lightweight bundler that transpiles and bundles for the web.
 - transpiles and bundles files
 - handles extensions and urls in import statements
 - splits dynamic imports to separate files
-- converts css files to `javascript` modules 
-- handles css `@import` statements
-- supports css postcss-preset-env *stage 2* and *nesting-rules* by default
+- has `--optimize` option that minifies `javascript` and `css` files
+- has `--watch` option that observes all dependencies and re-bundles on files changes
+- allows imports of `css` files and converts them to `javascript` modules
+- handles `css` `@import` statements
+- supports `css` postcss-preset-env *stage 2* and *nesting-rules* by default
 
 ### But there is `deno bundle`…
 Deno offers `deno bundle` to transpile a file to a standalone module. This might work in some occations but is limited.
 Bundler works in a similar way to `deno bundle` but splits dynamic imports to separate files and injects paths.
+The `--optimize` option also allows for code minification with both `javascript` and `css` files.
+It also has a `--watch` option that observes all dependencies and re-bundles on files changes.
 
 ### File extensions and url imports
 Typescript as of today does throw an error if an import has a `.ts` extension or a url.
@@ -55,7 +59,7 @@ bundler bundle index.ts=index.js
 
 
 ## Bundler API
-Bundler uses the Bundler API to transpile `typescript` files to ```javascript```.
+Bundler uses the Bundler API to transpile `typescript` files to `javascript`.
 
 ### Usage
 ```ts
@@ -70,6 +74,10 @@ const fileMap = {
 }
 
 const { outputMap, cacheMap, graph } = await bundle(inputMap, { fileMap })
+for (const [output, source] of Object.entries(outputMap)) {
+  await fs.ensureFile(output);
+  await Deno.writeTextFile(output, source);
+}
 ```
 
 ### CSS imports

@@ -109,7 +109,12 @@ export async function cache(
     if (needsReload(resolvedSpecifier) || !await fs.exists(cachedFilePath)) {
       console.log(green("Download"), resolvedSpecifier);
       const response = await fetch(resolvedSpecifier, { redirect: "follow" });
-      source = await response.text();
+      const text = await response.text();
+      if (response.status !== 200) {
+        throw Error(`Import '${resolvedSpecifier}' failed: ${response.status} ${text}`)
+      }
+      
+      source = text
       const headers: { [key: string]: string } = {};
       for (const [key, value] of response.headers) headers[key] = value;
       const metaFilePath = `${cachedFilePath}.metadata.json`;

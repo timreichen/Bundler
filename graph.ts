@@ -6,6 +6,7 @@ import { isURL } from "./_util.ts";
 export interface Imports {
   [input: string]: { dynamic: boolean };
 }
+
 export interface Exports {
   [input: string]: string[];
 }
@@ -45,12 +46,15 @@ export async function getSource(
       await cache(filePath, { importMap });
       filePath = resolveWithCache(filePath);
     }
+    if (!isURL(filePath) && !await fs.exists(filePath)) {
+      throw Error(`file '${input}' import not found: '${filePath}'`);
+    }
     inputMap[input] = await Deno.readTextFile(filePath);
   }
   return inputMap[input];
 }
 
-export async function createGraph(
+export async function create(
   inputMap: InputMap,
   loaders: Loader[],
   {
@@ -66,13 +70,12 @@ export async function createGraph(
     importMap?: ImportMap;
     reload?: boolean;
   } = {},
-) {
+): Promise<Graph> {
   const queue = Object.keys(inputMap);
   const checkedInputs: Set<string> = new Set();
 
   const sources: InputMap = { ...inputMap };
 
-  loop:
   while (queue.length) {
     const input = queue.pop()!;
     if (checkedInputs.has(input)) continue;
@@ -98,21 +101,16 @@ export async function createGraph(
             ...result,
           };
           for (const dependency of Object.keys(entry.imports)) {
-            if (!isURL(dependency) && !await fs.exists(dependency)) {
-              throw Error(`file '${input}' import not found: '${dependency}'`);
-            }
             queue.push(dependency);
           }
           for (const dependency of Object.keys(entry.exports)) {
-            if (!isURL(dependency) && !await fs.exists(dependency)) {
-              throw Error(`file '${input}' export not found: '${dependency}'`);
-            }
             queue.push(dependency);
           }
-          continue loop;
+          break;
         }
       }
     }
   }
+
   return graph;
 }

@@ -111,10 +111,12 @@ export async function cache(
       const response = await fetch(resolvedSpecifier, { redirect: "follow" });
       const text = await response.text();
       if (response.status !== 200) {
-        throw Error(`Import '${resolvedSpecifier}' failed: ${response.status} ${text}`)
+        throw Error(
+          `Import '${resolvedSpecifier}' failed: ${response.status} ${text}`,
+        );
       }
-      
-      source = text
+
+      source = text;
       const headers: { [key: string]: string } = {};
       for (const [key, value] of response.headers) headers[key] = value;
       const metaFilePath = `${cachedFilePath}.metadata.json`;

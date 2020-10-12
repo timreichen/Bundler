@@ -4,13 +4,13 @@ A lightweight bundler that transpiles and bundles for the web.
 ## Why Use Bundler
 
 - transpiles and bundles files
-- handles url import statements
+- handles [url imports](https://deno.land/manual/linking_to_external_code)
 - handles imports with and without extensions
-- splits dynamic imports to separate files
-- does [smart splits](#Smart-Splits)
+- does dynamic imports splitting to separate files
+- does [smart splitting](#Smart-splitting)
 - [`--optimize` option](#Options) minifies `javascript` and `css` files
 - [`--watch` option](#Options) observes all dependencies and re-bundles on files changes
-- allows [imports of `css` files](#CSS-imports) and converts them to `javascript` modules
+- handles [imports of `css` files](#CSS-imports) and converts them to `javascript` modules
 - handles `css` `@import` statements
 - supports `css` postcss-preset-env *stage 2* and *nesting-rules* by default
 
@@ -118,7 +118,7 @@ console.log(styles) // article > p { color: red; }
 - [React](https://github.com/timreichen/Bundler/tree/master/examples/react)
 - [dynamic import](https://github.com/timreichen/Bundler/tree/master/examples/dynamic%20import)
 - [top level await](https://github.com/timreichen/Bundler/tree/master/examples/top%20level%20await)
-- [smart split](https://github.com/timreichen/Bundler/tree/master/examples/smart%split)
+- [smart splitting](https://github.com/timreichen/Bundler/tree/master/examples/smart%20splitting)
 - [custom bundler](https://github.com/timreichen/Bundler/tree/master/examples/custom%20bundler)
 
 ## Unstable

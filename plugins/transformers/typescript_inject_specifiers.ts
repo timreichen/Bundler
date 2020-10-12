@@ -54,7 +54,7 @@ function injectOutputsTranformer(
           specifier!,
         );
 
-        specifier = `./${relativeOutput}`;
+        specifier = relativeOutput;
       }
 
       if (isExportNode(node) && node.moduleSpecifier) {

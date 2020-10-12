@@ -25,7 +25,6 @@ export function typescriptLoader(
 
       const visit: ts.Visitor = (node: ts.Node) => {
         // console.log(ts.SyntaxKind[node.kind])
-
         // import declarations
         if (node.kind === ts.SyntaxKind.ImportDeclaration) {
           if (!node.importClause?.isTypeOnly) {

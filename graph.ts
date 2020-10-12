@@ -1,7 +1,7 @@
 import { cache, resolve as resolveWithCache } from "./cache.ts";
 import { fs, ImportMap, path, Sha256 } from "./deps.ts";
 import type { Loader } from "./plugins/loader.ts";
-import { isURL } from "./_util.ts";
+import { addRelativePrefix, isURL, removeRelativePrefix } from "./_util.ts";
 
 export interface Imports {
   [input: string]: { dynamic: boolean };
@@ -31,8 +31,14 @@ export interface FileMap {
 }
 
 export function getOutput(input: string, fileMap: FileMap, baseURL: string) {
-  return fileMap[input] = fileMap[input] ||
-    `${path.join(baseURL, new Sha256().update(input).hex())}.js`;
+  const noPrefixInput = removeRelativePrefix(input);
+  let entry = fileMap[noPrefixInput] || fileMap[addRelativePrefix(input)];
+  if (!entry) {
+    entry = fileMap[noPrefixInput] = `${
+      path.join(baseURL, new Sha256().update(noPrefixInput).hex())
+    }.js`;
+  }
+  return removeRelativePrefix(entry);
 }
 
 export async function getSource(
@@ -40,8 +46,10 @@ export async function getSource(
   inputMap: InputMap,
   importMap: ImportMap,
 ): Promise<string> {
-  if (!inputMap[input]) {
-    let filePath = input;
+  const noPrefixInput = removeRelativePrefix(input);
+  let entry = inputMap[noPrefixInput] || inputMap[addRelativePrefix(input)];
+  if (!entry) {
+    let filePath = noPrefixInput;
     if (isURL(filePath)) {
       await cache(filePath, { importMap });
       filePath = resolveWithCache(filePath);
@@ -49,9 +57,9 @@ export async function getSource(
     if (!isURL(filePath) && !await fs.exists(filePath)) {
       throw Error(`file '${input}' import not found: '${filePath}'`);
     }
-    inputMap[input] = await Deno.readTextFile(filePath);
+    entry = inputMap[noPrefixInput] = await Deno.readTextFile(filePath);
   }
-  return inputMap[input];
+  return entry;
 }
 
 export async function create(
@@ -71,10 +79,12 @@ export async function create(
     reload?: boolean;
   } = {},
 ): Promise<Graph> {
-  const queue = Object.keys(inputMap);
+  const queue = Object.keys(inputMap).map(removeRelativePrefix);
   const checkedInputs: Set<string> = new Set();
 
-  const sources: InputMap = { ...inputMap };
+  const sources = {
+    ...inputMap,
+  };
 
   while (queue.length) {
     const input = queue.pop()!;
@@ -93,12 +103,26 @@ export async function create(
       for (const loader of loaders) {
         if (loader.test(input)) {
           const result = await loader.fn(input, source, { importMap });
+          const imports = Object.entries(result.imports || {}).reduce(
+            (object, [specifier, value]) => {
+              object[removeRelativePrefix(specifier)] = value;
+              return object;
+            },
+            {} as Imports,
+          );
+          const exports = Object.entries(result.exports || {}).reduce(
+            (object, [specifier, value]) => {
+              object[removeRelativePrefix(specifier)] = value;
+              return object;
+            },
+            {} as Exports,
+          );
+
           entry = graph[input] = {
-            path: resolvedPath,
-            output: getOutput(input, fileMap, baseURL),
-            imports: {},
-            exports: {},
-            ...result,
+            path: result.path || resolvedPath,
+            output: result.output || getOutput(input, fileMap, baseURL),
+            imports: imports,
+            exports: exports,
           };
           for (const dependency of Object.keys(entry.imports)) {
             queue.push(dependency);

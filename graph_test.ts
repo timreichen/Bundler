@@ -1,11 +1,32 @@
 import { assertEquals } from "https://deno.land/std@0.74.0/testing/asserts.ts";
 import { resolve } from "./cache.ts";
+import { Sha256 } from "./deps.ts";
 
 import { create } from "./graph.ts";
 import { typescriptLoader } from "./plugins/loaders/typescript.ts";
 
 Deno.test({
   name: "graph no dependencies",
+  fn: async () => {
+    const inputMap = {
+      "./a.ts": `console.log("ok");`,
+    };
+    const loaders = [typescriptLoader()];
+    const graph = await create(inputMap, loaders);
+    assertEquals(graph, {
+      "a.ts": {
+        path: "a.ts",
+        output:
+          "0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41.js",
+        imports: {},
+        exports: {},
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "graph no dependencies missing path prefix",
   fn: async () => {
     const inputMap = {
       "a.ts": `console.log("ok");`,
@@ -25,20 +46,64 @@ Deno.test({
 });
 
 Deno.test({
+  name: "graph fileMap",
+  fn: async () => {
+    const inputMap = {
+      "./a.ts": `console.log("ok");`,
+    };
+    const fileMap = {
+      "a.ts": "a.js",
+    };
+    const loaders = [typescriptLoader()];
+    const graph = await create(inputMap, loaders, { fileMap });
+    assertEquals(graph, {
+      "a.ts": {
+        path: "a.ts",
+        output: "a.js",
+        imports: {},
+        exports: {},
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "graph fileMap",
+  fn: async () => {
+    const inputMap = {
+      "./a.ts": `console.log("ok");`,
+    };
+    const fileMap = {
+      "./a.ts": "./a.js",
+    };
+    const loaders = [typescriptLoader()];
+    const graph = await create(inputMap, loaders, { fileMap });
+    assertEquals(graph, {
+      "a.ts": {
+        path: "a.ts",
+        output: "a.js",
+        imports: {},
+        exports: {},
+      },
+    });
+  },
+});
+
+Deno.test({
   name: "graph import",
   fn: async () => {
     const inputMap = {
       "./a.ts": `import { b } from "./b.ts"`,
-      "b.ts": `export const b = "b"`,
+      "./b.ts": `export const b = "b"`,
     };
     const loaders = [typescriptLoader()];
     const graph = await create(inputMap, loaders);
 
     assertEquals(graph, {
-      "./a.ts": {
-        path: "./a.ts",
+      "a.ts": {
+        path: "a.ts",
         output:
-          "165ab87c829a03157f59bea1089bb27be72d96f8ad008b304cf1a89cfde639dc.js",
+          "0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41.js",
         imports: { "b.ts": { dynamic: false } },
         exports: {},
       },
@@ -92,10 +157,10 @@ Deno.test({
         imports: {},
         exports: { "b.ts": ["b"] },
       },
-      "./a.ts": {
-        path: "./a.ts",
+      "a.ts": {
+        path: "a.ts",
         output:
-          "165ab87c829a03157f59bea1089bb27be72d96f8ad008b304cf1a89cfde639dc.js",
+          "0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41.js",
         imports: {},
         exports: { "b.ts": ["b"] },
       },
@@ -113,10 +178,10 @@ Deno.test({
     const graph = await create(inputMap, loaders);
 
     assertEquals(graph, {
-      "./testdata/a.ts": {
-        path: "./testdata/a.ts",
+      "testdata/a.ts": {
+        path: "testdata/a.ts",
         output:
-          "c46c89cbaae9c4ec6d03b12f75891fb5a92b7ed84a9b76a2ab99d071a8dfd511.js",
+          "8ab3f6db16d98acaab0ff817eb0498f87fb3d0a4333011665f8d79707ece5761.js",
         imports: {
           "testdata/b.ts": {
             dynamic: false,
@@ -141,16 +206,16 @@ Deno.test({
     const url = "https://deno.land/std@0.74.0/_util/assert.ts";
 
     const inputMap = {
-      "./a.ts": `export * as assert from "${url}"`,
+      "a.ts": `export * as assert from "${url}"`,
     };
     const loaders = [typescriptLoader()];
     const graph = await create(inputMap, loaders);
 
     assertEquals(graph, {
-      "./a.ts": {
-        path: "./a.ts",
+      "a.ts": {
+        path: "a.ts",
         output:
-          "165ab87c829a03157f59bea1089bb27be72d96f8ad008b304cf1a89cfde639dc.js",
+          "0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41.js",
         imports: {},
         exports: { [url]: ["assert"] },
       },

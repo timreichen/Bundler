@@ -12,6 +12,20 @@ export function isURL(path: string) {
   return path.startsWith("http");
 }
 
+export function removeRelativePrefix(path: string) {
+  if (path.startsWith("./")) {
+    return path.slice(2);
+  }
+  return path;
+}
+
+export function addRelativePrefix(path: string) {
+  if (!isURL(path) && !isAbsolute(path) && !path.startsWith(".")) {
+    path = `./${path}`;
+  }
+  return path;
+}
+
 export function removeExtension(path: string) {
   return path.split(".").slice(0, -1).join(".");
 }

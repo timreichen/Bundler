@@ -1,6 +1,7 @@
 import type { Graph } from "../../graph.ts";
 import { path, Sha256, ts } from "../../deps.ts";
 import { Plugin, PluginTest } from "../plugin.ts";
+import { addRelativePrefix } from "../../_util.ts";
 
 interface Config {
   test?: PluginTest;
@@ -30,7 +31,7 @@ export function cssInjectImports(
           undefined,
           false,
         ),
-        ts.createStringLiteral(`./${resolvedSpecifier}`),
+        ts.createStringLiteral(addRelativePrefix(resolvedSpecifier)),
       );
       importNodes[sourceIdentifier] = importNode;
     }

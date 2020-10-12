@@ -1,4 +1,4 @@
-import { colors, fs, ImportMap, path, Sha256 } from "./deps.ts";
+import { colors, fs, ImportMap, path, Sha256, ts } from "./deps.ts";
 import {
   createInstantiateString,
   createSystemExports,
@@ -14,6 +14,7 @@ import {
   Graph,
   InputMap,
 } from "./graph.ts";
+import { addRelativePrefix, removeRelativePrefix } from "./_util.ts";
 
 export interface OutputMap {
   [output: string]: string;
@@ -28,6 +29,163 @@ async function getCacheSource(cacheOutput: string, cacheMap: CacheMap) {
     cacheMap[cacheOutput] = await Deno.readTextFile(cacheOutput);
   }
   return cacheMap[cacheOutput];
+}
+
+const printer: ts.Printer = ts.createPrinter(
+  { newLine: ts.NewLineKind.LineFeed, removeComments: false },
+);
+
+function create(specifier: string, filePath: string) {
+  const printer: ts.Printer = ts.createPrinter(
+    { newLine: ts.NewLineKind.LineFeed, removeComments: false },
+  );
+  const declaration = ts.createImportDeclaration(
+    undefined,
+    undefined,
+    ts.createImportClause(
+      undefined,
+      ts.createNamespaceImport(ts.createIdentifier(specifier)),
+      false,
+    ),
+    ts.createStringLiteral(filePath),
+  );
+  return printer.printNode(ts.EmitHint.Unspecified, declaration, undefined);
+}
+
+function bundleLoaderTransformer(specifier: string) {
+  return (context: ts.TransformationContext) => {
+    const visit: ts.Visitor = (node: ts.Node) => {
+      if (
+        ts.isCallExpression(node) &&
+        node.expression?.expression?.escapedText === "System" &&
+        node.expression?.name?.escapedText === "register"
+      ) {
+        return ts.visitEachChild(node, (node: ts.Node) => {
+          if (node.kind === ts.SyntaxKind["FunctionExpression"]) {
+            return ts.visitEachChild(node, (node: ts.Node) => {
+              if (node.kind === ts.SyntaxKind["Block"]) {
+                return ts.visitEachChild(node, (node: ts.Node) => {
+                  if (node.kind === ts.SyntaxKind["ReturnStatement"]) {
+                    return ts.visitEachChild(node, (node: ts.Node) => {
+                      if (
+                        node.kind === ts.SyntaxKind["ObjectLiteralExpression"]
+                      ) {
+                        return ts.visitEachChild(node, (node: ts.Node) => {
+                          if (
+                            node.kind === ts.SyntaxKind["PropertyAssignment"]
+                          ) {
+                            return ts.visitEachChild(node, (node: ts.Node) => {
+                              if (
+                                node.kind ===
+                                  ts.SyntaxKind["FunctionExpression"]
+                              ) {
+                                return ts.visitEachChild(
+                                  node,
+                                  (node: ts.Node) => {
+                                    if (node.kind === ts.SyntaxKind["Block"]) {
+                                      return ts.visitEachChild(
+                                        node,
+                                        (node: ts.Node) => {
+                                          if (
+                                            node.kind ===
+                                              ts.SyntaxKind[
+                                                "ExpressionStatement"
+                                              ]
+                                          ) {
+                                            return ts.visitEachChild(
+                                              node,
+                                              (node: ts.Node) => {
+                                                if (
+                                                  node.kind ===
+                                                    ts.SyntaxKind[
+                                                      "CallExpression"
+                                                    ] &&
+                                                  node.expression
+                                                      .escapedText ===
+                                                    "exports_1"
+                                                ) {
+                                                  return ts.visitEachChild(
+                                                    node,
+                                                    (node: ts.Node) => {
+                                                      if (
+                                                        node.kind ===
+                                                          ts.SyntaxKind[
+                                                            "BinaryExpression"
+                                                          ]
+                                                      ) {
+                                                        return ts.createBinary(
+                                                          node.left,
+                                                          ts.createToken(
+                                                            ts.SyntaxKind
+                                                              .EqualsToken,
+                                                          ),
+                                                          ts.createPropertyAccess(
+                                                            ts.createIdentifier(
+                                                              specifier,
+                                                            ),
+                                                            node.right.text,
+                                                          ),
+                                                        );
+                                                      }
+                                                      return node;
+                                                    },
+                                                    context,
+                                                  );
+                                                }
+                                                return node;
+                                              },
+                                              context,
+                                            );
+                                          }
+                                          return node;
+                                        },
+                                        context,
+                                      );
+                                    }
+                                    return node;
+                                  },
+                                  context,
+                                );
+                              }
+                              return node;
+                            }, context);
+                          }
+                          return node;
+                        }, context);
+                      }
+                      return node;
+                    }, context);
+                  }
+                  return node;
+                }, context);
+              }
+              return node;
+            }, context);
+          }
+          return node;
+        }, context);
+      }
+      return ts.visitEachChild(node, visit, context);
+    };
+    return (node: ts.Node) => {
+      return ts.visitNode(node, visit);
+    };
+  };
+}
+
+function injectBundleLoader(source: string, specifier: string) {
+  const sourceFile = ts.createSourceFile(
+    "x.ts",
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  const result = ts.transform(sourceFile, [bundleLoaderTransformer(specifier)]);
+  return printer.printNode(
+    ts.EmitHint.SourceFile,
+    result.transformed[0],
+    sourceFile,
+  );
 }
 
 export async function bundle(
@@ -74,13 +232,24 @@ export async function bundle(
     { graph: initialGraph, fileMap, importMap, baseURL: depsPath, reload },
   );
 
-  const inputs = Object.keys(inputMap);
+  const inputs = Object.keys(inputMap).map(removeRelativePrefix);
+
+  const entries: Set<string> = new Set(inputs);
+  for (const entry of Object.values(graph)) {
+    Object.entries(entry.imports).forEach(([specifier, { dynamic }]) => {
+      if (dynamic) entries.add(specifier);
+    });
+  }
 
   const checkedInputs: Set<string> = new Set();
   while (inputs.length) {
     const input = inputs.pop()!;
     if (checkedInputs.has(input)) continue;
     checkedInputs.add(input);
+
+    if (!quiet) {
+      console.log(colors.blue(`Bundle`), input);
+    }
 
     const entry = graph[input];
 
@@ -92,6 +261,8 @@ export async function bundle(
     const { imports } = graph[input];
 
     const dependencies = [input];
+    const moduleImports: Set<string> = new Set();
+    const output = getOutput(input, fileMap, depsPath);
 
     Object.entries(imports).forEach(([input, { dynamic }]) => {
       if (dynamic) {
@@ -128,13 +299,15 @@ export async function bundle(
       const modified = cacheFileExists &&
         Deno.statSync(filePath).mtime! > Deno.statSync(cacheOutput).mtime!;
       // if cache file is up to date, get source from that cache file
+
+      let string: string;
       if (
         ((!reload && cacheFileExists) || cacheMap[cacheOutput]) && !modified
       ) {
-        if (filePath !== input) {
-          if (!quiet) console.log(colors.green(`Check`), dependency);
+        string = await getCacheSource(cacheOutput, cacheMap);
+        if (!quiet && filePath !== input) {
+          console.log(colors.green(`Check`), dependency);
         }
-        strings.push(await getCacheSource(cacheOutput, cacheMap));
       } else {
         // if cache file does not exist or is out of date create apply transformers to source and create new cache file
         bundleNeedsUpdate = true;
@@ -160,12 +333,21 @@ export async function bundle(
         }
 
         cacheMap[cacheOutput] = source;
-
-        strings.push(source);
+        string = source;
       }
-    }
 
-    const output = getOutput(input, fileMap, depsPath);
+      if (filePath !== input && entries.has(filePath)) {
+        const depsOutput = getOutput(filePath, fileMap, depsPath);
+        const relativePath = addRelativePrefix(
+          path.relative(path.dirname(output), depsOutput),
+        );
+        const specifier = `_${new Sha256().update(filePath).hex()}`;
+        moduleImports.add(create(specifier, relativePath));
+        string = injectBundleLoader(string, specifier);
+      }
+
+      strings.push(string);
+    }
 
     const outputFileExists = await fs.exists(output);
 
@@ -179,7 +361,7 @@ export async function bundle(
         strings.push(createSystemExports(exports));
       }
 
-      let string = strings.join("\n");
+      let string = [...moduleImports, ...strings].join("\n");
 
       if (optimize) {
         for (const optimizer of optimizers) {
@@ -192,10 +374,9 @@ export async function bundle(
           }
         }
       }
-      if (!quiet) console.log(colors.blue(`Bundle`), input);
       outputMap[output] = string;
     } else {
-      if (!quiet) console.log(colors.blue(`up-to-date`), input);
+      if (!quiet) console.log(colors.green(`up-to-date`), input);
     }
   }
 

@@ -4,10 +4,11 @@ A lightweight bundler that transpiles and bundles for the web.
 ## Why Use Bundler
 
 - transpiles and bundles files
-- handles extensions and urls in import statements
+- handles url import statements
+- handles imports with and without extensions
 - splits dynamic imports to separate files
-- has `--optimize` option that minifies `javascript` and `css` files
-- has `--watch` option that observes all dependencies and re-bundles on files changes
+- `--optimize` option minifies `javascript` and `css` files
+- `--watch` option observes all dependencies and re-bundles on files changes
 - allows imports of `css` files and converts them to `javascript` modules
 - handles `css` `@import` statements
 - supports `css` postcss-preset-env *stage 2* and *nesting-rules* by default

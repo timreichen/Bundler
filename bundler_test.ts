@@ -139,7 +139,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "bundle smart split",
+  name: "bundle smart splitting",
   fn: async () => {
     const inputMap: InputMap = {
       "./a.ts": `import { b } from "./b.ts"; console.log(b)`,
@@ -179,7 +179,7 @@ Deno.test({
 
     assert(
       outputMap["a.js"].includes(
-        `import * as ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63 from "./b.js";`,
+        `import * as _ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63 from "./b.js";`,
       ),
     );
 

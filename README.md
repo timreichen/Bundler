@@ -4,7 +4,7 @@ A lightweight bundler that transpiles and bundles for the web.
 ## Why Use Bundler
 
 - transpiles and bundles files
-- handles url import statements
+- allows [url imports](https://deno.land/manual/linking_to_external_code)
 - handles imports with and without extensions
 - splits dynamic imports to separate files
 - does [smart splitting](#Smart-splitting)

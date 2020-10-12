@@ -118,7 +118,7 @@ console.log(styles) // article > p { color: red; }
 - [React](https://github.com/timreichen/Bundler/tree/master/examples/react)
 - [dynamic import](https://github.com/timreichen/Bundler/tree/master/examples/dynamic%20import)
 - [top level await](https://github.com/timreichen/Bundler/tree/master/examples/top%20level%20await)
-- [smart split](https://github.com/timreichen/Bundler/tree/master/examples/smart%split)
+- [smart splitting](https://github.com/timreichen/Bundler/tree/master/examples/smart%splitting)
 - [custom bundler](https://github.com/timreichen/Bundler/tree/master/examples/custom%20bundler)
 
 ## Unstable

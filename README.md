@@ -7,7 +7,7 @@ A lightweight bundler that transpiles and bundles for the web.
 - handles url import statements
 - handles imports with and without extensions
 - splits dynamic imports to separate files
-- does [smart splits](#Smart-Splits)
+- does [smart splits](#Smart-splitting)
 - [`--optimize` option](#Options) minifies `javascript` and `css` files
 - [`--watch` option](#Options) observes all dependencies and re-bundles on files changes
 - allows [imports of `css` files](#CSS-imports) and converts them to `javascript` modules

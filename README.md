@@ -7,9 +7,10 @@ A lightweight bundler that transpiles and bundles for the web.
 - handles url import statements
 - handles imports with and without extensions
 - splits dynamic imports to separate files
-- `--optimize` option minifies `javascript` and `css` files
-- `--watch` option observes all dependencies and re-bundles on files changes
-- allows imports of `css` files and converts them to `javascript` modules
+- does [smart splits](#Smart-Splits)
+- [`--optimize` option](#Options) minifies `javascript` and `css` files
+- [`--watch` option](#Options) observes all dependencies and re-bundles on files changes
+- allows [imports of `css` files](#CSS-imports) and converts them to `javascript` modules
 - handles `css` `@import` statements
 - supports `css` postcss-preset-env *stage 2* and *nesting-rules* by default
 
@@ -81,6 +82,14 @@ for (const [output, source] of Object.entries(outputMap)) {
 }
 ```
 
+### Smart splitting
+#### What is smart splitting?
+Bundler automatically analyzes the dependency graph and splits dependencies from a bundle into a separate files, if the code is used in different entry points.
+This
+- allows bundle files to share code
+- allows bundle files to import other bundle files
+- makes multiple bundle files smaller, because they will not contain the same code multiple times
+
 ### CSS imports
 CSS is native to browsers and bundler therefore focuses on making css usage really easy.
 It supports [postcss-preset-env](https://preset-env.cssdb.org) with **stage 2** features and **nesting-rules** enabled so you can use the latest css features out of the box.
@@ -109,6 +118,7 @@ console.log(styles) // article > p { color: red; }
 - [React](https://github.com/timreichen/Bundler/tree/master/examples/react)
 - [dynamic import](https://github.com/timreichen/Bundler/tree/master/examples/dynamic%20import)
 - [top level await](https://github.com/timreichen/Bundler/tree/master/examples/top%20level%20await)
+- [smart split](https://github.com/timreichen/Bundler/tree/master/examples/smart%split)
 - [custom bundler](https://github.com/timreichen/Bundler/tree/master/examples/custom%20bundler)
 
 ## Unstable

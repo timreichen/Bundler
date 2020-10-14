@@ -138,10 +138,7 @@ async function runBundle(
       metaFilePath,
       JSON.stringify(
         {
-          options: {
-            fileMap,
-            optimize,
-          },
+          fileMap,
           graph,
         },
         null,

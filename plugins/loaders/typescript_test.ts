@@ -11,8 +11,8 @@ Deno.test({
   `;
     const { imports } = await typescriptLoader().fn(input, source);
     assertEquals(imports, {
-      "testdata/src/a.css": { dynamic: false },
-      "testdata/src/b.css": { dynamic: false },
+      "testdata/src/a.css": {},
+      "testdata/src/b.css": {},
     });
   },
 });
@@ -57,18 +57,22 @@ Deno.test({
   `;
     const { exports } = await typescriptLoader().fn(input, source);
     assertEquals(exports, {
-      "testdata/src/b.ts": [
-        "*",
-        "test",
-      ],
-      "testdata/src/a.ts": [
-        "test1",
-        "test2",
-        "test3",
-        "test4",
-        "test5",
-        "test6",
-      ],
+      "testdata/src/b.ts": {
+        specifiers: [
+          "*",
+          "test",
+        ],
+      },
+      "testdata/src/a.ts": {
+        specifiers: [
+          "test1",
+          "test2",
+          "test3",
+          "test4",
+          "test5",
+          "test6",
+        ],
+      },
     });
   },
 });

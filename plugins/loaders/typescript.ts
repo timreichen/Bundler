@@ -2,6 +2,7 @@ import { ImportMap, ts } from "../../deps.ts";
 import { Loader, LoaderTest } from "../loader.ts";
 import { getDynamicImportNode } from "../../typescript.ts";
 import { resolve as resolveDependencySpecifier } from "../../dependencies.ts";
+import { Exports, Imports } from "../../graph.ts";
 function hasExportModifier(node: ts.Node) {
   return node.modifiers &&
     ts.getCombinedModifierFlags(node as ts.Declaration) &
@@ -20,8 +21,8 @@ export function typescriptLoader(
       source: string,
       { importMap }: { importMap?: ImportMap } = {},
     ) => {
-      const imports: { [specifier: string]: { dynamic: boolean } } = {};
-      const exports: { [input: string]: string[] } = {};
+      const imports: Imports = {};
+      const exports: Exports = {};
 
       const visit: ts.Visitor = (node: ts.Node) => {
         // console.log(ts.SyntaxKind[node.kind])
@@ -36,7 +37,7 @@ export function typescriptLoader(
                 importMap,
               );
               imports[resolvedSpecifier] = imports[resolvedSpecifier] ||
-                { dynamic: false };
+                {};
             }
           }
         }
@@ -69,8 +70,8 @@ export function typescriptLoader(
                       importMap,
                     )
                     : input;
-                  exports[specifier] = exports[specifier] || [];
-                  exports[specifier].push(symbol);
+                  exports[specifier] = exports[specifier] || { specifiers: [] };
+                  exports[specifier].specifiers.push(symbol);
                 }
               } else {
                 // example: export * as foo from "./bar.ts"
@@ -83,8 +84,8 @@ export function typescriptLoader(
                     importMap,
                   )
                   : input;
-                exports[specifier] = exports[specifier] || [];
-                exports[specifier].push(symbol);
+                exports[specifier] = exports[specifier] || { specifiers: [] };
+                exports[specifier].specifiers.push(symbol);
               }
             }
           } else {
@@ -97,8 +98,8 @@ export function typescriptLoader(
                 importMap,
               )
               : input;
-            exports[specifier] = exports[specifier] || [];
-            exports[specifier].push(symbol);
+            exports[specifier] = exports[specifier] || { specifiers: [] };
+            exports[specifier].specifiers.push(symbol);
           }
         }
         // export values
@@ -109,21 +110,21 @@ export function typescriptLoader(
               if (declaration.elements) {
                 for (const element of declaration.elements) {
                   const symbol = element.escapedText;
-                  exports[input] = exports[input] || [];
-                  exports[input].push(symbol);
+                  exports[input] = exports[input] || { specifiers: [] };
+                  exports[input].specifiers.push(symbol);
                 }
               } else if (declaration.name) {
                 const symbol = declaration.name.text;
-                exports[input] = exports[input] || [];
-                exports[input].push(symbol);
+                exports[input] = exports[input] || { specifiers: [] };
+                exports[input].specifiers.push(symbol);
               }
             }
           } else {
             // example: export function foo() {}
             // example: export class bar {}
             const symbol = node.name.escapedText;
-            exports[input] = exports[input] || [];
-            exports[input].push(symbol);
+            exports[input] = exports[input] || { specifiers: [] };
+            exports[input].specifiers.push(symbol);
           }
         }
 

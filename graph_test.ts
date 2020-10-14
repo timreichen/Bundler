@@ -106,7 +106,7 @@ Deno.test({
         path: "a.ts",
         output:
           "0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41.js",
-        imports: { "b.ts": { dynamic: false } },
+        imports: { "b.ts": {} },
         exports: {},
       },
       "b.ts": {
@@ -114,7 +114,7 @@ Deno.test({
         output:
           "ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63.js",
         imports: {},
-        exports: { "b.ts": ["b"] },
+        exports: { "b.ts": { specifiers: ["b"] } },
       },
     });
   },
@@ -135,7 +135,7 @@ Deno.test({
         output:
           "0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41.js",
         imports: {},
-        exports: { "a.ts": ["a"] },
+        exports: { "a.ts": { specifiers: ["a"] } },
       },
     });
   },
@@ -157,14 +157,14 @@ Deno.test({
         output:
           "ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63.js",
         imports: {},
-        exports: { "b.ts": ["b"] },
+        exports: { "b.ts": { specifiers: ["b"] } },
       },
       "a.ts": {
         path: "a.ts",
         output:
           "0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41.js",
         imports: {},
-        exports: { "b.ts": ["b"] },
+        exports: { "b.ts": { specifiers: ["b"] } },
       },
     });
   },
@@ -185,9 +185,7 @@ Deno.test({
         output:
           "8ab3f6db16d98acaab0ff817eb0498f87fb3d0a4333011665f8d79707ece5761.js",
         imports: {
-          "testdata/b.ts": {
-            dynamic: false,
-          },
+          "testdata/b.ts": {},
         },
         exports: {},
       },
@@ -196,7 +194,7 @@ Deno.test({
         output:
           "8d0c0c18f2b26feabde651321894a23f2aaed687c96425c4edd85924576a25eb.js",
         imports: {},
-        exports: { "testdata/b.ts": ["b"] },
+        exports: { "testdata/b.ts": { specifiers: ["b"] } },
       },
     });
   },
@@ -219,7 +217,7 @@ Deno.test({
         output:
           "0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41.js",
         imports: {},
-        exports: { [url]: ["assert"] },
+        exports: { [url]: { specifiers: ["assert"] } },
       },
       [url]: {
         path: resolve(url),
@@ -227,7 +225,7 @@ Deno.test({
           "34a68f8c5b5dbae81d20664aeb8a0030aace348bf084def2ba2fa4d7e276a912.js",
         imports: {},
         exports: {
-          [url]: ["DenoStdInternalError", "assert"],
+          [url]: { specifiers: ["DenoStdInternalError", "assert"] },
         },
       },
     });

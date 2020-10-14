@@ -9,7 +9,7 @@ Deno.test("cssLoader imports", async () => {
   `;
   const { imports } = await cssLoader().fn(input, source);
   assertEquals(imports, {
-    "testdata/src/a.css": { dynamic: false },
-    "testdata/src/b.css": { dynamic: false },
+    "testdata/src/a.css": {},
+    "testdata/src/b.css": {},
   });
 });

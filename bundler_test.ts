@@ -126,7 +126,7 @@ Deno.test({
         path: "b.ts",
         output: "b.js",
         imports: {},
-        exports: { "b.ts": ["b"] },
+        exports: { "b.ts": { specifiers: ["b"] } },
       },
       "a.ts": {
         path: "a.ts",
@@ -188,12 +188,12 @@ Deno.test({
         path: "b.ts",
         output: "b.js",
         imports: {},
-        exports: { "b.ts": ["b"] },
+        exports: { "b.ts": { specifiers: ["b"] } },
       },
       "a.ts": {
         path: "a.ts",
         output: "a.js",
-        imports: { "b.ts": { dynamic: false } },
+        imports: { "b.ts": {} },
         exports: {},
       },
     });

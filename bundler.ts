@@ -201,8 +201,8 @@ export async function bundle(
 
     if (bundleNeedsUpdate) {
       strings.push(createInstantiate(output));
-      for (const exports of Object.values(entry.exports)) {
-        strings.push(createSystemExports(exports));
+      for (const { specifiers } of Object.values(entry.exports)) {
+        strings.push(createSystemExports(specifiers));
       }
 
       let string = [...moduleImports, ...strings].join("\n");

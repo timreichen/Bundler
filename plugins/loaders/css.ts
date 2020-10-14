@@ -1,5 +1,4 @@
 import postcssCore from "https://jspm.dev/postcss";
-import postcssPresetEnv from "https://jspm.dev/postcss-preset-env";
 import { resolve as resolveDependencySpecifier } from "../../dependencies.ts";
 import type { ImportMap } from "../../deps.ts";
 import type { Imports } from "../../graph.ts";
@@ -42,9 +41,7 @@ export function cssLoader(
       root.walkAtRules("import", (rule: { params: string }) => {
         const url: string = stripImportSpecifier(rule.params); // remove brackets and quotes
         const resolvedUrl = resolveDependencySpecifier(input, url, importMap);
-        imports[resolvedUrl] = {
-          dynamic: false,
-        };
+        imports[resolvedUrl] = {};
       });
 
       return {

@@ -4,11 +4,13 @@ import type { Loader } from "./plugins/loader.ts";
 import { addRelativePrefix, isURL, removeRelativePrefix } from "./_util.ts";
 
 export interface Imports {
-  [input: string]: { dynamic: boolean };
+  [input: string]: { dynamic?: true };
 }
 
 export interface Exports {
-  [input: string]: string[];
+  [input: string]: {
+    specifiers: string[];
+  };
 }
 
 export interface GraphEntry {

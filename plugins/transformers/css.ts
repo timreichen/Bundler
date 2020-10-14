@@ -40,10 +40,10 @@ export function css(
       ],
     }),
     csso({
-      test: (input: string) => optimize && input.endsWith(".css"),
+      test: (input: string) => optimize && test(input),
     }),
     cssInjectSpecifiers(),
-    text({ test: (input: string) => input.endsWith(".css") }),
+    text({ test }),
     cssInjectImports(),
   ];
 

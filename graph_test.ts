@@ -1,6 +1,8 @@
-import { assertEquals } from "https://deno.land/std@0.74.0/testing/asserts.ts";
+import {
+  assertEquals,
+  assertThrowsAsync,
+} from "https://deno.land/std@0.74.0/testing/asserts.ts";
 import { resolve } from "./cache.ts";
-import { Sha256 } from "./deps.ts";
 
 import { create } from "./graph.ts";
 import { typescriptLoader } from "./plugins/loaders/typescript.ts";
@@ -229,5 +231,39 @@ Deno.test({
         },
       },
     });
+  },
+});
+
+Deno.test({
+  name: "graph loader not found",
+  fn: async () => {
+    const inputMap = {
+      "./a.ts": `console.log("ok");`,
+    };
+    assertThrowsAsync(
+      async () => {
+        await create(inputMap, []);
+      },
+      Error,
+      `no loader for 'a.ts' was found`,
+    );
+  },
+});
+
+Deno.test({
+  name: "graph file not found",
+  fn: async () => {
+    const inputMap = {
+      "./a.ts": `import { b } from "./b.ts"`,
+    };
+    const loaders = [typescriptLoader()];
+
+    assertThrowsAsync(
+      async () => {
+        await create(inputMap, loaders);
+      },
+      Error,
+      `file 'b.ts' was not found`,
+    );
   },
 });

@@ -4,7 +4,7 @@ const printer: ts.Printer = ts.createPrinter(
   { newLine: ts.NewLineKind.LineFeed, removeComments: false },
 );
 
-export function createInstantiateString(path: string) {
+export function createInstantiate(path: string): string {
   const __exp = ts.createVariableStatement(
     undefined,
     ts.createVariableDeclarationList(
@@ -58,7 +58,7 @@ function defaultExportString(value: string) {
   return printer.printNode(ts.EmitHint.Unspecified, assignment, undefined);
 }
 
-export function createSystemExports(exports: string[]) {
+export function createSystemExports(exports: string[]): string {
   let string = "";
   for (const key of exports) {
     string += `\n`;
@@ -183,7 +183,7 @@ export async function createSystemLoader() {
   })();`;
 }
 
-export function injectInstantiateName(specifier: string) {
+export function injectInstantiateNameTransformer(specifier: string) {
   return (context: ts.TransformationContext) => {
     const visit: ts.Visitor = (node: ts.Node) => {
       if (

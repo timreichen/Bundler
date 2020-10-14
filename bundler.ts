@@ -1,6 +1,6 @@
 import { colors, fs, ImportMap, path, Sha256, ts } from "./deps.ts";
 import {
-  createInstantiateString,
+  createInstantiate,
   createSystemExports,
   createSystemLoader,
 } from "./system.ts";
@@ -15,6 +15,7 @@ import {
   InputMap,
 } from "./graph.ts";
 import { addRelativePrefix, removeRelativePrefix } from "./_util.ts";
+import { createModuleImport, injectBundleImport } from "./_smart_splitting.ts";
 
 export interface OutputMap {
   [output: string]: string;
@@ -29,163 +30,6 @@ async function getCacheSource(cacheOutput: string, cacheMap: CacheMap) {
     cacheMap[cacheOutput] = await Deno.readTextFile(cacheOutput);
   }
   return cacheMap[cacheOutput];
-}
-
-const printer: ts.Printer = ts.createPrinter(
-  { newLine: ts.NewLineKind.LineFeed, removeComments: false },
-);
-
-function create(specifier: string, filePath: string) {
-  const printer: ts.Printer = ts.createPrinter(
-    { newLine: ts.NewLineKind.LineFeed, removeComments: false },
-  );
-  const declaration = ts.createImportDeclaration(
-    undefined,
-    undefined,
-    ts.createImportClause(
-      undefined,
-      ts.createNamespaceImport(ts.createIdentifier(specifier)),
-      false,
-    ),
-    ts.createStringLiteral(filePath),
-  );
-  return printer.printNode(ts.EmitHint.Unspecified, declaration, undefined);
-}
-
-function bundleLoaderTransformer(specifier: string) {
-  return (context: ts.TransformationContext) => {
-    const visit: ts.Visitor = (node: ts.Node) => {
-      if (
-        ts.isCallExpression(node) &&
-        node.expression?.expression?.escapedText === "System" &&
-        node.expression?.name?.escapedText === "register"
-      ) {
-        return ts.visitEachChild(node, (node: ts.Node) => {
-          if (node.kind === ts.SyntaxKind["FunctionExpression"]) {
-            return ts.visitEachChild(node, (node: ts.Node) => {
-              if (node.kind === ts.SyntaxKind["Block"]) {
-                return ts.visitEachChild(node, (node: ts.Node) => {
-                  if (node.kind === ts.SyntaxKind["ReturnStatement"]) {
-                    return ts.visitEachChild(node, (node: ts.Node) => {
-                      if (
-                        node.kind === ts.SyntaxKind["ObjectLiteralExpression"]
-                      ) {
-                        return ts.visitEachChild(node, (node: ts.Node) => {
-                          if (
-                            node.kind === ts.SyntaxKind["PropertyAssignment"]
-                          ) {
-                            return ts.visitEachChild(node, (node: ts.Node) => {
-                              if (
-                                node.kind ===
-                                  ts.SyntaxKind["FunctionExpression"]
-                              ) {
-                                return ts.visitEachChild(
-                                  node,
-                                  (node: ts.Node) => {
-                                    if (node.kind === ts.SyntaxKind["Block"]) {
-                                      return ts.visitEachChild(
-                                        node,
-                                        (node: ts.Node) => {
-                                          if (
-                                            node.kind ===
-                                              ts.SyntaxKind[
-                                                "ExpressionStatement"
-                                              ]
-                                          ) {
-                                            return ts.visitEachChild(
-                                              node,
-                                              (node: ts.Node) => {
-                                                if (
-                                                  node.kind ===
-                                                    ts.SyntaxKind[
-                                                      "CallExpression"
-                                                    ] &&
-                                                  node.expression
-                                                      .escapedText ===
-                                                    "exports_1"
-                                                ) {
-                                                  return ts.visitEachChild(
-                                                    node,
-                                                    (node: ts.Node) => {
-                                                      if (
-                                                        node.kind ===
-                                                          ts.SyntaxKind[
-                                                            "BinaryExpression"
-                                                          ]
-                                                      ) {
-                                                        return ts.createBinary(
-                                                          node.left,
-                                                          ts.createToken(
-                                                            ts.SyntaxKind
-                                                              .EqualsToken,
-                                                          ),
-                                                          ts.createPropertyAccess(
-                                                            ts.createIdentifier(
-                                                              specifier,
-                                                            ),
-                                                            node.right.text,
-                                                          ),
-                                                        );
-                                                      }
-                                                      return node;
-                                                    },
-                                                    context,
-                                                  );
-                                                }
-                                                return node;
-                                              },
-                                              context,
-                                            );
-                                          }
-                                          return node;
-                                        },
-                                        context,
-                                      );
-                                    }
-                                    return node;
-                                  },
-                                  context,
-                                );
-                              }
-                              return node;
-                            }, context);
-                          }
-                          return node;
-                        }, context);
-                      }
-                      return node;
-                    }, context);
-                  }
-                  return node;
-                }, context);
-              }
-              return node;
-            }, context);
-          }
-          return node;
-        }, context);
-      }
-      return ts.visitEachChild(node, visit, context);
-    };
-    return (node: ts.Node) => {
-      return ts.visitNode(node, visit);
-    };
-  };
-}
-
-function injectBundleLoader(source: string, specifier: string) {
-  const sourceFile = ts.createSourceFile(
-    "x.ts",
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-  );
-  const result = ts.transform(sourceFile, [bundleLoaderTransformer(specifier)]);
-  return printer.printNode(
-    ts.EmitHint.SourceFile,
-    result.transformed[0],
-    sourceFile,
-  );
 }
 
 export async function bundle(
@@ -342,8 +186,8 @@ export async function bundle(
           path.relative(path.dirname(output), depsOutput),
         );
         const specifier = `_${new Sha256().update(filePath).hex()}`;
-        moduleImports.add(create(specifier, relativePath));
-        string = injectBundleLoader(string, specifier);
+        moduleImports.add(createModuleImport(specifier, relativePath));
+        string = injectBundleImport(string, specifier);
       }
 
       strings.push(string);
@@ -356,7 +200,7 @@ export async function bundle(
     }
 
     if (bundleNeedsUpdate) {
-      strings.push(createInstantiateString(output));
+      strings.push(createInstantiate(output));
       for (const exports of Object.values(entry.exports)) {
         strings.push(createSystemExports(exports));
       }

@@ -11,7 +11,7 @@ import {
 } from "../../typescript.ts";
 import { resolve as resolveDependencySpecifier } from "../../dependencies.ts";
 import { Plugin, PluginTest } from "../plugin.ts";
-import { injectInstantiateName } from "../../system.ts";
+import { injectInstantiateNameTransformer } from "../../system.ts";
 import { typescript } from "./typescript.ts";
 
 function injectOutputsTranformer(
@@ -117,7 +117,7 @@ export function typescriptInjectSpecifiers(
           { importMap, fileMap, outDir, depsPath },
         ),
       ],
-      after: [injectInstantiateName(output)],
+      after: [injectInstantiateNameTransformer(output)],
     };
     return typescript({
       test,

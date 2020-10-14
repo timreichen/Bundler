@@ -1,4 +1,9 @@
-import { extname, isAbsolute } from "https://deno.land/std@0.66.0/path/mod.ts";
+import {
+  basename,
+  extname,
+  isAbsolute,
+  sep,
+} from "https://deno.land/std@0.66.0/path/mod.ts";
 import { yellow } from "https://deno.land/std@0.66.0/fmt/colors.ts";
 
 /**
@@ -31,10 +36,11 @@ export function removeExtension(path: string) {
 }
 
 export function ensureExtension(path: string, extension: string) {
-  // allow urls and absolute paths without extension
+  // allow urls and absolute paths "." and paths ending with "/" without extension
+
   if (
     !isURL(path) && !isAbsolute(path) &&
-    extname(path) === ""
+    extname(path) === "" && path !== "." && !path.endsWith(sep)
   ) {
     console.warn(
       yellow(`Warning`),

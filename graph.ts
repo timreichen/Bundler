@@ -55,7 +55,7 @@ export async function getSource(
       filePath = resolveWithCache(filePath);
     }
     if (!isURL(filePath) && !await fs.exists(filePath)) {
-      throw Error(`file '${input}' import not found: '${filePath}'`);
+      throw Error(`file '${filePath}' was not found`);
     }
     entry = inputMap[noPrefixInput] = await Deno.readTextFile(filePath);
   }
@@ -86,6 +86,7 @@ export async function create(
     ...inputMap,
   };
 
+  loop:
   while (queue.length) {
     const input = queue.pop()!;
     if (checkedInputs.has(input)) continue;
@@ -99,9 +100,9 @@ export async function create(
         ...Object.keys(entry.exports),
       );
     } else {
-      const source = await getSource(input, sources, importMap);
       for (const loader of loaders) {
         if (loader.test(input)) {
+          const source = await getSource(input, sources, importMap);
           const result = await loader.fn(input, source, { importMap });
           const imports = Object.entries(result.imports || {}).reduce(
             (object, [specifier, value]) => {
@@ -130,9 +131,10 @@ export async function create(
           for (const dependency of Object.keys(entry.exports)) {
             queue.push(dependency);
           }
-          break;
+          continue loop;
         }
       }
+      throw Error(`no loader for '${input}' was found`);
     }
   }
 

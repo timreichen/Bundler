@@ -14,6 +14,8 @@ import { typescriptInjectSpecifiers } from "./plugins/transformers/typescript_in
 import { terser } from "./plugins/transformers/terser.ts";
 import type { CompilerOptions } from "./typescript.ts";
 import type { FileMap, Graph } from "./graph.ts";
+import { imageLoader } from "./plugins/loaders/image.ts"
+import { text } from "./plugins/transformers/text.ts"
 
 interface Meta {
   options: {
@@ -40,6 +42,7 @@ const loaders = [
   cssLoader({
     use: postCSSPlugins,
   }),
+  imageLoader()
 ];
 
 async function runBundle(
@@ -84,6 +87,9 @@ async function runBundle(
         ...compilerOptions,
         module: "system",
       },
+    }),
+    text({
+      test: (input: string) => /\.(png|svg)$/.test(input)
     }),
   ];
 

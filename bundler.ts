@@ -219,7 +219,9 @@ export async function bundle(
         }
       }
       outputMap[output] = string;
+      
     } else {
+
       if (!quiet) console.log(colors.green(`up-to-date`), input);
     }
   }

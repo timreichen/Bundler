@@ -241,7 +241,7 @@ Deno.test({
     ]);
     
     assert(
-      outputMap["a.js"].includes(
+      new TextDecoder().decode(outputMap["a.js"]).includes(
         `import * as _ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63 from "./b.js";`,
       ),
     );

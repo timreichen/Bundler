@@ -16,6 +16,7 @@ import type { CompilerOptions } from "./typescript.ts";
 import type { FileMap, Graph } from "./graph.ts";
 import { jsonLoader } from "./plugins/loaders/json.ts"
 import { json } from "./plugins/transformers/json.ts"
+import { text } from "./plugins/transformers/text.ts"
 
 interface Meta {
   options: {
@@ -88,6 +89,9 @@ async function runBundle(
         ...compilerOptions,
         module: "system",
       },
+    }),
+    text({
+      test: (input: string) => /\.(png|svg)$/.test(input)
     }),
   ];
 

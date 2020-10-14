@@ -89,6 +89,9 @@ async function runBundle(
         module: "system",
       },
     }),
+    text({
+      test: (input: string) => /\.(png|svg)$/.test(input)
+    }),
   ];
 
   const optimizers = [

@@ -21,7 +21,7 @@ export function text(
     );
     const entry = graph[input];
     entry.exports[input] = entry.exports[input] || [];
-    entry.exports[input].push("default");
+    entry.exports[input].specifiers.push("default");
     return string;
   };
 

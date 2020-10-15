@@ -18,7 +18,7 @@ import { addRelativePrefix, removeRelativePrefix } from "./_util.ts";
 import { createModuleImport, injectBundleImport } from "./_smart_splitting.ts";
 
 export interface OutputMap {
-  [output: string]: string;
+  [output: string]: ArrayBuffer;
 }
 
 export interface CacheMap {
@@ -31,6 +31,8 @@ async function getCacheSource(cacheOutput: string, cacheMap: CacheMap) {
   }
   return cacheMap[cacheOutput];
 }
+
+const encoder = new TextEncoder()
 
 export async function bundle(
   inputMap: InputMap = {},
@@ -218,7 +220,7 @@ export async function bundle(
           }
         }
       }
-      outputMap[output] = string;
+      outputMap[output] = encoder.encode(string);
       
     } else {
 

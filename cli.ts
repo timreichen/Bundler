@@ -4,7 +4,7 @@ import { Sha256 } from "./deps.ts";
 import { bundle } from "./bundler.ts";
 import { invalidSubcommandError, Program } from "./deps.ts";
 
-import { cssToModule } from "./plugins/transformers/css_to_module.ts";
+import { css } from "./plugins/transformers/css.ts";
 import postcssPresetEnv from "https://jspm.dev/postcss-preset-env";
 
 import { isURL } from "./_util.ts";
@@ -14,8 +14,8 @@ import { typescriptInjectSpecifiers } from "./plugins/transformers/typescript_in
 import { terser } from "./plugins/transformers/terser.ts";
 import type { CompilerOptions } from "./typescript.ts";
 import type { FileMap, Graph } from "./graph.ts";
-import { imageLoader } from "./plugins/loaders/image.ts"
-import { text } from "./plugins/transformers/text.ts"
+import { jsonLoader } from "./plugins/loaders/json.ts"
+import { json } from "./plugins/transformers/json.ts"
 
 interface Meta {
   options: {
@@ -42,7 +42,7 @@ const loaders = [
   cssLoader({
     use: postCSSPlugins,
   }),
-  imageLoader()
+  jsonLoader()
 ];
 
 async function runBundle(
@@ -76,20 +76,18 @@ async function runBundle(
   const metaFilePath = path.join(outDir, cacheDir, "meta.json");
 
   const transformers = [
-    cssToModule({
+    css({
       use: postCSSPlugins,
     }),
+    json(),
     typescriptInjectSpecifiers({
       test: (input: string) =>
-        input.startsWith("http") || /\.(css|tsx?|jsx?)$/.test(input),
+        input.startsWith("http") || /\.(css|tsx?|jsx?|json)$/.test(input),
       compilerOptions: {
         target: "es2015",
         ...compilerOptions,
         module: "system",
       },
-    }),
-    text({
-      test: (input: string) => /\.(png|svg)$/.test(input)
     }),
   ];
 
@@ -159,7 +157,7 @@ async function runBundle(
 
     for (const [output, source] of Object.entries(outputMap)) {
       await fs.ensureFile(output);
-      await Deno.writeTextFile(output, source);
+      await Deno.writeFile(output, new Uint8Array(source));
     }
 
     if (!quiet) {

@@ -238,7 +238,7 @@ Deno.test({
     const inputMap = {
       "./a.ts": `console.log("ok");`,
     };
-    assertThrowsAsync(
+    await assertThrowsAsync(
       async () => {
         await create(inputMap, []);
       },
@@ -256,7 +256,7 @@ Deno.test({
     };
     const loaders = [typescriptLoader()];
 
-    assertThrowsAsync(
+    await assertThrowsAsync(
       async () => {
         await create(inputMap, loaders);
       },

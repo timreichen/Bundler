@@ -123,7 +123,7 @@ export async function bundle(
       if (checkedDependencies.has(dependency)) continue;
       checkedDependencies.add(dependency);
       console.log(dependency);
-      
+
       const { imports, exports, path: filePath } = graph[dependency];
 
       const cacheOutput = path.join(
@@ -131,7 +131,7 @@ export async function bundle(
         new Sha256().update(dependency).hex(),
       );
 
-      Object.entries(imports).forEach(([input, { dynamic }]) => {        
+      Object.entries(imports).forEach(([input, { dynamic }]) => {
         if (dynamic) {
           inputs.push(input);
         } else {
@@ -181,8 +181,7 @@ export async function bundle(
         cacheMap[cacheOutput] = source;
         string = source;
       }
-      
-      
+
       if (filePath !== input && entries.has(filePath)) {
         const depsOutput = getOutput(filePath, fileMap, depsPath);
         const relativePath = addRelativePrefix(
@@ -192,7 +191,6 @@ export async function bundle(
         moduleImports.add(createModuleImport(specifier, relativePath));
         string = injectBundleImport(string, specifier);
         console.log("injectBundleImport");
-        
       }
 
       strings.push(string);

@@ -106,7 +106,7 @@ Deno.test({
         path: "a.ts",
         output:
           "0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41.js",
-        imports: { "b.ts": {specifiers: ["*"] } },
+        imports: { "b.ts": { specifiers: ["*"] } },
         exports: {},
       },
       "b.ts": {

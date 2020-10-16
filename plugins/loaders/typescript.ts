@@ -37,18 +37,18 @@ export function typescriptLoader(
                 importMap,
               );
               imports[resolvedSpecifier] = imports[resolvedSpecifier] ||
-                {specifiers: [] };
+                { specifiers: [] };
 
               if (node.importClause) {
-                let symbol
+                let symbol;
                 if (node.importClause.namedBindings) {
-                  symbol = "*"
+                  symbol = "*";
                 } else {
-                  symbol = node.importClause.name.escapedText
+                  symbol = node.importClause.name.escapedText;
                 }
                 console.log(symbol);
-                
-                imports[resolvedSpecifier].specifiers.push(symbol)
+
+                imports[resolvedSpecifier].specifiers.push(symbol);
               }
             }
           }

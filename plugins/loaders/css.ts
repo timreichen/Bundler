@@ -41,7 +41,7 @@ export function cssLoader(
       root.walkAtRules("import", (rule: { params: string }) => {
         const url: string = stripImportSpecifier(rule.params); // remove brackets and quotes
         const resolvedUrl = resolveDependencySpecifier(input, url, importMap);
-        imports[resolvedUrl] = {};
+        imports[resolvedUrl] = { specifiers: ["default"] };
       });
 
       return {

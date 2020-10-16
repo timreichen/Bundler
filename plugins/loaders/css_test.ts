@@ -15,7 +15,7 @@ Deno.test("cssLoader fn", async () => {
   `;
   const { imports } = await cssLoader().fn(input, source);
   assertEquals(imports, {
-    "testdata/src/a.css": {},
-    "testdata/src/b.css": {},
+    "testdata/src/a.css": {specifiers: ["default"] },
+    "testdata/src/b.css": {specifiers: ["default"] },
   });
 });

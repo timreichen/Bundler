@@ -4,7 +4,7 @@ import { Sha256 } from "./deps.ts";
 import { bundle } from "./bundler.ts";
 import { invalidSubcommandError, Program } from "./deps.ts";
 
-import { cssToModule } from "./plugins/transformers/css_to_module.ts";
+import { css } from "./plugins/transformers/css.ts";
 import postcssPresetEnv from "https://jspm.dev/postcss-preset-env";
 
 import { isURL } from "./_util.ts";
@@ -73,7 +73,7 @@ async function runBundle(
   const metaFilePath = path.join(outDir, cacheDir, "meta.json");
 
   const transformers = [
-    cssToModule({
+    css({
       use: postCSSPlugins,
     }),
     typescriptInjectSpecifiers({

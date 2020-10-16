@@ -37,7 +37,19 @@ export function typescriptLoader(
                 importMap,
               );
               imports[resolvedSpecifier] = imports[resolvedSpecifier] ||
-                {};
+                {specifiers: [] };
+
+              if (node.importClause) {
+                let symbol
+                if (node.importClause.namedBindings) {
+                  symbol = "*"
+                } else {
+                  symbol = node.importClause.name.escapedText
+                }
+                console.log(symbol);
+                
+                imports[resolvedSpecifier].specifiers.push(symbol)
+              }
             }
           }
         }
@@ -52,7 +64,7 @@ export function typescriptLoader(
             specifier,
             importMap,
           );
-          imports[resolvedSpecifier] = { dynamic: true };
+          imports[resolvedSpecifier] = { specifiers: [], dynamic: true };
         }
 
         // exports declarations

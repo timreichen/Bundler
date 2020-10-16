@@ -131,7 +131,7 @@ Deno.test({
       "a.ts": {
         path: "a.ts",
         output: "a.js",
-        imports: { "b.ts": { dynamic: true } },
+        imports: { "b.ts": { specifiers: [], dynamic: true } },
         exports: {},
       },
     });
@@ -193,7 +193,7 @@ Deno.test({
       "a.ts": {
         path: "a.ts",
         output: "a.js",
-        imports: { "b.ts": {} },
+        imports: { "b.ts": {specifiers: ["*"], } },
         exports: {},
       },
     });

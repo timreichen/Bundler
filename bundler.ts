@@ -109,11 +109,10 @@ export async function bundle(
     const output = getOutput(input, fileMap, depsPath);
 
     Object.entries(imports).forEach(([input, { specifiers, dynamic }]) => {
-      if (specifiers.length) {
-        dependencies.push(input);
-      }
       if (dynamic) {
         inputs.push(input);
+      } else {
+        dependencies.push(input);
       }
     });
 
@@ -190,7 +189,6 @@ export async function bundle(
         const specifier = `_${new Sha256().update(filePath).hex()}`;
         moduleImports.add(createModuleImport(specifier, relativePath));
         string = injectBundleImport(string, specifier);
-        console.log("injectBundleImport");
       }
 
       strings.push(string);

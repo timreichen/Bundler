@@ -199,3 +199,66 @@ Deno.test({
     });
   },
 });
+
+Deno.test({
+  only: true,
+  name: "bundle smart splitting dynamic import",
+  fn: async () => {
+    const inputMap: InputMap = {
+      "./a.ts": `import { b } from "./b.ts"; console.log(b); await import("./b.ts");`,
+      "./b.ts": `export const b = "b"`,
+    };
+    const fileMap = {
+      "a.ts": "a.js",
+      "./b.ts": "./b.js",
+    };
+    const loaders = [
+      typescriptLoader({
+        test: (input: string) =>
+          input.startsWith("http") || /\.(tsx?|jsx?)$/.test(input),
+      }),
+    ];
+    const transformers = [
+      typescriptInjectSpecifiers({
+        test: (input: string) =>
+          input.startsWith("http") || /\.(css|tsx?|jsx?)$/.test(input),
+        compilerOptions: {
+          target: "es2015",
+          module: "system",
+        },
+      }),
+    ];
+    const { outputMap, cacheMap, graph } = await bundle(inputMap, {
+      quiet: true,
+      fileMap,
+      loaders,
+      transformers,
+    });
+    assertArrayContains(Object.keys(outputMap), ["a.js", "b.js"]);
+    assertArrayContains(Object.keys(cacheMap), [
+      "dist/.cache/ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63",
+      "dist/.cache/0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41",
+    ]);
+    
+    assert(
+      outputMap["a.js"].includes(
+        `import * as _ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63 from "./b.js";`,
+      ),
+    );
+
+    assertEquals(graph, {
+      "b.ts": {
+        path: "b.ts",
+        output: "b.js",
+        imports: {},
+        exports: { "b.ts": { specifiers: ["b"] } },
+      },
+      "a.ts": {
+        path: "a.ts",
+        output: "a.js",
+        imports: { "b.ts": { specifiers: ["b"], dynamic: true } },
+        exports: {},
+      },
+    });
+  },
+});

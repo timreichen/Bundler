@@ -121,7 +121,6 @@ export async function bundle(
       const dependency = dependencies.pop()!;
       if (checkedDependencies.has(dependency)) continue;
       checkedDependencies.add(dependency);
-      console.log(dependency);
 
       const { imports, exports, path: filePath } = graph[dependency];
 
@@ -129,12 +128,13 @@ export async function bundle(
         cacheDirPath,
         new Sha256().update(dependency).hex(),
       );
-
-      Object.entries(imports).forEach(([input, { dynamic }]) => {
+      
+      Object.entries(imports).forEach(([input, { specifiers, dynamic }]) => {
+        if (specifiers.length) {
+          dependencies.push(input);
+        }
         if (dynamic) {
           inputs.push(input);
-        } else {
-          dependencies.push(input);
         }
       });
       dependencies.push(...Object.keys(exports));

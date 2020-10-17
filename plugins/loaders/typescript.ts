@@ -28,7 +28,8 @@ export function typescriptLoader(
         // console.log(ts.SyntaxKind[node.kind])
         // import declarations
         if (node.kind === ts.SyntaxKind.ImportDeclaration) {
-          if (!node.importClause?.isTypeOnly) {
+          const importClause = node.importClause
+          if (!importClause?.isTypeOnly) {
             if (node.moduleSpecifier) {
               const specifier = node.moduleSpecifier.text;
               const resolvedSpecifier = resolveDependencySpecifier(
@@ -36,19 +37,22 @@ export function typescriptLoader(
                 specifier,
                 importMap,
               );
-              imports[resolvedSpecifier] = imports[resolvedSpecifier] ||
-                { specifiers: [] };
+              
+              imports[resolvedSpecifier] = imports[resolvedSpecifier] || { specifiers: [] };
 
-              if (node.importClause) {
-                let symbol;
-                if (node.importClause.namedBindings) {
-                  symbol = "*";
+              if (importClause) {
+                if (importClause.namedBindings) {
+                  if (importClause.namedBindings.elements) {
+                    for (const element of importClause.namedBindings.elements) {
+                      imports[resolvedSpecifier].specifiers.push(element.name.escapedText);
+                    }
+                  } else {
+                    imports[resolvedSpecifier].specifiers.push("*");
+                  }
                 } else {
-                  symbol = node.importClause.name.escapedText;
+                  imports[resolvedSpecifier].specifiers.push(importClause.name.escapedText);
                 }
-                console.log(symbol);
-
-                imports[resolvedSpecifier].specifiers.push(symbol);
+                
               }
             }
           }
@@ -64,7 +68,8 @@ export function typescriptLoader(
             specifier,
             importMap,
           );
-          imports[resolvedSpecifier] = { specifiers: [], dynamic: true };
+          imports[resolvedSpecifier] = imports[resolvedSpecifier] || { specifiers: [] };
+          imports[resolvedSpecifier].dynamic = true
         }
 
         // exports declarations

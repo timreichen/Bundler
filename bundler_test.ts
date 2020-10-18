@@ -193,7 +193,7 @@ Deno.test({
       "a.ts": {
         path: "a.ts",
         output: "a.js",
-        imports: { "b.ts": { specifiers: ["*"] } },
+        imports: { "b.ts": { specifiers: ["b"] } },
         exports: {},
       },
     });
@@ -201,7 +201,6 @@ Deno.test({
 });
 
 Deno.test({
-  only: true,
   name: "bundle smart splitting dynamic import",
   fn: async () => {
     const inputMap: InputMap = {

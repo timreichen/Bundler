@@ -17,8 +17,10 @@ import {
 import { addRelativePrefix, removeRelativePrefix } from "./_util.ts";
 import { createModuleImport, injectBundleImport } from "./_smart_splitting.ts";
 
+const encoder = new TextEncoder()
+
 export interface OutputMap {
-  [output: string]: string;
+  [output: string]: ArrayBuffer;
 }
 
 export interface CacheMap {
@@ -219,7 +221,7 @@ export async function bundle(
           }
         }
       }
-      outputMap[output] = string;
+      outputMap[output] = encoder.encode(string);
     } else {
       if (!quiet) console.log(colors.green(`up-to-date`), input);
     }

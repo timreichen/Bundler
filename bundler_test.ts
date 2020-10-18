@@ -119,7 +119,7 @@ Deno.test({
       "dist/.cache/0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41",
     ]);
 
-    assert(!outputMap["a.js"].includes("import * as"));
+    assert(!new TextDecoder().decode(outputMap["a.js"]).includes("import * as"));
 
     assertEquals(graph, {
       "b.ts": {
@@ -178,7 +178,7 @@ Deno.test({
     ]);
 
     assert(
-      outputMap["a.js"].includes(
+      new TextDecoder().decode(outputMap["a.js"]).includes(
         `import * as _ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63 from "./b.js";`,
       ),
     );
@@ -240,7 +240,7 @@ Deno.test({
     ]);
     
     assert(
-      outputMap["a.js"].includes(
+      new TextDecoder().decode(outputMap["a.js"]).includes(
         `import * as _ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63 from "./b.js";`,
       ),
     );

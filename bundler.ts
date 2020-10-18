@@ -223,6 +223,7 @@ export async function bundle(
       }
       outputMap[output] = encoder.encode(string);
     } else {
+
       if (!quiet) console.log(colors.green(`up-to-date`), input);
     }
   }

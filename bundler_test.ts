@@ -119,7 +119,9 @@ Deno.test({
       "dist/.cache/0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41",
     ]);
 
-    assert(!new TextDecoder().decode(outputMap["a.js"]).includes("import * as"));
+    assert(
+      !new TextDecoder().decode(outputMap["a.js"]).includes("import * as"),
+    );
 
     assertEquals(graph, {
       "b.ts": {
@@ -204,7 +206,8 @@ Deno.test({
   name: "bundle smart splitting dynamic import",
   fn: async () => {
     const inputMap: InputMap = {
-      "./a.ts": `import { b } from "./b.ts"; console.log(b); await import("./b.ts");`,
+      "./a.ts":
+        `import { b } from "./b.ts"; console.log(b); await import("./b.ts");`,
       "./b.ts": `export const b = "b"`,
     };
     const fileMap = {
@@ -238,7 +241,7 @@ Deno.test({
       "dist/.cache/ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63",
       "dist/.cache/0d18d4eb377a214157ad45e7ee0f189a2d7370788a483e729c7f269d94cafe41",
     ]);
-    
+
     assert(
       new TextDecoder().decode(outputMap["a.js"]).includes(
         `import * as _ded2f7f761b76f9c30486fd9f691b40d810bc23774a5438361dbb362ce039f63 from "./b.js";`,

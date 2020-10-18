@@ -17,7 +17,7 @@ import {
 import { addRelativePrefix, removeRelativePrefix } from "./_util.ts";
 import { createModuleImport, injectBundleImport } from "./_smart_splitting.ts";
 
-const encoder = new TextEncoder()
+const encoder = new TextEncoder();
 
 export interface OutputMap {
   [output: string]: ArrayBuffer;
@@ -130,7 +130,7 @@ export async function bundle(
         cacheDirPath,
         new Sha256().update(dependency).hex(),
       );
-      
+
       Object.entries(imports).forEach(([input, { specifiers, dynamic }]) => {
         if (specifiers.length) {
           dependencies.push(input);

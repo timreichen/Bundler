@@ -13,7 +13,7 @@ import { resolve as resolveDependencySpecifier } from "../../dependencies.ts";
 import { Plugin, PluginTest } from "../plugin.ts";
 import { injectInstantiateNameTransformer } from "../../system.ts";
 import { typescript } from "./typescript.ts";
-import { addRelativePrefix } from "../../_util.ts"
+import { addRelativePrefix } from "../../_util.ts";
 
 function injectOutputsTranformer(
   input: string,
@@ -56,7 +56,6 @@ function injectOutputsTranformer(
         );
 
         specifier = addRelativePrefix(relativeOutput);
-        
       }
 
       if (isExportNode(node) && node.moduleSpecifier) {

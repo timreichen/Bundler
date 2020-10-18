@@ -8,6 +8,7 @@ import type { InputMap } from "./graph.ts";
 import { typescriptLoader } from "./plugins/loaders/typescript.ts";
 import { typescriptInjectSpecifiers } from "./plugins/transformers/typescript_inject_specifiers.ts";
 
+const decoder = new TextDecoder()
 Deno.test({
   name: "bundle inputMap",
   fn: async () => {

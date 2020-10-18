@@ -14,6 +14,8 @@ import { typescriptInjectSpecifiers } from "./plugins/transformers/typescript_in
 import { terser } from "./plugins/transformers/terser.ts";
 import type { CompilerOptions } from "./typescript.ts";
 import type { FileMap, Graph } from "./graph.ts";
+import { jsonLoader } from "./plugins/loaders/json.ts"
+import { json } from "./plugins/transformers/json.ts"
 
 interface Meta {
   options: {
@@ -40,6 +42,7 @@ const loaders = [
   cssLoader({
     use: postCSSPlugins,
   }),
+  jsonLoader()
 ];
 
 async function runBundle(
@@ -76,15 +79,16 @@ async function runBundle(
     css({
       use: postCSSPlugins,
     }),
+    json(),
     typescriptInjectSpecifiers({
       test: (input: string) =>
-        input.startsWith("http") || /\.(css|tsx?|jsx?)$/.test(input),
+        input.startsWith("http") || /\.(css|tsx?|jsx?|json)$/.test(input),
       compilerOptions: {
         target: "es2015",
         ...compilerOptions,
         module: "system",
       },
-    }),
+    })
   ];
 
   const optimizers = [
@@ -153,7 +157,7 @@ async function runBundle(
 
     for (const [output, source] of Object.entries(outputMap)) {
       await fs.ensureFile(output);
-      await Deno.writeTextFile(output, source);
+      await Deno.writeFile(output, new Uint8Array(source));
     }
 
     if (!quiet) {

@@ -10,6 +10,7 @@ A lightweight bundler that transpiles and bundles for the web.
 - [smart splits](#Smart-splitting) dependencies
 - [`--optimize` option](#Options) minifies `javascript` and `css` files
 - [`--watch` option](#Options) observes all dependencies and re-bundles on files changes
+- handles [`json` imports](#JSON)
 - handles [`css` imports](#CSS) and `css` `@import` statements
 - supports `css` postcss-preset-env *stage 2* and *nesting-rules* by default
 
@@ -95,6 +96,16 @@ This
 #### Typescript
 Bundler uses typescript loader by default. You can import `typescript` and `javascript` files directly in your files.
 typescript loader handles modules relative and absolute paths wih and without suffixes as well as urls.
+
+#### JSON
+Bundler uses `JSON` loader by default. You can import `JSON` files directly in your files. The `JSON` loader will convert the file into a javascript module with a default string export.
+
+```json
+/* src/data.json */
+{
+  "foo": "bar"
+}
+```
 
 #### CSS
 CSS is native to browsers and bundler therefore focuses on making css usage really easy.

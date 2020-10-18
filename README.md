@@ -4,19 +4,18 @@ A lightweight bundler that transpiles and bundles for the web.
 ## Why Use Bundler
 
 - transpiles and bundles files
-- handles [url imports](https://deno.land/manual/linking_to_external_code)
-- handles imports with and without extensions
-- does dynamic imports splitting to separate files
-- does [smart splitting](#Smart-splitting)
+- no configuration required
+- handles imports with and without extensions as well as [url imports](https://deno.land/manual/linking_to_external_code)
+- handles dynamic imports
+- [smart splits](#Smart-splitting) dependencies
 - [`--optimize` option](#Options) minifies `javascript` and `css` files
 - [`--watch` option](#Options) observes all dependencies and re-bundles on files changes
-- handles [imports of `css` files](#CSS-imports) and converts them to `javascript` modules
-- handles `css` `@import` statements
+- handles [`css` imports](#CSS) and `css` `@import` statements
 - supports `css` postcss-preset-env *stage 2* and *nesting-rules* by default
 
 ### But there is `deno bundle`…
-Deno offers `deno bundle` to transpile a file to a standalone module. This might work in some occations but is limited.
-Bundler works in a similar way to `deno bundle` but splits dynamic imports to separate files and injects paths.
+Deno offers `deno bundle` to transpile a file to a standalone module. This might work in some occations but is limited. Bundler works in a similar way to `deno bundle` but is created with the web in mind.
+It splits dynamic imports to separate files and injects paths. It splits code that is imported in multiple files so it only is loaded once.
 The `--optimize` option also allows for code minification with both `javascript` and `css` files.
 It also has a `--watch` option that observes all dependencies and re-bundles on files changes.
 
@@ -47,6 +46,7 @@ deno install --unstable --allow-read --allow-write --allow-net --allow-env --nam
 ```sh
 bundler bundle index.ts=index.js
 ```
+
 #### Options
 | Option              | Description                           | Default |
 |---------------------:|--------------------------------------|---------|
@@ -90,10 +90,16 @@ This
 - allows bundle files to import other bundle files
 - makes multiple bundle files smaller, because they will not contain the same code multiple times
 
-### CSS imports
+### Loaders
+
+#### Typescript
+Bundler uses typescript loader by default. You can import `typescript` and `javascript` files directly in your files.
+typescript loader handles modules relative and absolute paths wih and without suffixes as well as urls.
+
+#### CSS
 CSS is native to browsers and bundler therefore focuses on making css usage really easy.
 It supports [postcss-preset-env](https://preset-env.cssdb.org) with **stage 2** features and **nesting-rules** enabled so you can use the latest css features out of the box.
-You can import css files directly in your typescript files. Bundler will convert the css file into a javascript module with a default string export.
+Bundler uses CSS loader by default. You can import css files directly in your typescript files. The CSS loader will convert the file into a javascript module with a default string export.
 
 ```css
 /* src/styles.css */
@@ -111,15 +117,19 @@ console.log(styles) // article > p { color: red; }
 ```
 
 ## Examples
-
-- [Hello World](https://github.com/timreichen/Bundler/tree/master/examples/hello%20world)
+### Hello world
+- [hello world](https://github.com/timreichen/Bundler/tree/master/examples/hello%20world)
+### Dependencies
+- [dynamic import](https://github.com/timreichen/Bundler/tree/master/examples/dynamic%20import)
+- [json import](https://github.com/timreichen/Bundler/tree/master/examples/json%20import)
 - [css import](https://github.com/timreichen/Bundler/tree/master/examples/css%20import)
+### Third party imports
 - [lit-element](https://github.com/timreichen/Bundler/tree/master/examples/lit-element)
 - [React](https://github.com/timreichen/Bundler/tree/master/examples/react)
-- [dynamic import](https://github.com/timreichen/Bundler/tree/master/examples/dynamic%20import)
+### Bundler API
+- [custom bundler](https://github.com/timreichen/Bundler/tree/master/examples/custom%20bundler)
 - [top level await](https://github.com/timreichen/Bundler/tree/master/examples/top%20level%20await)
 - [smart splitting](https://github.com/timreichen/Bundler/tree/master/examples/smart%20splitting)
-- [custom bundler](https://github.com/timreichen/Bundler/tree/master/examples/custom%20bundler)
 
 ## Unstable
-This module is likely to change in the future. Do not use in production!
+This module requires deno to run with the `--unstable` flag and is likely to change in the future. Do not use in production!

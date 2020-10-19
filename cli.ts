@@ -14,8 +14,8 @@ import { typescriptInjectSpecifiers } from "./plugins/transformers/typescript_in
 import { terser } from "./plugins/transformers/terser.ts";
 import type { CompilerOptions } from "./typescript.ts";
 import type { FileMap, Graph } from "./graph.ts";
-import { jsonLoader } from "./plugins/loaders/json.ts"
-import { json } from "./plugins/transformers/json.ts"
+import { jsonLoader } from "./plugins/loaders/json.ts";
+import { json } from "./plugins/transformers/json.ts";
 
 interface Meta {
   options: {
@@ -42,7 +42,7 @@ const loaders = [
   cssLoader({
     use: postCSSPlugins,
   }),
-  jsonLoader()
+  jsonLoader(),
 ];
 
 async function runBundle(
@@ -79,7 +79,7 @@ async function runBundle(
     css({
       use: postCSSPlugins,
     }),
-    json(),
+    json({ optimize }),
     typescriptInjectSpecifiers({
       test: (input: string) =>
         input.startsWith("http") || /\.(css|tsx?|jsx?|json)$/.test(input),
@@ -88,7 +88,7 @@ async function runBundle(
         ...compilerOptions,
         module: "system",
       },
-    })
+    }),
   ];
 
   const optimizers = [

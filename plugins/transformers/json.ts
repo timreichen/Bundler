@@ -5,6 +5,7 @@ import type { Graph } from "../../graph.ts";
 
 interface Config {
   test?: PluginTest;
+  optimize?: boolean;
 }
 
 const printer: ts.Printer = ts.createPrinter({ removeComments: false });
@@ -12,14 +13,17 @@ const printer: ts.Printer = ts.createPrinter({ removeComments: false });
 export function json(
   {
     test = (input: string) => input.endsWith(".json"),
+    optimize = false,
   }: Config = {},
 ) {
-
   const fn = async (
     input: string,
     source: string,
-    { graph }: { graph: Graph;},
+    { graph }: { graph: Graph },
   ) => {
+    if (optimize) {
+      source = JSON.stringify(JSON.parse(source));
+    }
     const ast = ts.createExportDefault(ts.createIdentifier(source));
     const string = printer.printList(
       undefined,
@@ -29,7 +33,7 @@ export function json(
     const entry = graph[input];
     entry.exports[input] = entry.exports[input] || { specifiers: [] };
     entry.exports[input].specifiers.push("default");
-    
+
     return string;
   };
 

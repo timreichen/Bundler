@@ -49,7 +49,7 @@ async function runBundle(
   {
     _,
     "out-dir": outDir = "dist",
-    importmap: importMapPath,
+    "import-map": importMapPath,
     config: configPath,
     optimize,
     reload,
@@ -248,7 +248,7 @@ program
     description: "Prints help information",
   })
   .option({
-    name: "importmap",
+    name: "import-map",
     args: [{ name: "FILE" }],
     description: `UNSTABLE:
 Load import map file

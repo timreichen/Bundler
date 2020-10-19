@@ -72,11 +72,21 @@ export async function bundle(
 
   fileMap = { ...fileMap };
 
+  const graphTime = performance.now();
+
   const graph = await createGraph(
     inputMap,
     loaders,
     { graph: initialGraph, fileMap, importMap, baseURL: depsPath, reload },
   );
+
+  if (!quiet) {
+    console.log(
+      colors.blue(`Create`),
+      `graph`,
+      colors.gray(`(${Math.ceil(performance.now() - graphTime)}ms)`),
+    );
+  }
 
   const inputs = Object.keys(inputMap).map(removeRelativePrefix);
 
@@ -88,14 +98,12 @@ export async function bundle(
   }
 
   const checkedInputs: Set<string> = new Set();
+  const time = performance.now();
+
   while (inputs.length) {
     const input = inputs.pop()!;
     if (checkedInputs.has(input)) continue;
     checkedInputs.add(input);
-
-    if (!quiet) {
-      console.log(colors.blue(`Bundle`), input);
-    }
 
     const entry = graph[input];
 
@@ -120,6 +128,7 @@ export async function bundle(
 
     const checkedDependencies: Set<string> = new Set();
     while (dependencies.length) {
+      const time = performance.now();
       const dependency = dependencies.pop()!;
       if (checkedDependencies.has(dependency)) continue;
       checkedDependencies.add(dependency);
@@ -152,8 +161,12 @@ export async function bundle(
         ((!reload && cacheFileExists) || cacheMap[cacheOutput]) && !modified
       ) {
         string = await getCacheSource(cacheOutput, cacheMap);
-        if (!quiet && filePath !== input) {
-          console.log(colors.green(`Check`), dependency);
+        if (!quiet) {
+          console.log(
+            colors.green(`Check`),
+            dependency,
+            colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
+          );
         }
       } else {
         // if cache file does not exist or is out of date create apply transformers to source and create new cache file
@@ -171,11 +184,19 @@ export async function bundle(
         }
 
         // Bundle file has special log. Only log dependency files
-        if (filePath !== input) {
+        if (!quiet) {
           if (!cacheFileExists) {
-            if (!quiet) console.log(colors.green(`Create`), dependency);
+            console.log(
+              colors.green(`Create`),
+              dependency,
+              colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
+            );
           } else {
-            if (!quiet) console.log(colors.green(`Update`), dependency);
+            console.log(
+              colors.green(`Update`),
+              dependency,
+              colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
+            );
           }
         }
 
@@ -222,8 +243,21 @@ export async function bundle(
         }
       }
       outputMap[output] = encoder.encode(string);
+      if (!quiet) {
+        console.log(
+          colors.blue(`Bundle`),
+          input,
+          colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
+        );
+      }
     } else {
-      if (!quiet) console.log(colors.green(`up-to-date`), input);
+      if (!quiet) {
+        console.log(
+          colors.blue(`up-to-date`),
+          input,
+          colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
+        );
+      }
     }
   }
 

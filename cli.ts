@@ -160,10 +160,6 @@ async function runBundle(
       await Deno.writeFile(output, new Uint8Array(source));
     }
 
-    if (!quiet) {
-      console.log(colors.blue(`${Math.ceil(performance.now() - time)}ms`));
-    }
-
     const paths = Object.values(graph).map((entry) => entry.path);
     for (const path of paths) {
       if (!hashes[path]) {

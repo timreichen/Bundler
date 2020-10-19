@@ -2,7 +2,7 @@ import { typescriptLoader } from "./typescript.ts";
 import { assertEquals } from "https://deno.land/std@0.74.0/testing/asserts.ts";
 
 Deno.test({
-  name: "typescriptLoader imports",
+  name: "loader typescript imports",
   fn: async () => {
     const input = "testdata/src/a.ts";
     const source = `
@@ -18,7 +18,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "typescriptLoader dynamic imports",
+  name: "loader typescript dynamic imports",
   fn: async () => {
     const input = "testdata/src/a.ts";
     const source = `
@@ -39,7 +39,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "typescriptLoader exports",
+  name: "loader typescript exports",
   fn: async () => {
     const input = "testdata/src/a.ts";
     const source = `

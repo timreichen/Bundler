@@ -1,7 +1,7 @@
 import {
   assertEquals,
   assertThrowsAsync,
-} from "https://deno.land/std@0.74.0/testing/asserts.ts";
+} from "./test_deps.ts";
 import { resolve } from "./cache.ts";
 
 import { create } from "./graph.ts";

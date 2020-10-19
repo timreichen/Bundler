@@ -1,9 +1,9 @@
-import { bundle } from "./bundler.ts";
 import {
   assert,
-  assertArrayContains,
   assertEquals,
-} from "https://deno.land/std@0.74.0/testing/asserts.ts";
+  assertArrayContains
+} from "./test_deps.ts";
+import { bundle } from "./bundler.ts";
 import type { InputMap } from "./graph.ts";
 import { typescriptLoader } from "./plugins/loaders/typescript.ts";
 import { typescriptInjectSpecifiers } from "./plugins/transformers/typescript_inject_specifiers.ts";

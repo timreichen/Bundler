@@ -1,5 +1,7 @@
+import {
+  assertEquals,
+} from "../../test_deps.ts";
 import { typescriptLoader } from "./typescript.ts";
-import { assertEquals } from "https://deno.land/std@0.74.0/testing/asserts.ts";
 
 Deno.test({
   name: "loader typescript imports",

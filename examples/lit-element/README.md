@@ -3,7 +3,7 @@
 ## 1. Bundle
 Run
 ```sh
-bundler bundle --importmap=importmap.json src/index.ts=index.js
+bundler bundle --import-map=importmap.json src/index.ts=index.js
 ```
 
 ## 2. Serve

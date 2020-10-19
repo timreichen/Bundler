@@ -20,7 +20,7 @@ export function text(
       undefined,
     );
     const entry = graph[input];
-    entry.exports[input] = entry.exports[input] || [];
+    entry.exports[input] = entry.exports[input] || { specifiers: [] };
     entry.exports[input].specifiers.push("default");
     return string;
   };

@@ -1,7 +1,5 @@
 import { cssLoader } from "./css.ts";
-import {
-  assertEquals,
-} from "../../test_deps.ts";
+import { assertEquals } from "../../test_deps.ts";
 
 Deno.test("loader css test", async () => {
   assertEquals(await cssLoader().test("testdata/src/styles.css"), true);

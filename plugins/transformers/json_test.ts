@@ -1,6 +1,4 @@
-import {
-  assertEquals,
-} from "../../test_deps.ts";
+import { assertEquals } from "../../test_deps.ts";
 
 import { json } from "./json.ts";
 

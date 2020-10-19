@@ -1,8 +1,4 @@
-import {
-  assert,
-  assertEquals,
-  assertArrayContains
-} from "./test_deps.ts";
+import { assert, assertArrayContains, assertEquals } from "./test_deps.ts";
 import { bundle } from "./bundler.ts";
 import type { InputMap } from "./graph.ts";
 import { typescriptLoader } from "./plugins/loaders/typescript.ts";

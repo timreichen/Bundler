@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertThrowsAsync,
-} from "./test_deps.ts";
+import { assertEquals, assertThrowsAsync } from "./test_deps.ts";
 import { cache, resolve } from "./cache.ts";
 
 import * as path from "https://deno.land/std@0.74.0/path/mod.ts";

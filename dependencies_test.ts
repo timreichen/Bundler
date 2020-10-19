@@ -1,8 +1,5 @@
-import {
-  assertEquals,
-} from "./test_deps.ts";
+import { assertEquals } from "./test_deps.ts";
 import { resolve } from "./dependencies.ts";
-
 
 Deno.test("dependencies resolve path", async () => {
   const importMap = {

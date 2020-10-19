@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertThrowsAsync,
-} from "./test_deps.ts";
+import { assertEquals, assertThrowsAsync } from "./test_deps.ts";
 import { resolve } from "./cache.ts";
 
 import { create } from "./graph.ts";

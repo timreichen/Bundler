@@ -107,6 +107,13 @@ Bundler uses `JSON` loader by default. You can import `JSON` files directly in y
 }
 ```
 
+```js
+/* src/index.ts */
+import data from "./data.json"
+console.log(data) // { foo: "bar" }
+```
+**Info** [JSON modules](https://github.com/tc39/proposal-json-modules) is currently at **stage 2**. The functionality of this loader might change once  **stage 4** is reached.
+
 #### CSS
 CSS is native to browsers and bundler therefore focuses on making css usage really easy.
 It supports [postcss-preset-env](https://preset-env.cssdb.org) with **stage 2** features and **nesting-rules** enabled so you can use the latest css features out of the box.

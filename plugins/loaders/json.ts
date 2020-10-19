@@ -6,7 +6,6 @@ export function jsonLoader(
     test?: LoaderTest;
   } = {},
 ) {
-
   return new Loader({
     test,
     fn: async (

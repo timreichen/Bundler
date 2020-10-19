@@ -9,11 +9,22 @@ Deno.test("transformer csso test", async () => {
   assertEquals(await csso().test("testdata/src/a.png"), false);
 });
 
-
 Deno.test("transformer csso fn", async () => {
   const input = "testdata/src/a.css";
-  const source = `article > p { color: yellow; }`
-  const output = await csso().fn(input, source, { graph: { [input]: { path: input, output: "x.ts", imports: {}, exports: {} } } , fileMap: {}, importMap: {}, depsDir: "deps", outDir: "dist"});
+  const source = `article > p { color: yellow; }`;
+  const output = await csso().fn(
+    input,
+    source,
+    {
+      graph: {
+        [input]: { path: input, output: "x.ts", imports: {}, exports: {} },
+      },
+      fileMap: {},
+      importMap: {},
+      depsDir: "deps",
+      outDir: "dist",
+    },
+  );
 
   assertEquals(output, `article>p{color:#ff0}`);
 });

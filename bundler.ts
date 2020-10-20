@@ -83,7 +83,8 @@ export async function bundle(
   if (!quiet) {
     console.log(
       colors.blue(`Create`),
-      `graph`,
+      `Graph`,
+      `${Object.keys(graph).length} files`,
       colors.gray(`(${Math.ceil(performance.now() - graphTime)}ms)`),
     );
   }
@@ -98,12 +99,12 @@ export async function bundle(
   }
 
   const checkedInputs: Set<string> = new Set();
-  const time = performance.now();
 
   while (inputs.length) {
     const input = inputs.pop()!;
     if (checkedInputs.has(input)) continue;
     checkedInputs.add(input);
+    const time = performance.now();
 
     const entry = graph[input];
 
@@ -141,7 +142,7 @@ export async function bundle(
       );
 
       Object.entries(imports).forEach(([input, { specifiers, dynamic }]) => {
-        if (specifiers.length) {
+        if (!specifiers || specifiers.length) {
           dependencies.push(input);
         }
         if (dynamic) {
@@ -157,11 +158,12 @@ export async function bundle(
       // if cache file is up to date, get source from that cache file
 
       let string: string;
+
       if (
         ((!reload && cacheFileExists) || cacheMap[cacheOutput]) && !modified
       ) {
         string = await getCacheSource(cacheOutput, cacheMap);
-        if (!quiet) {
+        if (!quiet && filePath !== input) {
           console.log(
             colors.green(`Check`),
             dependency,
@@ -184,7 +186,7 @@ export async function bundle(
         }
 
         // Bundle file has special log. Only log dependency files
-        if (!quiet) {
+        if (!quiet && filePath !== input) {
           if (!cacheFileExists) {
             console.log(
               colors.green(`Create`),
@@ -247,6 +249,8 @@ export async function bundle(
         console.log(
           colors.blue(`Bundle`),
           input,
+          colors.gray("->"),
+          colors.gray(output),
           colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
         );
       }
@@ -255,6 +259,8 @@ export async function bundle(
         console.log(
           colors.blue(`up-to-date`),
           input,
+          colors.gray("->"),
+          colors.gray(output),
           colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
         );
       }

@@ -31,9 +31,9 @@ Deno.test({
   `;
     const { imports } = await typescriptLoader().fn(input, source);
     assertEquals(imports, {
-      "testdata/src/c.css": { specifiers: [], dynamic: true },
-      "testdata/src/localisation/en.ts": { specifiers: [], dynamic: true },
-      "testdata/src/localisation/de.ts": { specifiers: [], dynamic: true },
+      "testdata/src/c.css": { dynamic: true },
+      "testdata/src/localisation/en.ts": { dynamic: true },
+      "testdata/src/localisation/de.ts": { dynamic: true },
     });
   },
 });

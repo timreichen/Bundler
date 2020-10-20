@@ -38,22 +38,23 @@ export function typescriptLoader(
                 importMap,
               );
 
-              imports[resolvedSpecifier] = imports[resolvedSpecifier] ||
-                { specifiers: [] };
+              imports[resolvedSpecifier] = imports[resolvedSpecifier] || {};
 
               if (importClause) {
+                imports[resolvedSpecifier].specifiers =
+                  imports[resolvedSpecifier].specifiers || [];
                 if (importClause.namedBindings) {
                   if (importClause.namedBindings.elements) {
                     for (const element of importClause.namedBindings.elements) {
-                      imports[resolvedSpecifier].specifiers.push(
+                      imports[resolvedSpecifier].specifiers!.push(
                         element.name.escapedText,
                       );
                     }
                   } else {
-                    imports[resolvedSpecifier].specifiers.push("*");
+                    imports[resolvedSpecifier].specifiers!.push("*");
                   }
                 } else {
-                  imports[resolvedSpecifier].specifiers.push(
+                  imports[resolvedSpecifier].specifiers!.push(
                     importClause.name.escapedText,
                   );
                 }
@@ -73,7 +74,7 @@ export function typescriptLoader(
             importMap,
           );
           imports[resolvedSpecifier] = imports[resolvedSpecifier] ||
-            { specifiers: [] };
+            {};
           imports[resolvedSpecifier].dynamic = true;
         }
 

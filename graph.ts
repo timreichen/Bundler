@@ -4,7 +4,7 @@ import type { Loader } from "./plugins/loader.ts";
 import { addRelativePrefix, isURL, removeRelativePrefix } from "./_util.ts";
 
 export interface Imports {
-  [input: string]: { specifiers: string[]; dynamic?: true };
+  [input: string]: { specifiers?: string[]; dynamic?: true };
 }
 
 export interface Exports {

@@ -59,6 +59,7 @@ async function runBundle(
   }: // "log-level": logLevel,
     Args,
 ) {
+  
   const importMap =
     (importMapPath
       ? JSON.parse(await Deno.readTextFile(importMapPath))
@@ -95,7 +96,7 @@ async function runBundle(
     terser(),
   ];
 
-  const { graph: initialGraph }: Meta = await fs.exists(metaFilePath)
+  const { graph: initialGraph }: Meta = !reload && await fs.exists(metaFilePath)
     ? JSON.parse(await Deno.readTextFile(metaFilePath))
     : { graph: {} };
 
@@ -103,8 +104,6 @@ async function runBundle(
 
   async function main() {
     const inputMap: { [input: string]: string } = {};
-
-    const time = performance.now();
 
     const fileMap: FileMap = {};
 

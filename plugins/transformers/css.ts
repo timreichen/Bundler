@@ -1,5 +1,6 @@
 import { Plugin, PluginTest } from "../plugin.ts";
 
+import { postcss as postcssCore } from "../../deps.ts";
 import { postcss } from "./postcss.ts";
 import { csso } from "./csso.ts";
 import { cssInjectImports } from "./css_inject_imports.ts";
@@ -11,7 +12,7 @@ import type { FileMap, Graph } from "../../graph.ts";
 interface Config {
   test?: PluginTest;
   optimize?: boolean;
-  use?: unknown[];
+  use?: postcssCore.AcceptedPlugin[];
 }
 
 function removeImports() {

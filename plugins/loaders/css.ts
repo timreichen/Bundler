@@ -1,4 +1,4 @@
-import postcssCore from "https://jspm.dev/postcss";
+import { postcss as postcssCore } from "../../deps.ts";
 import { resolve as resolveDependencySpecifier } from "../../dependencies.ts";
 import type { ImportMap } from "../../deps.ts";
 import type { Imports } from "../../graph.ts";
@@ -22,10 +22,10 @@ function stripImportSpecifier(specifier: string) {
 export function cssLoader(
   { test = (input: string) => input.endsWith(".css"), use = [] }: {
     test?: LoaderTest;
-    use?: unknown[];
+    use?: postcssCore.AcceptedPlugin[];
   } = {},
 ) {
-  const postcss = (postcssCore as Function)(use);
+  const postcss = postcssCore.default(use);
 
   return new Loader({
     test,

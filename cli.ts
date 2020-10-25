@@ -5,7 +5,7 @@ import { bundle } from "./bundler.ts";
 import { invalidSubcommandError, Program } from "./deps.ts";
 
 import { css } from "./plugins/transformers/css.ts";
-import postcssPresetEnv from "https://jspm.dev/postcss-preset-env";
+import { postcssPresetEnv } from "./deps.ts";
 
 import { isURL } from "./_util.ts";
 import { cssLoader } from "./plugins/loaders/css.ts";

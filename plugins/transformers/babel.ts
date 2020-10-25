@@ -1,4 +1,4 @@
-import babelCore from "https://dev.jspm.io/@babel/core";
+import { babel as babelCore } from "../../deps.ts";
 import { Plugin, PluginTest } from "../plugin.ts";
 
 interface Config {

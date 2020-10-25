@@ -1,8 +1,7 @@
 import { Plugin, PluginTest } from "../plugin.ts";
-import * as Terser from "https://jspm.dev/terser";
-import { colors } from "../../deps.ts";
+import { terser as terserCore } from "../../deps.ts";
 
-const minify = Terser.minify;
+import { colors } from "../../deps.ts";
 
 interface Config {
   test?: PluginTest;
@@ -15,7 +14,7 @@ export function terser(
 ) {
   const fn = async (input: string, source: string) => {
     try {
-      const { code } = await minify(source, { ...options }) as {
+      const { code } = await terserCore.minify(source, { ...options }) as {
         code: string;
       };
       return code;

@@ -1,5 +1,5 @@
-import { assertEquals } from "https://deno.land/std@0.74.0/testing/asserts.ts";
-import postcssPresetEnv from "https://jspm.dev/postcss-preset-env";
+import { assertEquals } from "../../test_deps.ts";
+import { postcssPresetEnv } from "../../deps.ts";
 
 import { css } from "./css.ts";
 

@@ -13,8 +13,8 @@ export { invalidSubcommandError } from "https://deno.land/x/program@0.1.6/_helpe
 
 export { default as ts } from "https://jspm.dev/typescript"
 export * as postcss from "https://esm.sh/postcss@8.1.4"
-/* esm.sh/postcss-preset-env throws error: Type 'Plugin' is not generic. type Autoprefixer = Plugin<Options> & ExportedAPI; */
-export { default as postcssPresetEnv } from "https://jspm.dev/postcss-preset-env@6.7.0" 
+
+export { default as postcssPresetEnv } from "https://esm.sh/postcss-preset-env@6.7.0?no-check"
 export * as terser from "https://esm.sh/terser@5.3.8"
 export { default as csso } from "https://esm.sh/csso@4.0.3"
 export { default as babel } from "https://esm.sh/@babel/core@7.12.3"

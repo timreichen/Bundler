@@ -1,4 +1,4 @@
-import { ts } from "./deps.ts";
+import { ts, xts } from "./deps.ts";
 
 const printer = ts.createPrinter(
   { removeComments: false },
@@ -210,6 +210,127 @@ export function injectInstantiateNameTransformer(
     };
     return (node: ts.Node) => {
       return ts.visitNode(node, visit) as ts.SourceFile;
+    };
+  };
+}
+
+export function bundleImportTransformer(specifier: string) {
+  return (context: xts.TransformationContext) => {
+    const visit: xts.Visitor = (node: xts.Node) => {
+      if (
+        xts.isCallExpression(node) &&
+        node.expression?.expression?.escapedText === "System" &&
+        node.expression?.name?.escapedText === "register"
+      ) {
+        return xts.visitEachChild(node, (node: xts.Node) => {
+          if (node.kind === xts.SyntaxKind["FunctionExpression"]) {
+            return xts.visitEachChild(node, (node: xts.Node) => {
+              if (node.kind === xts.SyntaxKind["Block"]) {
+                return xts.visitEachChild(node, (node: xts.Node) => {
+                  if (node.kind === xts.SyntaxKind["ReturnStatement"]) {
+                    return xts.visitEachChild(node, (node: xts.Node) => {
+                      if (
+                        node.kind === xts.SyntaxKind["ObjectLiteralExpression"]
+                      ) {
+                        return xts.visitEachChild(node, (node: xts.Node) => {
+                          if (
+                            node.kind === xts.SyntaxKind["PropertyAssignment"]
+                          ) {
+                            return xts.visitEachChild(node, (node: xts.Node) => {
+                              if (
+                                node.kind ===
+                                  xts.SyntaxKind["FunctionExpression"]
+                              ) {
+                                return xts.visitEachChild(
+                                  node,
+                                  (node: xts.Node) => {
+                                    if (node.kind === xts.SyntaxKind["Block"]) {
+                                      return xts.visitEachChild(
+                                        node,
+                                        (node: xts.Node) => {
+                                          if (
+                                            node.kind ===
+                                              xts.SyntaxKind[
+                                                "ExpressionStatement"
+                                              ]
+                                          ) {
+                                            return xts.visitEachChild(
+                                              node,
+                                              (node: xts.Node) => {
+                                                if (
+                                                  node.kind ===
+                                                    xts.SyntaxKind[
+                                                      "CallExpression"
+                                                    ] &&
+                                                  node.expression
+                                                      .escapedText ===
+                                                    "exports_1"
+                                                ) {
+                                                  return xts.visitEachChild(
+                                                    node,
+                                                    (node: xts.Node) => {
+                                                      if (
+                                                        node.kind ===
+                                                          xts.SyntaxKind[
+                                                            "BinaryExpression"
+                                                          ]
+                                                      ) {
+                                                        return xts.createBinary(
+                                                          node.left,
+                                                          xts.createToken(
+                                                            xts.SyntaxKind
+                                                              .EqualsToken,
+                                                          ),
+                                                          xts.createPropertyAccess(
+                                                            xts.createIdentifier(
+                                                              specifier,
+                                                            ),
+                                                            node.left.text,
+                                                          ),
+                                                        );
+                                                      }
+                                                      return node;
+                                                    },
+                                                    context,
+                                                  );
+                                                }
+                                                return node;
+                                              },
+                                              context,
+                                            );
+                                          }
+                                          return node;
+                                        },
+                                        context,
+                                      );
+                                    }
+                                    return node;
+                                  },
+                                  context,
+                                );
+                              }
+                              return node;
+                            }, context);
+                          }
+                          return node;
+                        }, context);
+                      }
+                      return node;
+                    }, context);
+                  }
+                  return node;
+                }, context);
+              }
+              return node;
+            }, context);
+          }
+          return node;
+        }, context);
+      }
+      return xts.visitEachChild(node, visit, context);
+    };
+    return (node: xts.Node) => {
+      return xts.visitNode(node, visit);
     };
   };
 }

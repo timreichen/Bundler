@@ -228,7 +228,7 @@ export async function bundle(
     if (bundleNeedsUpdate) {
       strings.push(createInstantiate(output));
       for (const { specifiers } of Object.values(entry.exports)) {
-        strings.push(createSystemExports(specifiers));
+        strings.push(...createSystemExports(specifiers));
       }
 
       let string = [...moduleImports, ...strings].join("\n");

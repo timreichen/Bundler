@@ -1,79 +1,80 @@
-import { xts } from "./deps.ts";
+import { ts } from "./deps.ts";
 
-const printer: xts.Printer = xts.createPrinter(
-  { newLine: xts.NewLineKind.LineFeed, removeComments: false },
+const printer = ts.createPrinter(
+  { removeComments: false },
 );
+const sourceFile = ts.createSourceFile("x.ts", "", ts.ScriptTarget.Latest)
 
 export function createInstantiate(path: string): string {
-  const __exp = xts.createVariableStatement(
+  const __exp = ts.createVariableStatement(
     undefined,
-    xts.createVariableDeclarationList(
-      [xts.createVariableDeclaration(
-        xts.createIdentifier("__exp"),
+    ts.createVariableDeclarationList(
+      [ts.createVariableDeclaration(
+        ts.createIdentifier("__exp"),
         undefined,
-        xts.createCall(
-          xts.createIdentifier("__instantiate"),
+        ts.createCall(
+          ts.createIdentifier("__instantiate"),
           undefined,
           [
-            xts.createStringLiteral(path),
-            xts.createFalse(),
+            ts.createStringLiteral(path),
+            ts.createFalse(),
           ],
         ),
       )],
-      xts.NodeFlags.Const,
+      ts.NodeFlags.Const,
     ),
   );
-  return printer.printNode(xts.EmitHint.Unspecified, __exp, undefined);
+  
+  return printer.printNode(ts.EmitHint.Unspecified, __exp, sourceFile);
 }
 
 function exportString(key: string, value: string) {
-  const statement = xts.createVariableStatement(
-    [xts.createModifier(xts.SyntaxKind.ExportKeyword)],
-    xts.createVariableDeclarationList(
-      [xts.createVariableDeclaration(
-        xts.createIdentifier(key),
+  const statement = ts.createVariableStatement(
+    [ts.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.createVariableDeclarationList(
+      [ts.createVariableDeclaration(
+        ts.createIdentifier(key),
         undefined,
-        xts.createElementAccess(
-          xts.createIdentifier("__exp"),
-          xts.createStringLiteral(value),
+        ts.createElementAccess(
+          ts.createIdentifier("__exp"),
+          ts.createStringLiteral(value),
         ),
       )],
-      xts.NodeFlags.Const,
+      ts.NodeFlags.Const,
     ),
   );
 
-  return printer.printNode(xts.EmitHint.Unspecified, statement, undefined);
+  return printer.printNode(ts.EmitHint.Unspecified, statement, sourceFile);
 }
 
 function defaultExportString(value: string) {
-  const assignment = xts.createExportAssignment(
+  const assignment = ts.createExportAssignment(
     undefined,
     undefined,
     undefined,
-    xts.createElementAccess(
-      xts.createIdentifier("__exp"),
-      xts.createStringLiteral(value),
+    ts.createElementAccess(
+      ts.createIdentifier("__exp"),
+      ts.createStringLiteral(value),
     ),
   );
-  return printer.printNode(xts.EmitHint.Unspecified, assignment, undefined);
+  return printer.printNode(ts.EmitHint.Unspecified, assignment, sourceFile);
 }
 
-export function createSystemExports(exports: string[]): string {
-  let string = "";
+export function createSystemExports(exports: string[]): string[] {
+  let strings = []
   for (const key of exports) {
-    string += `\n`;
     switch (key) {
       case "default": {
-        string += defaultExportString(key);
+        strings.push(defaultExportString(key));
         break;
       }
       default: {
-        string += exportString(key, key);
+        strings.push(exportString(key, key));
         break;
       }
     }
   }
-  return string;
+  return strings;
 }
 
 export async function createSystemLoader() {
@@ -183,21 +184,32 @@ export async function createSystemLoader() {
   })();`;
 }
 
-export function injectInstantiateNameTransformer(specifier: string) {
-  return (context: xts.TransformationContext) => {
-    const visit: xts.Visitor = (node: xts.Node) => {
+export function injectInstantiateNameTransformer(
+  specifier: string,
+): ts.TransformerFactory<ts.SourceFile> {
+  return (context: ts.TransformationContext) => {
+    const visit: ts.Visitor = (node: ts.Node) => {
       if (
-        xts.isCallExpression(node) &&
-        node.expression?.expression?.escapedText === "System" &&
-        node.expression?.name?.escapedText === "register"
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        ts.isIdentifier(node.expression.expression) &&
+        node.expression.expression.escapedText === "System" &&
+        node.expression.name.escapedText === "register"
       ) {
-        node.arguments = [xts.createLiteral(specifier), ...node.arguments];
-        return node;
+        return context.factory.updateCallExpression(
+          node,
+          context.factory.createPropertyAccessExpression(
+            context.factory.createIdentifier("System"),
+            context.factory.createIdentifier("register"),
+          ),
+          undefined,
+          [context.factory.createStringLiteral(specifier), ...node.arguments],
+        );
       }
-      return xts.visitEachChild(node, visit, context);
+      return ts.visitEachChild(node, visit, context);
     };
-    return (node: xts.Node) => {
-      return xts.visitNode(node, visit);
+    return (node: ts.Node) => {
+      return ts.visitNode(node, visit) as ts.SourceFile;
     };
   };
 }

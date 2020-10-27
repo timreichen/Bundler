@@ -1,6 +1,6 @@
 import { Plugin, PluginTest } from "../plugin.ts";
 
-import { xts } from "../../deps.ts";
+import { ts } from "../../deps.ts";
 import type { Graph } from "../../graph.ts";
 
 interface Config {
@@ -8,7 +8,7 @@ interface Config {
   optimize?: boolean;
 }
 
-const printer: xts.Printer = xts.createPrinter({ removeComments: false });
+const printer: ts.Printer = ts.createPrinter({ removeComments: false });
 
 export function json(
   {
@@ -24,11 +24,12 @@ export function json(
     if (optimize) {
       source = JSON.stringify(JSON.parse(source));
     }
-    const ast = xts.createExportDefault(xts.createIdentifier(source));
+    const ast = ts.createExportDefault(ts.createIdentifier(source));
+    const sourceFile = ts.createSourceFile(input, source, ts.ScriptTarget.Latest)
     const string = printer.printList(
-      undefined,
-      xts.createNodeArray([ast]),
-      undefined,
+      ts.ListFormat.SourceFileStatements,
+      ts.createNodeArray([ast]),
+      sourceFile,
     );
     const entry = graph[input];
     entry.exports[input] = entry.exports[input] || { specifiers: [] };

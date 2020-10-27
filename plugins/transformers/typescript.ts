@@ -1,14 +1,11 @@
-import { xts } from "../../deps.ts";
-import type { CompilerOptions } from "../../typescript.ts";
+import { ts } from "../../deps.ts";
+import { CompilerOptions } from "../../typescript.ts"
 import { Plugin, PluginTest } from "../plugin.ts";
 
 interface Config {
   test?: PluginTest;
   compilerOptions?: CompilerOptions;
-  transformers?: {
-    before?: unknown[];
-    after?: unknown[];
-  };
+  transformers?: ts.CustomTransformers
 }
 
 export function typescript(
@@ -22,15 +19,16 @@ export function typescript(
     input: string,
     source: string,
   ) => {
-    const { diagnostics, outputText } = xts.transpileModule(source, {
+    const { diagnostics, outputText } = ts.transpileModule(source, {
       compilerOptions:
-        xts.convertCompilerOptionsFromJson(compilerOptions).options,
+        ts.convertCompilerOptionsFromJson(compilerOptions, Deno.cwd()).options,
       transformers,
       reportDiagnostics: true,
     });
-
-    for (const diagnostic of diagnostics) {
-      console.error(`error during transpilation: ${diagnostic.messageText}`);
+    if (diagnostics) {
+      for (const diagnostic of diagnostics) {
+        console.error(`error during transpilation: ${diagnostic.messageText}`);
+      }
     }
 
     return outputText;

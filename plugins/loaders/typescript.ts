@@ -1,12 +1,12 @@
-import { ImportMap, ts } from "../../deps.ts";
+import { ImportMap, xts } from "../../deps.ts";
 import { Loader, LoaderTest } from "../loader.ts";
 import { getDynamicImportNode } from "../../typescript.ts";
 import { resolve as resolveDependencySpecifier } from "../../dependencies.ts";
 import { Exports, Imports } from "../../graph.ts";
-function hasExportModifier(node: ts.Node) {
+function hasExportModifier(node: xts.Node) {
   return node.modifiers &&
-    ts.getCombinedModifierFlags(node as ts.Declaration) &
-      ts.ModifierFlags.Export;
+    xts.getCombinedModifierFlags(node as xts.Declaration) &
+      xts.ModifierFlags.Export;
 }
 
 export function typescriptLoader(
@@ -24,10 +24,10 @@ export function typescriptLoader(
       const imports: Imports = {};
       const exports: Exports = {};
 
-      const visit: ts.Visitor = (node: ts.Node) => {
+      const visit: xts.Visitor = (node: xts.Node) => {
         // console.log(ts.SyntaxKind[node.kind])
         // import declarations
-        if (node.kind === ts.SyntaxKind.ImportDeclaration) {
+        if (node.kind === xts.SyntaxKind.ImportDeclaration) {
           const importClause = node.importClause;
           if (!importClause?.isTypeOnly) {
             if (node.moduleSpecifier) {
@@ -64,10 +64,10 @@ export function typescriptLoader(
         }
         // dynamic imports
         if (
-          node.kind === ts.SyntaxKind.CallExpression &&
-          node.expression.kind === ts.SyntaxKind.ImportKeyword
+          node.kind === xts.SyntaxKind.CallExpression &&
+          node.expression.kind === xts.SyntaxKind.ImportKeyword
         ) {
-          const specifier = getDynamicImportNode(node, source).text;
+          const specifier = getDynamicImportNode(node, source)!.text;
           const resolvedSpecifier = resolveDependencySpecifier(
             input,
             specifier,
@@ -79,7 +79,7 @@ export function typescriptLoader(
         }
 
         // exports declarations
-        if (node.kind === ts.SyntaxKind.ExportDeclaration) {
+        if (node.kind === xts.SyntaxKind.ExportDeclaration) {
           if (node.exportClause) {
             if (!node.exportClause.isTypeOnly) {
               if (node.exportClause.elements) {
@@ -151,12 +151,12 @@ export function typescriptLoader(
           }
         }
 
-        return ts.forEachChild(node, visit);
+        return xts.forEachChild(node, visit);
       };
 
-      const sourceFile = ts.createSourceFile(input, source);
+      const sourceFile = xts.createSourceFile(input, source);
 
-      ts.forEachChild(sourceFile, visit);
+      xts.forEachChild(sourceFile, visit);
 
       return {
         imports,

@@ -1,4 +1,4 @@
-import { ImportMap, path, ts } from "../../deps.ts";
+import { ImportMap, path, xts } from "../../deps.ts";
 import { FileMap, getOutput, Graph } from "../../graph.ts";
 import {
   CompilerOptions,
@@ -25,9 +25,9 @@ function injectOutputsTranformer(
     depsPath: string;
   },
 ) {
-  return (context: ts.TransformationContext) => {
-    const visit: ts.Visitor = (node: ts.Node) => {
-      let specifierNode: ts.Node = null;
+  return (context: xts.TransformationContext) => {
+    const visit: xts.Visitor = (node: xts.Node) => {
+      let specifierNode: xts.Node = null;
       let specifier: string | null = null;
       if (isImportNode(node)) {
         specifierNode = getImportNode(node);
@@ -70,20 +70,20 @@ function injectOutputsTranformer(
       }
 
       if (specifierNode) {
-        const newNode = ts.createStringLiteral(specifier);
+        const newNode = xts.createStringLiteral(specifier);
 
-        return ts.visitEachChild(
+        return xts.visitEachChild(
           node,
-          (child: ts.Node) => child === specifierNode ? newNode : child,
+          (child: xts.Node) => child === specifierNode ? newNode : child,
           context,
         );
       }
 
-      return ts.visitEachChild(node, visit, context);
+      return xts.visitEachChild(node, visit, context);
     };
 
-    return (node: ts.Node) => {
-      return ts.visitNode(node, visit);
+    return (node: xts.Node) => {
+      return xts.visitNode(node, visit);
     };
   };
 }

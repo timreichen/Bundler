@@ -1,5 +1,5 @@
 import type { Graph } from "../../graph.ts";
-import { path, Sha256, ts } from "../../deps.ts";
+import { path, Sha256, xts } from "../../deps.ts";
 import { Plugin, PluginTest } from "../plugin.ts";
 import { addRelativePrefix } from "../../_util.ts";
 
@@ -14,31 +14,31 @@ export function getSpecifier(specifier: string) {
 export function cssInjectImports(
   { test = (input: string) => input.endsWith(".css") }: Config = {},
 ) {
-  const printer: ts.Printer = ts.createPrinter({ removeComments: false });
+  const printer: xts.Printer = xts.createPrinter({ removeComments: false });
 
   const fn = (input: string, source: string, { graph }: { graph: Graph }) => {
-    const importNodes: { [input: string]: ts.Node } = {};
+    const importNodes: { [input: string]: xts.Node } = {};
     const specifiers = Object.keys(graph[input].imports);
     for (const specifier of specifiers) {
       const sourceIdentifier = getSpecifier(specifier);
       const resolvedSpecifier = path.relative(path.dirname(input), specifier);
 
-      const importNode = ts.createImportDeclaration(
+      const importNode = xts.createImportDeclaration(
         undefined,
         undefined,
-        ts.createImportClause(
-          ts.createIdentifier(sourceIdentifier),
+        xts.createImportClause(
+          xts.createIdentifier(sourceIdentifier),
           undefined,
           false,
         ),
-        ts.createStringLiteral(addRelativePrefix(resolvedSpecifier)),
+        xts.createStringLiteral(addRelativePrefix(resolvedSpecifier)),
       );
       importNodes[sourceIdentifier] = importNode;
     }
 
     const string = printer.printList(
       undefined,
-      ts.createNodeArray(Object.values(importNodes)),
+      xts.createNodeArray(Object.values(importNodes)),
       undefined,
     );
 

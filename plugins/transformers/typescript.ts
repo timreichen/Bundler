@@ -1,4 +1,4 @@
-import { ts } from "../../deps.ts";
+import { xts } from "../../deps.ts";
 import type { CompilerOptions } from "../../typescript.ts";
 import { Plugin, PluginTest } from "../plugin.ts";
 
@@ -22,9 +22,9 @@ export function typescript(
     input: string,
     source: string,
   ) => {
-    const { diagnostics, outputText } = ts.transpileModule(source, {
+    const { diagnostics, outputText } = xts.transpileModule(source, {
       compilerOptions:
-        ts.convertCompilerOptionsFromJson(compilerOptions).options,
+        xts.convertCompilerOptionsFromJson(compilerOptions).options,
       transformers,
       reportDiagnostics: true,
     });

@@ -1,4 +1,4 @@
-import { ts } from "../../deps.ts";
+import { xts } from "../../deps.ts";
 import type { Graph } from "../../graph.ts";
 import { Plugin, PluginTest } from "../plugin.ts";
 
@@ -6,17 +6,17 @@ interface Config {
   test: PluginTest;
 }
 
-const printer: ts.Printer = ts.createPrinter({ removeComments: false });
+const printer: xts.Printer = xts.createPrinter({ removeComments: false });
 
 export function text(
   { test }: Config,
 ) {
   const fn = (input: string, source: string, { graph }: { graph: Graph }) => {
     const identifier = `\`${source}\``;
-    const ast = ts.createExportDefault(ts.createIdentifier(identifier));
+    const ast = xts.createExportDefault(xts.createIdentifier(identifier));
     const string = printer.printList(
       undefined,
-      ts.createNodeArray([ast]),
+      xts.createNodeArray([ast]),
       undefined,
     );
     const entry = graph[input];

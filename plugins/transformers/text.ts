@@ -14,7 +14,11 @@ export function text(
   const fn = (input: string, source: string, { graph }: { graph: Graph }) => {
     const identifier = `\`${source}\``;
     const ast = ts.createExportDefault(ts.createIdentifier(identifier));
-    const sourceFile = ts.createSourceFile(input, source, ts.ScriptTarget.Latest)
+    const sourceFile = ts.createSourceFile(
+      input,
+      source,
+      ts.ScriptTarget.Latest,
+    );
     const string = printer.printList(
       ts.ListFormat.SourceFileStatements,
       ts.createNodeArray([ast]),

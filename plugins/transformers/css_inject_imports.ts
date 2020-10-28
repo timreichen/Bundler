@@ -16,7 +16,6 @@ const printer = ts.createPrinter({ removeComments: false });
 export function cssInjectImports(
   { test = (input: string) => input.endsWith(".css") }: Config = {},
 ) {
-
   const fn = (input: string, source: string, { graph }: { graph: Graph }) => {
     const importNodes: { [input: string]: ts.Node } = {};
     const specifiers = Object.keys(graph[input].imports);
@@ -36,7 +35,11 @@ export function cssInjectImports(
       );
       importNodes[sourceIdentifier] = importNode;
     }
-    const sourceFile = ts.createSourceFile(input, source, ts.ScriptTarget.Latest)
+    const sourceFile = ts.createSourceFile(
+      input,
+      source,
+      ts.ScriptTarget.Latest,
+    );
     const string = printer.printList(
       ts.ListFormat.SourceFileStatements,
       ts.createNodeArray(Object.values(importNodes)),

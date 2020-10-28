@@ -1,11 +1,11 @@
 import { ts } from "../../deps.ts";
-import type { CompilerOptions } from "../../_import_export.ts"
+import type { CompilerOptions } from "../../_import_export.ts";
 import { Plugin, PluginTest } from "../plugin.ts";
 
 interface Config {
   test?: PluginTest;
   compilerOptions?: CompilerOptions;
-  transformers?: ts.CustomTransformers
+  transformers?: ts.CustomTransformers;
 }
 
 export function typescript(
@@ -20,7 +20,8 @@ export function typescript(
     source: string,
   ) => {
     const { diagnostics, outputText } = ts.transpileModule(source, {
-      compilerOptions: ts.convertCompilerOptionsFromJson(compilerOptions, Deno.cwd()).options,
+      compilerOptions:
+        ts.convertCompilerOptionsFromJson(compilerOptions, Deno.cwd()).options,
       transformers,
       reportDiagnostics: true,
     });

@@ -25,7 +25,11 @@ export function json(
       source = JSON.stringify(JSON.parse(source));
     }
     const ast = ts.createExportDefault(ts.createIdentifier(source));
-    const sourceFile = ts.createSourceFile(input, source, ts.ScriptTarget.Latest)
+    const sourceFile = ts.createSourceFile(
+      input,
+      source,
+      ts.ScriptTarget.Latest,
+    );
     const string = printer.printList(
       ts.ListFormat.SourceFileStatements,
       ts.createNodeArray([ast]),

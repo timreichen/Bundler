@@ -131,7 +131,7 @@ export async function cache(
     }
 
     const { imports } = await getImportExports(cachedFilePath, source);
-        
+
     queue.push(
       ...Object.keys(imports).map((dependency) =>
         resolveDependencySpecifier(specifier, dependency)

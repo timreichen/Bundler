@@ -6,7 +6,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `import type { A } from "./b.ts";`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {});
   },
@@ -17,7 +21,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `import * as A from "./b.ts";`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {
       "foo/b.ts": {
         specifiers: ["*"],
@@ -32,7 +40,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `import { A, B } from "./b.ts";`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {
       "foo/b.ts": {
         specifiers: ["A", "B"],
@@ -47,7 +59,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `import A from "./b.ts";`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {
       "foo/b.ts": {
         specifiers: ["default"],
@@ -62,7 +78,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `import "./b.ts";`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {
       "foo/b.ts": {
         specifiers: [],
@@ -77,7 +97,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `import("./b.ts");`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {
       "foo/b.ts": {
         dynamic: true,
@@ -92,7 +116,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `import("./" + "b.ts");`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {});
   },
@@ -103,7 +131,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export type { A } from "./b.ts";`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {});
   },
@@ -114,7 +146,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export interface A { };`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {});
   },
@@ -125,7 +161,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export * from "./b.ts";`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {
       "foo/b.ts": { specifiers: ["*"] },
@@ -138,7 +178,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export * as b from "./b.ts";`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {
       "foo/b.ts": { specifiers: ["b"] },
@@ -151,7 +195,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export { a, b } from "./b.ts"`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {
       "foo/b.ts": { specifiers: ["a", "b"] },
@@ -164,7 +212,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `const a = "abc"; const b = "bcd"; export { a, b };`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {
       "foo/a.ts": { specifiers: ["a", "b"] },
@@ -177,7 +229,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export const a = "abc";`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {
       "foo/a.ts": { specifiers: ["a"] },
@@ -190,7 +246,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export class A {}`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {
       "foo/a.ts": { specifiers: ["A"] },
@@ -203,7 +263,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export function a() {};`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {
       "foo/a.ts": { specifiers: ["a"] },
@@ -216,7 +280,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export default "abc";`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {
       "foo/a.ts": { specifiers: ["default"] },
@@ -229,7 +297,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export default function x() {};`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {
       "foo/a.ts": { specifiers: ["default"] },
@@ -242,7 +314,11 @@ Deno.test({
   fn() {
     const fileName = "foo/a.ts";
     const sourceText = `export default class X{};`;
-    const { imports, exports } = getImportExports(fileName, sourceText, { resolve: true });
+    const { imports, exports } = getImportExports(
+      fileName,
+      sourceText,
+      { resolve: true },
+    );
     assertEquals(imports, {});
     assertEquals(exports, {
       "foo/a.ts": { specifiers: ["default"] },

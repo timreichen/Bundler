@@ -28,15 +28,18 @@ function injectOutputsTranformer(
         const importClause = node.importClause;
         if (importClause?.isTypeOnly) return node;
         const quotedSpecifier = node.moduleSpecifier.getText(sourceFile);
-        const unquotedSpecifier = quotedSpecifier.substring(1, quotedSpecifier.length - 1)
-        
+        const unquotedSpecifier = quotedSpecifier.substring(
+          1,
+          quotedSpecifier.length - 1,
+        );
+
         const resolvedSpecifier = resolveDependencySpecifier(
           fileName,
           unquotedSpecifier,
           importMap,
         );
         const specifier = getOutput(resolvedSpecifier, fileMap, depsPath);
-        
+
         return context.factory.updateImportDeclaration(
           node,
           node.decorators,
@@ -50,14 +53,17 @@ function injectOutputsTranformer(
         const moduleSpecifier = node.moduleSpecifier;
         if (moduleSpecifier) {
           const quotedSpecifier = moduleSpecifier.getText(sourceFile);
-          const unquotedSpecifier = quotedSpecifier.substring(1, quotedSpecifier.length - 1)
-          
+          const unquotedSpecifier = quotedSpecifier.substring(
+            1,
+            quotedSpecifier.length - 1,
+          );
+
           const resolvedSpecifier = resolveDependencySpecifier(
             fileName,
             unquotedSpecifier,
             importMap,
           );
-            
+
           const specifier = getOutput(resolvedSpecifier, fileMap, depsPath);
 
           return context.factory.updateExportDeclaration(
@@ -83,7 +89,7 @@ function injectOutputsTranformer(
             importMap,
           );
           const specifier = getOutput(resolvedSpecifier, fileMap, depsPath);
-          
+
           const relativeOutput = path.relative(outDir, specifier);
           const relativeSpecifier = addRelativePrefix(relativeOutput);
           return context.factory.updateCallExpression(

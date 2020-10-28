@@ -3,7 +3,7 @@ import { ts } from "./deps.ts";
 const printer = ts.createPrinter(
   { removeComments: false },
 );
-const sourceFile = ts.createSourceFile("x.ts", "", ts.ScriptTarget.Latest)
+const sourceFile = ts.createSourceFile("x.ts", "", ts.ScriptTarget.Latest);
 
 export function createInstantiate(path: string): string {
   const __exp = ts.createVariableStatement(
@@ -24,7 +24,7 @@ export function createInstantiate(path: string): string {
       ts.NodeFlags.Const,
     ),
   );
-  
+
   return printer.printNode(ts.EmitHint.Unspecified, __exp, sourceFile);
 }
 
@@ -61,7 +61,7 @@ function defaultExportString(value: string) {
 }
 
 export function createSystemExports(exports: string[]): string[] {
-  let strings = []
+  let strings = [];
   for (const key of exports) {
     switch (key) {
       case "default": {

@@ -10,9 +10,9 @@ export function injectBundleImport(source: string, specifier: string): string {
     source,
     ts.ScriptTarget.Latest,
   );
-  
+
   const result = ts.transform(sourceFile, [bundleImportTransformer(specifier)]);
-  
+
   return printer.printNode(
     ts.EmitHint.SourceFile,
     result.transformed[0],

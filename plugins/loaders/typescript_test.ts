@@ -11,7 +11,7 @@ Deno.test({
   `;
     const { imports } = await typescriptLoader().fn(input, source);
     assertEquals(imports, {
-      "testdata/src/a.css": { specifiers: ["a"] },
+      "testdata/src/a.css": { specifiers: ["default"] },
       "testdata/src/b.css": { specifiers: ["*"] },
     });
   },

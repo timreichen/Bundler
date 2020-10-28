@@ -1,7 +1,7 @@
 import { assertEquals, assertThrowsAsync } from "./test_deps.ts";
 import { cache, resolve } from "./cache.ts";
 
-import { path, fs } from "./deps.ts";
+import { fs, path } from "./deps.ts";
 
 Deno.test("cache resolve", async () => {
   const input = "https://deno.land/std@0.70.0/path/mod.ts";

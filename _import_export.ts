@@ -1,6 +1,5 @@
-import { colors, ts } from "./deps.ts";
-
-const { yellow } = colors;
+import { colors, ImportMap, ts } from "./deps.ts";
+import { resolve as resolveDependencySpecifier } from "./dependencies.ts";
 
 export interface CompilerOptions {
   /** Allow JavaScript files to be compiled. Defaults to `true`. */
@@ -204,87 +203,201 @@ export interface CompilerOptions {
   types?: string[];
 }
 
-export function isImportNode(node: ts.Node) {
-  return ts.isImportDeclaration(node);
-}
-export function getImportNode(node: ts.Node) {
-  return node.moduleSpecifier;
-}
+function importExportTransformer(
+  sourceFile: ts.SourceFile,
+  { imports, exports }: { imports: any; exports: any },
+  { importMap, resolve = false }: { importMap: ImportMap; resolve?: boolean },
+): ts.TransformerFactory<ts.Node> {
+  return (context: ts.TransformationContext) => {
+    const visit: ts.Visitor = (node: ts.Node) => {
+      let specifier = sourceFile.fileName;
 
-export function isDynamicImportNode(node: ts.Node) {
-  return node.kind === ts.SyntaxKind.CallExpression &&
-    node.expression.kind === ts.SyntaxKind.ImportKeyword;
-}
-export function getDynamicImportNode(node: ts.Node, source: string) {
-  const arg = node.arguments[0];
-  if (!ts.isStringLiteral(arg)) {
-    console.warn(
-      yellow("Warning"),
-      `dynamic import argument is not a static string: Cannot resolve ${
-        yellow(
-          `import(${
-            source.substring(
-              arg.pos,
-              node.arguments[node.arguments.length - 1].end,
+      if (ts.isImportDeclaration(node)) {
+        const importClause = node.importClause;
+        if (importClause?.isTypeOnly) return node;
+
+        if (node.moduleSpecifier) {
+          const quotedSpecifier = node.moduleSpecifier.getText(sourceFile);
+          const unquotedSpecifier = quotedSpecifier.substring(
+            1,
+            quotedSpecifier.length - 1,
+          );
+          specifier = resolve
+            ? resolveDependencySpecifier(
+              specifier,
+              unquotedSpecifier,
+              importMap,
             )
-          })`,
-        )
-      } at index ${arg.pos}`,
-    );
-    return;
-  }
-  return arg;
-}
+            : unquotedSpecifier;
+        }
+        imports[specifier] = imports[specifier] || { specifiers: [] };
+        if (importClause) {
+          importClause.getChildren(sourceFile).forEach((child) => {
+            if (ts.isNamespaceImport(child)) {
+              // import * as x from "./x.ts"
+              imports[specifier].specifiers.push("*");
+            } else if (ts.isIdentifier(child)) {
+              // import x from "./x.ts"
+              imports[specifier].specifiers.push("default");
+            } else if (ts.isNamedImports(child)) {
+              // import { x } from "./x.ts"
+              imports[specifier].specifiers.push(
+                ...child.elements.map((element) => element.name.escapedText),
+              );
+            }
+          });
+        } else {
+          // import from "./x.ts"
+          // if (ts.isImportEqualsDeclaration(node)) {
+          // }
+        }
+        return node;
+      } else if (ts.isExportDeclaration(node)) {
+        if (node.isTypeOnly) return node;
 
-export function isExportNode(node: ts.Node) {
-  return ts.isExportDeclaration(node);
-}
-export function getExportNode(node: ts.node) {
-  return node.moduleSpecifier;
-}
+        if (node.moduleSpecifier) {
+          const quotedSpecifier = node.moduleSpecifier.getText(sourceFile);
+          const unquotedSpecifier = quotedSpecifier.substring(
+            1,
+            quotedSpecifier.length - 1,
+          );
+          specifier = resolve
+            ? resolveDependencySpecifier(
+              specifier,
+              unquotedSpecifier,
+              importMap,
+            )
+            : unquotedSpecifier;
+        }
 
-export function getImportExports(
-  source: string,
-): {
-  imports: { [specifier: string]: { dynamic: boolean } };
-  exports: string[];
-} {
-  const imports: { [specifier: string]: ts.Node } = {};
-  let exports: string[] = [];
+        exports[specifier] = exports[specifier] || { specifiers: [] };
 
-  function transformer() {
-    return (context: ts.TransformationContext) => {
-      const visit: ts.Visitor = (node: ts.Node) => {
-        let specifierNode;
-        if (isImportNode(node)) {
-          if (node.importClause?.isTypeOnly) return node;
-          specifierNode = getImportNode(node);
-          return node;
+        const exportClause = node.exportClause;
+        if (exportClause) {
+          if (ts.isNamespaceExport(exportClause)) {
+            // export * as x from "./x.ts"
+            exports[specifier].specifiers.push(exportClause.name.escapedText);
+          } else if (ts.isNamedExports(exportClause)) {
+            // export { x } from "./x.ts"
+            exports[specifier].specifiers.push(
+              ...exportClause.elements.map((element) =>
+                element.name.escapedText
+              ),
+            );
+          }
+        } else {
+          // export * from "./x.ts"
+          exports[specifier].specifiers.push("*");
         }
-        if (isDynamicImportNode(node)) {
-          specifierNode = getDynamicImportNode(node, source);
+        return node;
+      } else if (ts.isExportAssignment(node)) {
+        // export default "abc"
+        exports[specifier] = exports[specifier] || { specifiers: [] };
+        exports[specifier].specifiers.push("default");
+        return node;
+      } else if (ts.isVariableStatement(node)) {
+        const combinedModifierFlags = ts.getCombinedModifierFlags(node as any);
+        if ((combinedModifierFlags & ts.ModifierFlags.Export) !== 0) {
+          // export const x = "x"
+          exports[specifier] = exports[specifier] || { specifiers: [] };
+          node.getChildren(sourceFile).forEach((child) => {
+            if (ts.isVariableDeclarationList(child)) {
+              child.declarations.forEach((declaration) => {
+                if (ts.isIdentifier(declaration.name)) {
+                  exports[specifier].specifiers.push(
+                    declaration.name.escapedText,
+                  );
+                }
+              });
+            }
+          });
         }
-        if (isExportNode(node)) {
-          if (node.importClause?.isTypeOnly) return node;
-          specifierNode = getExportNode(node);
-          return node;
+      } else if (ts.isFunctionDeclaration(node)) {
+        const combinedModifierFlags = ts.getCombinedModifierFlags(node);
+        if (
+          node.name && (combinedModifierFlags & ts.ModifierFlags.Export) !== 0
+        ) {
+          exports[specifier] = exports[specifier] || { specifiers: [] };
+          if ((combinedModifierFlags & ts.ModifierFlags.Default) !== 0) {
+            // export default function x() {}
+            exports[specifier].specifiers.push("default");
+          } else if (ts.isIdentifier(node.name)) {
+            // export function x() {}
+            exports[specifier].specifiers.push(node.name.escapedText);
+          }
         }
-        if (specifierNode) {
-          imports[specifierNode.text] = node;
-          return node;
+      } else if (ts.isClassDeclaration(node)) {
+        const combinedModifierFlags = ts.getCombinedModifierFlags(node);
+        if (
+          node.name && (combinedModifierFlags & ts.ModifierFlags.Export) !== 0
+        ) {
+          exports[specifier] = exports[specifier] || { specifiers: [] };
+          if ((combinedModifierFlags & ts.ModifierFlags.Default) !== 0) {
+            // export default class X {}
+            exports[specifier].specifiers.push("default");
+          } else if (ts.isIdentifier(node.name)) {
+            // export class X {}
+            exports[specifier].specifiers.push(node.name.escapedText);
+          }
         }
-        return ts.visitEachChild(node, visit, context);
-      };
-      return (node: ts.Node) => {
-        if (node.symbol) {
-          exports = Object.keys(node.symbol.exports);
+      } else if (
+        ts.isCallExpression(node) &&
+        node.expression.kind === ts.SyntaxKind.ImportKeyword
+      ) {
+        const arg = node.arguments[0];
+        if (ts.isStringLiteral(arg)) {
+          // import("./x.ts")
+          specifier = resolve
+            ? resolveDependencySpecifier(
+              specifier,
+              arg.text,
+              importMap,
+            )
+            : arg.text;
+          imports[specifier] = imports[specifier] || {};
+          imports[specifier].dynamic = true;
+        } else {
+          console.warn(
+            colors.yellow("Warning"),
+            `The argument in dynamic import is not a static string. Cannot resolve ${
+              node.getFullText(sourceFile)
+            } at position ${node.pos}.`,
+          );
         }
-        return ts.visitNode(node, visit);
-      };
+      }
+
+      return ts.visitEachChild(node, visit, context);
     };
-  }
-
-  ts.transform(source, [transformer]);
-
-  return { imports, exports };
+    return (node: ts.Node) => {
+      return ts.visitNode(node, visit);
+    };
+  };
+}
+export function getImportExports(
+  fileName: string,
+  source: string,
+  { importMap = { imports: {} }, resolve = false }: {
+    importMap?: ImportMap;
+    resolve?: boolean;
+  } = {},
+): { imports: any; exports: any } {
+  const imports: any = {};
+  const exports: any = {};
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.Latest,
+  );
+  ts.transform(
+    sourceFile,
+    [importExportTransformer(
+      sourceFile,
+      { imports, exports },
+      { importMap, resolve },
+    )],
+  );
+  return {
+    imports,
+    exports,
+  };
 }

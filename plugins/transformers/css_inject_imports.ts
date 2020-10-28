@@ -11,11 +11,11 @@ export function getSpecifier(specifier: string) {
   return `_${new Sha256().update(specifier).hex()}`;
 }
 
+const printer = ts.createPrinter({ removeComments: false });
+
 export function cssInjectImports(
   { test = (input: string) => input.endsWith(".css") }: Config = {},
 ) {
-  const printer: ts.Printer = ts.createPrinter({ removeComments: false });
-
   const fn = (input: string, source: string, { graph }: { graph: Graph }) => {
     const importNodes: { [input: string]: ts.Node } = {};
     const specifiers = Object.keys(graph[input].imports);
@@ -35,11 +35,15 @@ export function cssInjectImports(
       );
       importNodes[sourceIdentifier] = importNode;
     }
-
+    const sourceFile = ts.createSourceFile(
+      input,
+      source,
+      ts.ScriptTarget.Latest,
+    );
     const string = printer.printList(
-      undefined,
+      ts.ListFormat.SourceFileStatements,
       ts.createNodeArray(Object.values(importNodes)),
-      undefined,
+      sourceFile,
     );
 
     const strings: string[] = [string, source];

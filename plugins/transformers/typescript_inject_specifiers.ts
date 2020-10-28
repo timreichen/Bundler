@@ -1,14 +1,6 @@
-import { ImportMap, path, ts } from "../../deps.ts";
+import { colors, ImportMap, path, ts } from "../../deps.ts";
 import { FileMap, getOutput, Graph } from "../../graph.ts";
-import {
-  CompilerOptions,
-  getDynamicImportNode,
-  getExportNode,
-  getImportNode,
-  isDynamicImportNode,
-  isExportNode,
-  isImportNode,
-} from "../../typescript.ts";
+import { CompilerOptions } from "../../_import_export.ts";
 import { resolve as resolveDependencySpecifier } from "../../dependencies.ts";
 import { Plugin, PluginTest } from "../plugin.ts";
 import { injectInstantiateNameTransformer } from "../../system.ts";
@@ -16,74 +8,109 @@ import { typescript } from "./typescript.ts";
 import { addRelativePrefix } from "../../_util.ts";
 
 function injectOutputsTranformer(
-  input: string,
-  source: string,
+  fileName: string,
+  sourceText: string,
   { importMap, fileMap, depsPath, outDir }: {
     importMap: ImportMap;
     fileMap: FileMap;
     outDir: string;
     depsPath: string;
   },
-) {
+): ts.TransformerFactory<ts.SourceFile> {
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    sourceText,
+    ts.ScriptTarget.Latest,
+  );
   return (context: ts.TransformationContext) => {
     const visit: ts.Visitor = (node: ts.Node) => {
-      let specifierNode: ts.Node = null;
-      let specifier: string | null = null;
-      if (isImportNode(node)) {
-        specifierNode = getImportNode(node);
-        const specifierText = specifierNode.text;
+      if (ts.isImportDeclaration(node)) {
+        const importClause = node.importClause;
+        if (importClause?.isTypeOnly) return node;
+        const quotedSpecifier = node.moduleSpecifier.getText(sourceFile);
+        const unquotedSpecifier = quotedSpecifier.substring(
+          1,
+          quotedSpecifier.length - 1,
+        );
+
         const resolvedSpecifier = resolveDependencySpecifier(
-          input,
-          specifierText,
+          fileName,
+          unquotedSpecifier,
           importMap,
         );
-        specifier = getOutput(resolvedSpecifier, fileMap, depsPath);
-      }
-      if (isDynamicImportNode(node)) {
-        specifierNode = getDynamicImportNode(node, source);
-        const specifierText = specifierNode.text;
-        const resolvedSpecifier = resolveDependencySpecifier(
-          input,
-          specifierText,
-          importMap,
-        );
-        specifier = getOutput(resolvedSpecifier, fileMap, depsPath);
+        const specifier = getOutput(resolvedSpecifier, fileMap, depsPath);
 
-        const relativeOutput = path.relative(
-          // path.dirname(getOutput(input, fileMap, depsPath)),
-          outDir,
-          specifier!,
-        );
-
-        specifier = addRelativePrefix(relativeOutput);
-      }
-
-      if (isExportNode(node) && node.moduleSpecifier) {
-        specifierNode = getExportNode(node);
-        const specifierText = specifierNode.text;
-        const resolvedSpecifier = resolveDependencySpecifier(
-          input,
-          specifierText,
-          importMap,
-        );
-        specifier = getOutput(resolvedSpecifier, fileMap, depsPath);
-      }
-
-      if (specifierNode) {
-        const newNode = ts.createStringLiteral(specifier);
-
-        return ts.visitEachChild(
+        return context.factory.updateImportDeclaration(
           node,
-          (child: ts.Node) => child === specifierNode ? newNode : child,
-          context,
+          node.decorators,
+          node.modifiers,
+          node.importClause,
+          context.factory.createStringLiteral(specifier),
         );
-      }
+      } else if (ts.isExportDeclaration(node)) {
+        if (node.isTypeOnly) return node;
 
+        const moduleSpecifier = node.moduleSpecifier;
+        if (moduleSpecifier) {
+          const quotedSpecifier = moduleSpecifier.getText(sourceFile);
+          const unquotedSpecifier = quotedSpecifier.substring(
+            1,
+            quotedSpecifier.length - 1,
+          );
+
+          const resolvedSpecifier = resolveDependencySpecifier(
+            fileName,
+            unquotedSpecifier,
+            importMap,
+          );
+
+          const specifier = getOutput(resolvedSpecifier, fileMap, depsPath);
+
+          return context.factory.updateExportDeclaration(
+            node,
+            node.decorators,
+            node.modifiers,
+            node.isTypeOnly,
+            node.exportClause,
+            context.factory.createStringLiteral(specifier),
+          );
+        }
+        return node;
+      } else if (
+        ts.isCallExpression(node) &&
+        node.expression.kind === ts.SyntaxKind.ImportKeyword
+      ) {
+        const arg = node.arguments[0];
+        if (ts.isStringLiteral(arg)) {
+          // import("./x.ts")
+          const resolvedSpecifier = resolveDependencySpecifier(
+            fileName,
+            arg.text,
+            importMap,
+          );
+          const specifier = getOutput(resolvedSpecifier, fileMap, depsPath);
+
+          const relativeOutput = path.relative(outDir, specifier);
+          const relativeSpecifier = addRelativePrefix(relativeOutput);
+          return context.factory.updateCallExpression(
+            node,
+            node.expression,
+            node.typeArguments,
+            [context.factory.createStringLiteral(relativeSpecifier)],
+          );
+        } else {
+          console.warn(
+            colors.yellow("Warning"),
+            `The argument in dynamic import is not a static string. Cannot resolve ${
+              node.getFullText(sourceFile)
+            } at position ${node.pos}.`,
+          );
+        }
+      }
       return ts.visitEachChild(node, visit, context);
     };
-
     return (node: ts.Node) => {
-      return ts.visitNode(node, visit);
+      return ts.visitNode(node, visit) as ts.SourceFile;
     };
   };
 }
@@ -110,7 +137,7 @@ export function typescriptInjectSpecifiers(
   ) => {
     const depsPath = path.join(outDir, depsDir);
     const output = getOutput(input, fileMap, depsPath);
-    const transformers = {
+    const transformers: ts.CustomTransformers = {
       before: [
         injectOutputsTranformer(
           input,

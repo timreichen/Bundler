@@ -12,10 +12,10 @@ import { cssLoader } from "./plugins/loaders/css.ts";
 import { typescriptLoader } from "./plugins/loaders/typescript.ts";
 import { typescriptInjectSpecifiers } from "./plugins/transformers/typescript_inject_specifiers.ts";
 import { terser } from "./plugins/transformers/terser.ts";
-import type { CompilerOptions } from "./typescript.ts";
 import type { FileMap, Graph } from "./graph.ts";
 import { jsonLoader } from "./plugins/loaders/json.ts";
 import { json } from "./plugins/transformers/json.ts";
+import type { CompilerOptions } from "./_import_export.ts";
 
 interface Meta {
   options: {
@@ -59,7 +59,6 @@ async function runBundle(
   }: // "log-level": logLevel,
     Args,
 ) {
-  
   const importMap =
     (importMapPath
       ? JSON.parse(await Deno.readTextFile(importMapPath))

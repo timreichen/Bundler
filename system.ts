@@ -1,8 +1,9 @@
 import { ts } from "./deps.ts";
 
-const printer: ts.Printer = ts.createPrinter(
-  { newLine: ts.NewLineKind.LineFeed, removeComments: false },
+const printer = ts.createPrinter(
+  { removeComments: false },
 );
+const sourceFile = ts.createSourceFile("x.ts", "", ts.ScriptTarget.Latest);
 
 export function createInstantiate(path: string): string {
   const __exp = ts.createVariableStatement(
@@ -23,7 +24,8 @@ export function createInstantiate(path: string): string {
       ts.NodeFlags.Const,
     ),
   );
-  return printer.printNode(ts.EmitHint.Unspecified, __exp, undefined);
+
+  return printer.printNode(ts.EmitHint.Unspecified, __exp, sourceFile);
 }
 
 function exportString(key: string, value: string) {
@@ -42,7 +44,7 @@ function exportString(key: string, value: string) {
     ),
   );
 
-  return printer.printNode(ts.EmitHint.Unspecified, statement, undefined);
+  return printer.printNode(ts.EmitHint.Unspecified, statement, sourceFile);
 }
 
 function defaultExportString(value: string) {
@@ -55,25 +57,24 @@ function defaultExportString(value: string) {
       ts.createStringLiteral(value),
     ),
   );
-  return printer.printNode(ts.EmitHint.Unspecified, assignment, undefined);
+  return printer.printNode(ts.EmitHint.Unspecified, assignment, sourceFile);
 }
 
-export function createSystemExports(exports: string[]): string {
-  let string = "";
+export function createSystemExports(exports: string[]): string[] {
+  let strings = [];
   for (const key of exports) {
-    string += `\n`;
     switch (key) {
       case "default": {
-        string += defaultExportString(key);
+        strings.push(defaultExportString(key));
         break;
       }
       default: {
-        string += exportString(key, key);
+        strings.push(exportString(key, key));
         break;
       }
     }
   }
-  return string;
+  return strings;
 }
 
 export async function createSystemLoader() {
@@ -183,16 +184,143 @@ export async function createSystemLoader() {
   })();`;
 }
 
-export function injectInstantiateNameTransformer(specifier: string) {
+export function injectInstantiateNameTransformer(
+  specifier: string,
+): ts.TransformerFactory<ts.SourceFile> {
   return (context: ts.TransformationContext) => {
     const visit: ts.Visitor = (node: ts.Node) => {
       if (
         ts.isCallExpression(node) &&
-        node.expression?.expression?.escapedText === "System" &&
-        node.expression?.name?.escapedText === "register"
+        ts.isPropertyAccessExpression(node.expression) &&
+        ts.isIdentifier(node.expression.expression) &&
+        node.expression.expression.escapedText === "System" &&
+        node.expression.name.escapedText === "register"
       ) {
-        node.arguments = [ts.createLiteral(specifier), ...node.arguments];
-        return node;
+        return context.factory.updateCallExpression(
+          node,
+          context.factory.createPropertyAccessExpression(
+            context.factory.createIdentifier("System"),
+            context.factory.createIdentifier("register"),
+          ),
+          undefined,
+          [context.factory.createStringLiteral(specifier), ...node.arguments],
+        );
+      }
+      return ts.visitEachChild(node, visit, context);
+    };
+    return (node: ts.Node) => {
+      return ts.visitNode(node, visit) as ts.SourceFile;
+    };
+  };
+}
+
+export function bundleImportTransformer(specifier: string) {
+  return (context: ts.TransformationContext) => {
+    const visit: ts.Visitor = (node: ts.Node) => {
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        ts.isIdentifier(node.expression.expression) &&
+        node.expression.expression.escapedText === "System" &&
+        node.expression.name.escapedText === "register"
+      ) {
+        return ts.visitEachChild(node, (node: ts.Node) => {
+          if (ts.isFunctionExpression(node)) {
+            return ts.visitEachChild(node, (node: ts.Node) => {
+              if (ts.isBlock(node)) {
+                return ts.visitEachChild(node, (node: ts.Node) => {
+                  if (ts.isReturnStatement(node)) {
+                    return ts.visitEachChild(node, (node: ts.Node) => {
+                      if (ts.isObjectLiteralExpression(node)) {
+                        return ts.visitEachChild(node, (node: ts.Node) => {
+                          if (ts.isPropertyAssignment(node)) {
+                            return ts.visitEachChild(node, (node: ts.Node) => {
+                              if (ts.isFunctionExpression(node)) {
+                                return ts.visitEachChild(
+                                  node,
+                                  (node: ts.Node) => {
+                                    if (ts.isBlock(node)) {
+                                      return ts.visitEachChild(
+                                        node,
+                                        (node: ts.Node) => {
+                                          if (ts.isExpressionStatement(node)) {
+                                            return ts.visitEachChild(
+                                              node,
+                                              (node: ts.Node) => {
+                                                if (
+                                                  ts.isCallExpression(node) &&
+                                                  ts.isIdentifier(
+                                                    node.expression,
+                                                  ) &&
+                                                  node.expression
+                                                      .escapedText ===
+                                                    "exports_1"
+                                                ) {
+                                                  return ts.visitEachChild(
+                                                    node,
+                                                    (node: ts.Node) => {
+                                                      if (
+                                                        ts.isBinaryExpression(
+                                                          node,
+                                                        ) &&
+                                                        ts.isStringLiteral(
+                                                          node.left,
+                                                        ) &&
+                                                        ts.isStringLiteral(
+                                                          node.right,
+                                                        )
+                                                      ) {
+                                                        return ts.createBinary(
+                                                          node.left,
+                                                          ts.createToken(
+                                                            ts.SyntaxKind
+                                                              .EqualsToken,
+                                                          ),
+                                                          ts.createPropertyAccess(
+                                                            ts.createIdentifier(
+                                                              specifier,
+                                                            ),
+                                                            node.left.text,
+                                                          ),
+                                                        );
+                                                      }
+                                                      return node;
+                                                    },
+                                                    context,
+                                                  );
+                                                }
+                                                return node;
+                                              },
+                                              context,
+                                            );
+                                          }
+                                          return node;
+                                        },
+                                        context,
+                                      );
+                                    }
+                                    return node;
+                                  },
+                                  context,
+                                );
+                              }
+                              return node;
+                            }, context);
+                          }
+                          return node;
+                        }, context);
+                      }
+                      return node;
+                    }, context);
+                  }
+                  return node;
+                }, context);
+              }
+              return node;
+            }, context);
+          }
+          return node;
+        }, context);
       }
       return ts.visitEachChild(node, visit, context);
     };

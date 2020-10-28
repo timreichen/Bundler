@@ -1,9 +1,10 @@
 import { ts } from "../../deps.ts";
+import type { CompilerOptions } from "../../typescript.ts"
 import { Plugin, PluginTest } from "../plugin.ts";
 
 interface Config {
   test?: PluginTest;
-  compilerOptions?: ts.CompilerOptions;
+  compilerOptions?: CompilerOptions;
   transformers?: ts.CustomTransformers
 }
 

@@ -1,6 +1,7 @@
-import { ImportMap, path, ts, xts } from "../../deps.ts";
+import { ImportMap, path, xts } from "../../deps.ts";
 import { FileMap, getOutput, Graph } from "../../graph.ts";
 import {
+  CompilerOptions,
   getDynamicImportNode,
   getExportNode,
   getImportNode,
@@ -89,7 +90,7 @@ function injectOutputsTranformer(
 
 interface Config {
   test?: PluginTest;
-  compilerOptions?: ts.CompilerOptions;
+  compilerOptions?: CompilerOptions;
 }
 
 export function typescriptInjectSpecifiers(

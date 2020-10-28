@@ -1,4 +1,4 @@
-import { ts, xts } from "./deps.ts";
+import { ts } from "./deps.ts";
 
 const printer = ts.createPrinter(
   { removeComments: false },
@@ -215,74 +215,69 @@ export function injectInstantiateNameTransformer(
 }
 
 export function bundleImportTransformer(specifier: string) {
-  return (context: xts.TransformationContext) => {
-    const visit: xts.Visitor = (node: xts.Node) => {
+  return (context: ts.TransformationContext) => {
+    const visit: ts.Visitor = (node: ts.Node) => {
       if (
-        xts.isCallExpression(node) &&
-        node.expression?.expression?.escapedText === "System" &&
-        node.expression?.name?.escapedText === "register"
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        ts.isIdentifier(node.expression.expression) &&
+        node.expression.expression.escapedText === "System" &&
+        node.expression.name.escapedText === "register"
       ) {
-        return xts.visitEachChild(node, (node: xts.Node) => {
-          if (node.kind === xts.SyntaxKind["FunctionExpression"]) {
-            return xts.visitEachChild(node, (node: xts.Node) => {
-              if (node.kind === xts.SyntaxKind["Block"]) {
-                return xts.visitEachChild(node, (node: xts.Node) => {
-                  if (node.kind === xts.SyntaxKind["ReturnStatement"]) {
-                    return xts.visitEachChild(node, (node: xts.Node) => {
-                      if (
-                        node.kind === xts.SyntaxKind["ObjectLiteralExpression"]
-                      ) {
-                        return xts.visitEachChild(node, (node: xts.Node) => {
-                          if (
-                            node.kind === xts.SyntaxKind["PropertyAssignment"]
-                          ) {
-                            return xts.visitEachChild(node, (node: xts.Node) => {
-                              if (
-                                node.kind ===
-                                  xts.SyntaxKind["FunctionExpression"]
-                              ) {
-                                return xts.visitEachChild(
+        return ts.visitEachChild(node, (node: ts.Node) => {
+          if (ts.isFunctionExpression(node)) {
+            return ts.visitEachChild(node, (node: ts.Node) => {
+              if (ts.isBlock(node)) {
+                return ts.visitEachChild(node, (node: ts.Node) => {
+                  if (ts.isReturnStatement(node)) {
+                    return ts.visitEachChild(node, (node: ts.Node) => {
+                      if (ts.isObjectLiteralExpression(node)) {
+                        return ts.visitEachChild(node, (node: ts.Node) => {
+                          if (ts.isPropertyAssignment(node)) {
+                            return ts.visitEachChild(node, (node: ts.Node) => {
+                              if (ts.isFunctionExpression(node)) {
+                                return ts.visitEachChild(
                                   node,
-                                  (node: xts.Node) => {
-                                    if (node.kind === xts.SyntaxKind["Block"]) {
-                                      return xts.visitEachChild(
+                                  (node: ts.Node) => {
+                                    if (ts.isBlock(node)) {
+                                      return ts.visitEachChild(
                                         node,
-                                        (node: xts.Node) => {
-                                          if (
-                                            node.kind ===
-                                              xts.SyntaxKind[
-                                                "ExpressionStatement"
-                                              ]
-                                          ) {
-                                            return xts.visitEachChild(
+                                        (node: ts.Node) => {
+                                          if (ts.isExpressionStatement(node)) {
+                                            return ts.visitEachChild(
                                               node,
-                                              (node: xts.Node) => {
+                                              (node: ts.Node) => {
                                                 if (
-                                                  node.kind ===
-                                                    xts.SyntaxKind[
-                                                      "CallExpression"
-                                                    ] &&
+                                                  ts.isCallExpression(node) &&
+                                                  ts.isIdentifier(
+                                                    node.expression,
+                                                  ) &&
                                                   node.expression
                                                       .escapedText ===
                                                     "exports_1"
                                                 ) {
-                                                  return xts.visitEachChild(
+                                                  return ts.visitEachChild(
                                                     node,
-                                                    (node: xts.Node) => {
+                                                    (node: ts.Node) => {
                                                       if (
-                                                        node.kind ===
-                                                          xts.SyntaxKind[
-                                                            "BinaryExpression"
-                                                          ]
-                                                      ) {
-                                                        return xts.createBinary(
+                                                        ts.isBinaryExpression(
+                                                          node,
+                                                        ) &&
+                                                        ts.isStringLiteral(
                                                           node.left,
-                                                          xts.createToken(
-                                                            xts.SyntaxKind
+                                                        ) &&
+                                                        ts.isStringLiteral(
+                                                          node.right,
+                                                        )
+                                                      ) {
+                                                        return ts.createBinary(
+                                                          node.left,
+                                                          ts.createToken(
+                                                            ts.SyntaxKind
                                                               .EqualsToken,
                                                           ),
-                                                          xts.createPropertyAccess(
-                                                            xts.createIdentifier(
+                                                          ts.createPropertyAccess(
+                                                            ts.createIdentifier(
                                                               specifier,
                                                             ),
                                                             node.left.text,
@@ -327,10 +322,10 @@ export function bundleImportTransformer(specifier: string) {
           return node;
         }, context);
       }
-      return xts.visitEachChild(node, visit, context);
+      return ts.visitEachChild(node, visit, context);
     };
-    return (node: xts.Node) => {
-      return xts.visitNode(node, visit);
+    return (node: ts.Node) => {
+      return ts.visitNode(node, visit);
     };
   };
 }

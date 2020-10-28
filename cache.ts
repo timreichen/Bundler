@@ -9,7 +9,7 @@ import {
 
 import { resolve as resolveDependencySpecifier } from "./dependencies.ts";
 import { isURL } from "./_util.ts";
-import { getImportExports } from "./typescript.ts";
+import { getImportExports } from "./_import_export.ts";
 
 const { green } = colors;
 
@@ -130,8 +130,8 @@ export async function cache(
       source = await Deno.readTextFile(cachedFilePath);
     }
 
-    const { imports } = await getImportExports(source);
-
+    const { imports } = await getImportExports(cachedFilePath, source);
+        
     queue.push(
       ...Object.keys(imports).map((dependency) =>
         resolveDependencySpecifier(specifier, dependency)

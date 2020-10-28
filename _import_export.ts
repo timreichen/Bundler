@@ -206,7 +206,7 @@ export interface CompilerOptions {
 function importExportTransformer(
   sourceFile: ts.SourceFile,
   { imports, exports }: { imports: any; exports: any },
-  { importMap }: { importMap: ImportMap },
+  { importMap, resolve=false }: { importMap: ImportMap, resolve?: boolean },
 ): ts.TransformerFactory<ts.Node> {
   return (context: ts.TransformationContext) => {
     const visit: ts.Visitor = (node: ts.Node) => {
@@ -217,12 +217,13 @@ function importExportTransformer(
         if (importClause?.isTypeOnly) return node;
 
         if (node.moduleSpecifier) {
-          const quotedSpecifier = node.moduleSpecifier.getText(sourceFile);
-          specifier = resolveDependencySpecifier(
+          const quotedSpecifier = node.moduleSpecifier.getText(sourceFile)
+          const unquotedSpecifier =  quotedSpecifier.substring(1, quotedSpecifier.length - 1)
+          specifier = resolve ? resolveDependencySpecifier(
             specifier,
-            quotedSpecifier.substring(1, quotedSpecifier.length - 1),
+            unquotedSpecifier,
             importMap,
-          );
+          ) : unquotedSpecifier;
         }
         imports[specifier] = imports[specifier] || { specifiers: [] };
         if (importClause) {
@@ -251,11 +252,12 @@ function importExportTransformer(
 
         if (node.moduleSpecifier) {
           const quotedSpecifier = node.moduleSpecifier.getText(sourceFile);
-          specifier = resolveDependencySpecifier(
+          const unquotedSpecifier =  quotedSpecifier.substring(1, quotedSpecifier.length - 1)
+          specifier = resolve ? resolveDependencySpecifier(
             specifier,
-            quotedSpecifier.substring(1, quotedSpecifier.length - 1),
+            unquotedSpecifier,
             importMap,
-          );
+          ): unquotedSpecifier;
         }
 
         exports[specifier] = exports[specifier] || { specifiers: [] };
@@ -335,11 +337,11 @@ function importExportTransformer(
         const arg = node.arguments[0];
         if (ts.isStringLiteral(arg)) {
           // import("./x.ts")
-          specifier = resolveDependencySpecifier(
+          specifier = resolve ? resolveDependencySpecifier(
             specifier,
             arg.text,
             importMap,
-          );
+          ): arg.text;
           imports[specifier] = imports[specifier] || {};
           imports[specifier].dynamic = true;
         } else {
@@ -362,7 +364,7 @@ function importExportTransformer(
 export function getImportExports(
   fileName: string,
   source: string,
-  { importMap = { imports: {} } }: { importMap?: ImportMap } = {},
+  { importMap = { imports: {} }, resolve=false }: { importMap?: ImportMap, resolve?: boolean } = {},
 ): { imports: any; exports: any } {
   const imports: any = {};
   const exports: any = {};
@@ -373,7 +375,7 @@ export function getImportExports(
   );
   ts.transform(
     sourceFile,
-    [importExportTransformer(sourceFile, { imports, exports }, { importMap })],
+    [importExportTransformer(sourceFile, { imports, exports }, { importMap, resolve })],
   );
   return {
     imports,

@@ -18,7 +18,7 @@ export function typescriptLoader(
       const { imports, exports } = getImportExports(
         input,
         source,
-        { importMap },
+        { importMap, resolve: true },
       );
 
       return {

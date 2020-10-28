@@ -15,7 +15,7 @@ import { terser } from "./plugins/transformers/terser.ts";
 import type { FileMap, Graph } from "./graph.ts";
 import { jsonLoader } from "./plugins/loaders/json.ts";
 import { json } from "./plugins/transformers/json.ts";
-import type { CompilerOptions } from "./typescript.ts"
+import type { CompilerOptions } from "./_import_export.ts"
 
 interface Meta {
   options: {

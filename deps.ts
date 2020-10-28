@@ -11,7 +11,6 @@ export { Program } from "https://deno.land/x/program@0.1.6/mod.ts"
 export type { Args } from "https://deno.land/std@0.74.0/flags/mod.ts"
 export { invalidSubcommandError } from "https://deno.land/x/program@0.1.6/_helpers.ts"
 
-export { default as xts } from "https://jspm.dev/typescript"
 export { default as ts } from "https://esm.sh/typescript@4.0.5"
 export * as postcss from "https://esm.sh/postcss@8.1.4"
 

@@ -1,5 +1,5 @@
 import { ts } from "../../deps.ts";
-import type { CompilerOptions } from "../../typescript.ts"
+import type { CompilerOptions } from "../../_import_export.ts"
 import { Plugin, PluginTest } from "../plugin.ts";
 
 interface Config {
@@ -20,11 +20,11 @@ export function typescript(
     source: string,
   ) => {
     const { diagnostics, outputText } = ts.transpileModule(source, {
-      compilerOptions:
-        ts.convertCompilerOptionsFromJson(compilerOptions, Deno.cwd()).options,
+      compilerOptions: ts.convertCompilerOptionsFromJson(compilerOptions, Deno.cwd()).options,
       transformers,
       reportDiagnostics: true,
     });
+
     if (diagnostics) {
       for (const diagnostic of diagnostics) {
         console.error(`error during transpilation: ${diagnostic.messageText}`);

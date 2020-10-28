@@ -3,9 +3,9 @@ A lightweight bundler that transpiles and bundles for the web.
 
 ## Why Use Bundler
 
+- no configuration setup
 - transpiles and bundles files
-- no configuration required
-- handles imports with and without extensions as well as [url imports](https://deno.land/manual/linking_to_external_code)
+- handles relative, absolute and [url imports](https://deno.land/manual/linking_to_external_code) with and without file extension
 - handles dynamic imports
 - [smart splits](#Smart-splitting) dependencies
 - [`--optimize` option](#Options) minifies `javascript` and `css` files
@@ -14,11 +14,6 @@ A lightweight bundler that transpiles and bundles for the web.
 - handles [`css` imports](#CSS) and `css` `@import` statements
 - supports `css` postcss-preset-env *stage 2* and *nesting-rules* by default
 
-### But there is `deno bundle`…
-Deno offers `deno bundle` to transpile a file to a standalone module. This might work in some occations but is limited. Bundler works in a similar way to `deno bundle` but is created with the web in mind.
-It splits dynamic imports to separate files and injects paths. It splits code that is imported in multiple files so it only is loaded once.
-The `--optimize` option also allows for code minification with both `javascript` and `css` files.
-It also has a `--watch` option that observes all dependencies and re-bundles on files changes.
 
 ### File extensions and url imports
 Typescript as of today does throw an error if an import has a `.ts` extension or a url.
@@ -33,6 +28,12 @@ import { foo } from "bar" // Deno Error
 ```
 
 Bundler handles file extensions as well as url imports and uses the same cached files as deno does.
+
+### But there is `deno bundle`…
+Deno offers `deno bundle` to transpile a file to a standalone module. This might work in some occations but is limited. Bundler works in a similar way to `deno bundle` but is created with the web in mind.
+It splits dynamic imports to separate files and injects paths. It splits code that is imported in multiple files so it only is loaded once.
+The `--optimize` option also allows for code minification with both `javascript` and `css` files.
+It also has a `--watch` option that observes all dependencies and re-bundles on files changes.
 
 ## CLI
 
@@ -62,7 +63,7 @@ bundler bundle index.ts=index.js
 
 
 ## Bundler API
-Bundler uses the Bundler API to transpile `typescript` files to `javascript`.
+Bundler CLI uses the Bundler API to transpile under the hood.
 
 ### Usage
 ```ts
@@ -137,17 +138,19 @@ console.log(styles) // article > p { color: red; }
 ## Examples
 ### Hello world
 - [hello world](https://github.com/timreichen/Bundler/tree/master/examples/hello%20world)
-### Dependencies
+### Components
+- [lit-element](https://github.com/timreichen/Bundler/tree/master/examples/lit-element)
+- [React](https://github.com/timreichen/Bundler/tree/master/examples/react)
+### File dependencies
 - [dynamic import](https://github.com/timreichen/Bundler/tree/master/examples/dynamic%20import)
 - [json import](https://github.com/timreichen/Bundler/tree/master/examples/json%20import)
 - [css import](https://github.com/timreichen/Bundler/tree/master/examples/css%20import)
-### Third party imports
-- [lit-element](https://github.com/timreichen/Bundler/tree/master/examples/lit-element)
-- [React](https://github.com/timreichen/Bundler/tree/master/examples/react)
 ### Bundler API
 - [custom bundler](https://github.com/timreichen/Bundler/tree/master/examples/custom%20bundler)
 - [top level await](https://github.com/timreichen/Bundler/tree/master/examples/top%20level%20await)
 - [smart splitting](https://github.com/timreichen/Bundler/tree/master/examples/smart%20splitting)
+### Other
+- [Threejs](https://github.com/timreichen/Bundler/tree/master/examples/threejs)
 
 ## Unstable
 This module requires deno to run with the `--unstable` flag and is likely to change in the future. Do not use in production!

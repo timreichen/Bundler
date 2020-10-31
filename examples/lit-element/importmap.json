@@ -1,6 +1,6 @@
 {
   "imports": {
-    "lit-element": "https://jspm.dev/lit-element",
-    "lit-html/": "https://jspm.dev/lit-html/"
+    "lit-element": "https://esm.sh/lit-element@2.4.0",
+    "lit-html/": "https://esm.sh/lit-html@1.3.0/"
   }
 }

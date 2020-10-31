@@ -13,7 +13,7 @@ export interface Exports {
   };
 }
 
-export interface GraphEntry {
+export interface Asset {
   path: string;
   output: string;
   imports: Imports;
@@ -21,7 +21,7 @@ export interface GraphEntry {
 }
 
 export interface Graph {
-  [input: string]: GraphEntry;
+  [input: string]: Asset;
 }
 
 export interface InputMap {

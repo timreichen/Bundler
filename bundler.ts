@@ -1,275 +1,452 @@
-import { colors, fs, ImportMap, path, Sha256, ts } from "./deps.ts";
-import {
-  createInstantiate,
-  createSystemExports,
-  createSystemLoader,
-} from "./system.ts";
-import type { Plugin } from "./plugins/plugin.ts";
-import type { Loader } from "./plugins/loader.ts";
-import {
-  create as createGraph,
-  FileMap,
-  getOutput,
-  getSource,
-  Graph,
-  InputMap,
-} from "./graph.ts";
-import { addRelativePrefix, removeRelativePrefix } from "./_util.ts";
-import { createModuleImport, injectBundleImport } from "./_smart_splitting.ts";
+import { colors, fs, ImportMap, path, Sha256 } from "./deps.ts";
+import { resolve as resolveCache } from "./cache.ts";
+import { Bundles, Chunks, Data, Plugin, Source } from "./plugins/plugin.ts";
+import { Logger, LogLevel, logLevels } from "./logger.ts";
+import { Graph } from "./graph.ts";
+import { Chunk } from "./chunk.ts";
 
-const encoder = new TextEncoder();
-
-export interface OutputMap {
-  [output: string]: ArrayBuffer;
+function createTimestamp(time: number) {
+  return `${Math.ceil(performance.now() - time)}ms`;
 }
 
-export interface CacheMap {
-  [output: string]: string;
+const units = ["B", "KB", "MB", "GB", "TB"];
+function humanizeSize(size: number) {
+  const i = Math.floor(Math.log(size) / Math.log(1024));
+  const unit = units[i];
+  return `${Math.ceil(size / Math.pow(1024, i))}${unit}`;
 }
 
-async function getCacheSource(cacheOutput: string, cacheMap: CacheMap) {
-  if (!cacheMap[cacheOutput]) {
-    cacheMap[cacheOutput] = await Deno.readTextFile(cacheOutput);
+type OutputMap = Record<string, string>;
+
+export class Bundler {
+  plugins: Plugin[];
+  logger: Logger;
+  sources: Record<string, Source>;
+  outputMap: OutputMap;
+  importMap: ImportMap;
+  outDirPath: string;
+  depsDirPath: string;
+  cacheDirPath: string;
+  cacheFilePath: string;
+  constructor(
+    plugins: Plugin[],
+    {
+      logLevel = logLevels.info,
+      outputMap = {},
+      importMap = { imports: {} },
+      outDirPath = "dist",
+      depsDirPath = "deps",
+      cacheDirPath = ".cache",
+      cacheFilePath = ".cache/cache.json",
+    }: {
+      logLevel?: LogLevel;
+      importMap?: ImportMap;
+      outputMap?: OutputMap;
+      outDirPath?: string;
+      depsDirPath?: string;
+      cacheDirPath?: string;
+      cacheFilePath?: string;
+    } = {},
+  ) {
+    this.plugins = plugins;
+    this.logger = new Logger({ logLevel });
+    this.sources = {};
+    this.outputMap = outputMap;
+    this.importMap = importMap;
+    this.outDirPath = outDirPath;
+    this.depsDirPath = depsDirPath;
+    this.cacheDirPath = cacheDirPath;
+    this.cacheFilePath = cacheFilePath;
   }
-  return cacheMap[cacheOutput];
-}
-
-export async function bundle(
-  inputMap: InputMap = {},
-  {
-    outDir = "dist",
-    depsDir = "deps",
-    cacheDir = ".cache",
-    graph: initialGraph = {},
-    fileMap = {},
-    importMap = { imports: {}, scopes: {} },
-    loaders = [],
-    transformers = [],
-    optimizers = [],
-    reload = false,
-    optimize = false,
-    quiet = false,
-  }: {
-    outDir?: string;
-    depsDir?: string;
-    cacheDir?: string;
-    graph?: Graph;
-    fileMap?: FileMap;
-    importMap?: ImportMap;
-    loaders?: Loader[];
-    transformers?: Plugin[];
-    optimizers?: Plugin[];
-    reload?: boolean;
-    optimize?: boolean;
-    quiet?: boolean;
-  } = {},
-): Promise<{ outputMap: OutputMap; cacheMap: CacheMap; graph: Graph }> {
-  const outputMap: OutputMap = {};
-
-  const depsPath = path.join(outDir, depsDir);
-  const cacheDirPath = path.join(outDir, cacheDir);
-  const cacheMap: CacheMap = {};
-
-  fileMap = { ...fileMap };
-
-  const graphTime = performance.now();
-
-  const graph = await createGraph(
-    inputMap,
-    loaders,
-    { graph: initialGraph, fileMap, importMap, baseURL: depsPath, reload },
-  );
-
-  if (!quiet) {
-    console.log(
-      colors.blue(`Create`),
-      `Graph`,
-      `${Object.keys(graph).length} files`,
-      colors.gray(`(${Math.ceil(performance.now() - graphTime)}ms)`),
+  createOutput(filePath: string, extension: string) {
+    return path.join(
+      this.depsDirPath,
+      `${new Sha256().update(filePath).hex()}${extension}`,
     );
   }
+  async getSource(
+    filePath: string,
+    data: Data,
+  ): Promise<string | Uint8Array> {
+    let source = this.sources[filePath];
+    if (!source) {
+      for (const plugin of this.plugins) {
+        if (
+          plugin.load &&
+          await plugin.test(filePath, data)
+        ) {
+          source = await plugin.load(
+            filePath,
+            data,
+          );
+          this.sources[filePath] = source;
+          break;
+        }
+      }
+      // this.logger.trace(colors.green("Get"), "source", filePath);
+    } else {
+      // this.logger.trace(colors.green("Load"), "source", filePath);
+    }
+    if (source === undefined) {
+      throw Error(`no plugin for getSource found: ${filePath}`);
+    }
+    return source;
+  }
+  async createGraph(
+    inputs: string[],
+    {
+      reload = false,
+      optimize = false,
+      initialGraph = {},
+      cacheFilePath = this.cacheFilePath,
+    }: {
+      initialGraph?: Graph;
+      reload?: boolean;
+      optimize?: boolean;
+      cacheFilePath?: string;
+    } = {},
+  ) {
+    const time = performance.now();
+    const list: Map<string, any> = new Map(inputs.map((input) => [input, {}]));
+    const graph: Graph = {};
 
-  const inputs = Object.keys(inputMap).map(removeRelativePrefix);
+    const exists = await fs.exists(cacheFilePath);
+    const mtime = exists && Deno.statSync(cacheFilePath).mtime!;
 
-  const entries: Set<string> = new Set(inputs);
-  for (const entry of Object.values(graph)) {
-    Object.entries(entry.imports).forEach(([specifier, { dynamic }]) => {
-      if (dynamic) entries.add(specifier);
-    });
+    const data: Data = {
+      bundler: this,
+      graph,
+      chunks: new Map(),
+      reload,
+      optimize,
+    };
+
+    for (const [input, { type }] of list.entries()) {
+      let asset = initialGraph[input];
+      const filePath = resolveCache(input);
+
+      // if asset does not exist or is outdated
+      const needsAssetUpdate = reload || !asset || !exists ||
+        mtime < Deno.statSync(filePath).mtime!;
+      if (needsAssetUpdate) {
+        let foundPlugin = false;
+        const extension = path.extname(filePath);
+        graph[input] = {
+          input,
+          output: this.createOutput(filePath, extension),
+          filePath,
+          imports: {},
+          exports: {},
+          type: type,
+        };
+        for (const plugin of this.plugins) {
+          if (
+            plugin.createAsset &&
+            await plugin.test(
+              input,
+              data,
+            )
+          ) {
+            foundPlugin = true;
+            const time = performance.now();
+            asset = await plugin.createAsset(
+              input,
+              data,
+            );
+            this.logger.debug(
+              colors.green("Create"),
+              "Asset",
+              input,
+              colors.dim(plugin.constructor.name),
+              colors.dim(createTimestamp(time)),
+            );
+            break;
+          }
+        }
+        if (!foundPlugin) {
+          throw Error(`no plugin for createAsset found: ${input}`);
+        }
+      }
+      Object.entries(asset.imports).forEach(([dependency, d]) => {
+        list.set(dependency, d);
+      });
+      Object.entries(asset.exports).forEach(([dependency, d]) => {
+        list.set(dependency, d);
+      });
+      graph[input] = asset;
+    }
+    this.logger.debug(
+      colors.green("Create"),
+      "Graph",
+      colors.dim(createTimestamp(time)),
+    );
+    return graph;
   }
 
-  const checkedInputs: Set<string> = new Set();
-
-  while (inputs.length) {
-    const input = inputs.pop()!;
-    if (checkedInputs.has(input)) continue;
-    checkedInputs.add(input);
-    const time = performance.now();
-
-    const entry = graph[input];
-
-    const strings: string[] = [];
-    strings.push(await createSystemLoader());
-
-    let bundleNeedsUpdate = false;
-
-    const { imports } = graph[input];
-
-    const dependencies = [input];
-    const moduleImports: Set<string> = new Set();
-    const output = getOutput(input, fileMap, depsPath);
-
-    Object.entries(imports).forEach(([input, { specifiers, dynamic }]) => {
-      if (dynamic) {
-        inputs.push(input);
-      } else {
-        dependencies.push(input);
+  async createChunk(
+    dependency: string,
+    inputHistory: string[],
+    chunkList: string[][],
+    data: Data,
+  ) {
+    let chunk: Chunk | undefined;
+    for (const plugin of this.plugins) {
+      if (
+        plugin.createChunk &&
+        await plugin.test(
+          dependency,
+          data,
+        )
+      ) {
+        chunk = await plugin.createChunk(
+          [...inputHistory, dependency],
+          chunkList,
+          data,
+        );
+        break;
       }
-    });
+    }
+    if (!chunk) {
+      throw new Error(`no plugin for createChunk found: ${dependency}`);
+    }
+    return chunk;
+  }
+  async createChunks(
+    inputs: string[],
+    graph: Graph,
+    { reload = false, optimize = false, chunks = new Map() }: {
+      reload?: boolean;
+      optimize?: boolean;
+      chunks?: Chunks;
+    },
+  ) {
+    const time = performance.now();
+    const data = {
+      bundler: this,
+      graph,
+      chunks,
+      reload,
+      optimize,
+    };
+    for (const bundleInput of inputs) {
+      const chunkList = [
+        [bundleInput],
+      ];
+      for (const inputHistory of chunkList) {
+        let pluginName: string;
+        const time = performance.now();
+        const input = inputHistory[inputHistory.length - 1];
+        const dependencyList: Set<string> = new Set([input]);
+        for (const dependency of dependencyList) {
+          for (const plugin of this.plugins) {
+            if (
+              plugin.createChunk &&
+              await plugin.test(
+                dependency,
+                data,
+              )
+            ) {
+              const chunk = await this.createChunk(
+                dependency,
+                inputHistory,
+                chunkList,
+                data,
+              );
 
-    const checkedDependencies: Set<string> = new Set();
-    while (dependencies.length) {
+              if (input === dependency) {
+                pluginName = plugin.constructor.name;
+              }
+              chunk.dependencies.forEach((dependency) =>
+                dependencyList.add(dependency)
+              );
+            }
+          }
+        }
+        this.logger.debug(
+          colors.green("Create"),
+          "Chunk",
+          input,
+          colors.dim(pluginName!),
+          colors.dim(createTimestamp(time)),
+        );
+        chunks.set(
+          input,
+          new Chunk(this, {
+            inputHistory,
+            dependencies: dependencyList,
+          }),
+        );
+      }
+    }
+    this.logger.debug(
+      colors.green("Create"),
+      "Chunks",
+      colors.dim(createTimestamp(time)),
+    );
+    return chunks;
+  }
+  async createBundles(
+    graph: Graph,
+    chunks: Chunks,
+    { reload = false, optimize = false }: {
+      reload?: boolean;
+      optimize?: boolean;
+    } = {},
+  ) {
+    const time = performance.now();
+    const bundles: Bundles = {};
+    const data = {
+      bundler: this,
+      graph,
+      chunks,
+      reload,
+      optimize,
+    };
+    for (const [input, chunk] of chunks.entries()) {
+      let plugin: Plugin | undefined;
+      for (const potentialPlugin of this.plugins) {
+        if (
+          potentialPlugin.createBundle &&
+          await potentialPlugin.test(
+            input,
+            data,
+          )
+        ) {
+          plugin = potentialPlugin;
+        }
+      }
+      if (!plugin) {
+        throw new Error(`no plugin for createBundle found: ${input}`);
+      }
+
       const time = performance.now();
-      const dependency = dependencies.pop()!;
-      if (checkedDependencies.has(dependency)) continue;
-      checkedDependencies.add(dependency);
-
-      const { imports, exports, path: filePath } = graph[dependency];
-
-      const cacheOutput = path.join(
-        cacheDirPath,
-        new Sha256().update(dependency).hex(),
+      const bundleSource = await plugin.createBundle!(
+        chunk,
+        data,
       );
 
-      Object.entries(imports).forEach(([input, { specifiers, dynamic }]) => {
-        if (!specifiers || specifiers.length) {
-          dependencies.push(input);
-        }
-        if (dynamic) {
-          inputs.push(input);
-        }
-      });
-      dependencies.push(...Object.keys(exports));
+      this.logger.debug(
+        colors.green("Create"),
+        "Bundle",
+        input,
+        colors.dim(plugin.constructor.name),
+        colors.dim(createTimestamp(time)),
+      );
 
-      const cacheFileExists = await fs.exists(cacheOutput);
-
-      const modified = cacheFileExists &&
-        Deno.statSync(filePath).mtime! > Deno.statSync(cacheOutput).mtime!;
-      // if cache file is up to date, get source from that cache file
-
-      let string: string;
-
-      if (
-        ((!reload && cacheFileExists) || cacheMap[cacheOutput]) && !modified
-      ) {
-        string = await getCacheSource(cacheOutput, cacheMap);
-        if (!quiet && filePath !== input) {
-          console.log(
-            colors.green(`Check`),
-            dependency,
-            colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
-          );
-        }
-      } else {
-        // if cache file does not exist or is out of date create apply transformers to source and create new cache file
+      let bundleNeedsUpdate = false;
+      const { output } = graph[input];
+      if (bundleSource !== undefined) {
         bundleNeedsUpdate = true;
-
-        let source = await getSource(filePath, inputMap, importMap);
-        for (const transformer of transformers) {
-          if (await transformer.test(dependency)) {
-            source = await transformer.fn(
-              dependency,
-              source,
-              { graph, fileMap, importMap, outDir, depsDir },
-            );
-          }
-        }
-
-        // Bundle file has special log. Only log dependency files
-        if (!quiet && filePath !== input) {
-          if (!cacheFileExists) {
-            console.log(
-              colors.green(`Create`),
-              dependency,
-              colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
-            );
-          } else {
-            console.log(
-              colors.green(`Update`),
-              dependency,
-              colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
-            );
-          }
-        }
-
-        cacheMap[cacheOutput] = source;
-        string = source;
-      }
-
-      if (filePath !== input && entries.has(filePath)) {
-        const depsOutput = getOutput(filePath, fileMap, depsPath);
-        const relativePath = addRelativePrefix(
-          path.relative(path.dirname(output), depsOutput),
+        bundles[output] = bundleSource;
+        const size = typeof bundleSource === "string"
+          ? new Blob([bundleSource]).size
+          : bundleSource.length;
+        this.logger.info(
+          colors.blue("Bundle"),
+          input,
+          colors.dim("->"),
+          colors.dim(output),
+          colors.dim(humanizeSize(size)),
+          colors.dim(createTimestamp(time)),
         );
-        const specifier = `_${new Sha256().update(filePath).hex()}`;
-        moduleImports.add(createModuleImport(specifier, relativePath));
-        string = injectBundleImport(string, specifier);
+      } else {
+        this.logger.info(
+          colors.blue("Up-To-Date"),
+          input,
+          colors.dim("->"),
+          colors.dim(output),
+          colors.dim(createTimestamp(time)),
+        );
       }
-
-      strings.push(string);
-    }
-
-    const outputFileExists = await fs.exists(output);
-
-    if (!outputFileExists) {
-      bundleNeedsUpdate = true;
-    }
-
-    if (bundleNeedsUpdate) {
-      strings.push(createInstantiate(output));
-      for (const { specifiers } of Object.values(entry.exports)) {
-        strings.push(...createSystemExports(specifiers));
-      }
-
-      let string = [...moduleImports, ...strings].join("\n");
-
-      if (optimize) {
-        for (const optimizer of optimizers) {
-          if (optimizer.test(input)) {
-            string = await optimizer.fn(
+      if (bundleNeedsUpdate && optimize) {
+        for (const plugin of this.plugins) {
+          if (
+            plugin.optimize &&
+            await plugin.test(
               input,
-              string,
-              { graph, fileMap, importMap, outDir, depsDir },
+              data,
+            )
+          ) {
+            const time = performance.now();
+            bundles[output] = await plugin.optimize(
+              output,
+              bundles,
+              data,
+            );
+            this.logger.debug(
+              colors.green("Optimize"),
+              input,
+              colors.dim(plugin.constructor.name),
+              colors.dim(createTimestamp(time)),
             );
           }
         }
       }
-      outputMap[output] = encoder.encode(string);
-      if (!quiet) {
-        console.log(
-          colors.blue(`Bundle`),
+    }
+    this.logger.debug(
+      colors.green("Create"),
+      "Bundles",
+      colors.dim(createTimestamp(time)),
+    );
+    return bundles;
+  }
+  async transformSource(
+    input: string,
+    bundleInput: string,
+    chunk: Chunk,
+    data: Data,
+  ) {
+    let source = await chunk.getSource(input, data);
+    for (const plugin of this.plugins) {
+      if (
+        plugin.transform &&
+        await plugin.test(
           input,
-          colors.gray("->"),
-          colors.gray(output),
-          colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
+          data,
+        )
+      ) {
+        const time = performance.now();
+
+        source = await plugin.transform(
+          input,
+          source,
+          bundleInput,
+          data,
         );
-      }
-    } else {
-      if (!quiet) {
-        console.log(
-          colors.blue(`up-to-date`),
+        this.logger.debug(
+          colors.green("Transform"),
           input,
-          colors.gray("->"),
-          colors.gray(output),
-          colors.gray(`(${Math.ceil(performance.now() - time)}ms)`),
+          colors.dim(plugin.constructor.name),
+          colors.dim(`${Math.ceil(performance.now() - time)}ms`),
         );
       }
     }
+    return source;
   }
-
-  return {
-    outputMap,
-    cacheMap,
-    graph,
-  };
+  async bundle(
+    inputs: string[],
+    { initialGraph = {}, reload = false, optimize = false }: {
+      initialGraph?: Graph;
+      reload?: boolean;
+      optimize?: boolean;
+    } = {},
+  ) {
+    const graph = await this.createGraph(
+      inputs,
+      { initialGraph, reload, cacheFilePath: this.cacheFilePath },
+    );
+    // console.log(graph);
+    const chunks = await this.createChunks(
+      inputs,
+      graph,
+      { reload, optimize },
+    );
+    // console.log(chunks);
+    const bundles = await this.createBundles(
+      graph,
+      chunks,
+      { reload, optimize },
+    );
+    return { graph, chunks, bundles };
+  }
 }

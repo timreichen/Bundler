@@ -1,39 +1,30 @@
 # Bundler
-A lightweight bundler that transpiles and bundles for the web.
+A bundler that transpiles and bundles deno code for the web.
 
 ## Why Use Bundler
 
 - no configuration setup
-- transpiles and bundles files
 - handles relative, absolute and [url imports](https://deno.land/manual/linking_to_external_code) with and without file extension
 - handles dynamic imports
 - [smart splits](#Smart-splitting) dependencies
 - [`--optimize` option](#Options) minifies `javascript` and `css` files
 - [`--watch` option](#Options) observes all dependencies and re-bundles on files changes
-- handles [`json` imports](#JSON)
-- handles [`css` imports](#CSS) and `css` `@import` statements
+- handles `typescript` and `javascript` files
+- handles `html` files and `src` and `href` imports
+- handles `css` files and `css` `@import` statements
 - supports `css` postcss-preset-env *stage 2* and *nesting-rules* by default
-
-
-### File extensions and url imports
-Typescript as of today does throw an error if an import has a `.ts` extension or a url.
-```ts
-import { foo } from "bar.ts" // Typescript Error
-import * as path from "https://deno.land/std/path/mod.ts"  // Typescript Error
-```
-
-Deno on the other hand does not allow the suspension of extensions.
-```ts
-import { foo } from "bar" // Deno Error
-```
-
-Bundler handles file extensions as well as url imports and uses the same cached files as deno does.
+- handles `json` and `webmanifest` files
+- handles `image` files
 
 ### But there is `deno bundle`…
-Deno offers `deno bundle` to transpile a file to a standalone module. This might work in some occations but is limited. Bundler works in a similar way to `deno bundle` but is created with the web in mind.
-It splits dynamic imports to separate files and injects paths. It splits code that is imported in multiple files so it only is loaded once.
-The `--optimize` option also allows for code minification with both `javascript` and `css` files.
-It also has a `--watch` option that observes all dependencies and re-bundles on files changes.
+Deno offers `deno bundle` to transpile a file to a standalone module. This might work in some occations but is limited.
+Bundler works in a similar way to `deno bundle` but is created with the web in mind.
+
+#### Key differences
+- Bundler supports `css`, `html`, `json`, `webmanifest` and `image` files
+- Bundler splits dynamic imports into separate files and injects paths. It splits code that is imported in multiple files so it is only loaded once.
+- The `--optimize` option allows for code minification.
+- The `--watch` option observes all dependencies and re-bundles on files changes.
 
 ## CLI
 
@@ -50,56 +41,31 @@ bundler bundle index.ts=index.js
 ```
 
 #### Options
-| Option                    | Description                           | Default |
-|--------------------------:|---------------------------------------|---------|
-| -c, --config \<FILE>      | Load tsconfig.json configuration file | {}      |
-|     --out-dir \<DIR>      | Name of out_dir                       | "dist"  |
-| -h, --help                | Prints help information               |         |
-|     --import-map \<FILE>  | UNSTABLE: Load import map file        | {}      |
-|     --optimize            | Minify source code                    | false   |
-| -q, --quiet               | Suppress diagnostic output            | false   |
-| -r, --reload              | Reload source code                    | false   |
-|     --watch               | Watch files and re-bundle on change   | false   |
-
-
-## Bundler API
-Bundler CLI uses the Bundler API to transpile under the hood.
-
-### Usage
-```ts
-import { bundle } from "deno.land/x/bundler/mod.ts"
-
-const inputMap = {
-  "src/index.ts": `console.log("Hello World")`
-}
-
-const fileMap = {
-  "src/index.ts": "dist/index.js"
-}
-
-const { outputMap, cacheMap, graph } = await bundle(inputMap, { fileMap })
-for (const [output, source] of Object.entries(outputMap)) {
-  await fs.ensureFile(output);
-  await Deno.writeTextFile(output, source);
-}
-```
+| Option                    | Description                                     | Default |
+|--------------------------:|-------------------------------------------------|---------|
+| -c, --config \<FILE>      | Load tsconfig.json configuration file           | {}      |
+|     --out-dir \<DIR>      | Name of out_dir                                 | "dist"  |
+| -h, --help                | Prints help information                         |         |
+|     --import-map \<FILE>  | UNSTABLE: Load import map file                  | {}      |
+|     --optimize            | Optimize source code                            | false   |
+| -L, --log-level           | Set log level [possible values: debug, info]    | debug   |
+| -q, --quiet               | Suppress diagnostic output                      | false   |
+| -r, --reload              | Reload source code                              | false   |
+|     --watch               | Watch files and re-bundle on change             | false   |
 
 ### Smart splitting
-#### What is smart splitting?
-Bundler automatically analyzes the dependency graph and splits dependencies from a bundle into a separate files, if the code is used in different entry points.
-This
-- allows bundle files to share code
-- allows bundle files to import other bundle files
-- makes multiple bundle files smaller, because they will not contain the same code multiple times
+Bundler automatically analyzes the dependency graph and splits dependencies into a separate files, if the code is used in different entry points. This allows bundle files to share code.
 
-### Loaders
+### Plugins
 
-#### Typescript
-Bundler uses typescript loader by default. You can import `typescript` and `javascript` files directly in your files.
-typescript loader handles modules relative and absolute paths wih and without suffixes as well as urls.
+#### TypescriptPlugin
+Bundler uses TypescriptPlugin by default.
+You can import `typescript` and `javascript` files directly in your files.
+The `typescript` plugin handles modules relative and absolute paths with and without extensions as well as urls.
 
-#### JSON
-Bundler uses `JSON` loader by default. You can import `JSON` files directly in your files. The `JSON` loader will convert the file into a javascript module with a default string export.
+#### JsonPlugin
+Bundler uses JsonPlugin by default.
+You can import `json` files directly in your files. The `json` loader will convert the file into a javascript module with a default string export.
 
 ```json
 /* src/data.json */
@@ -111,14 +77,16 @@ Bundler uses `JSON` loader by default. You can import `JSON` files directly in y
 ```js
 /* src/index.ts */
 import data from "./data.json"
-console.log(data) // { foo: "bar" }
+console.log(data) // { "foo": "bar" }
 ```
-**Info** [JSON modules](https://github.com/tc39/proposal-json-modules) is currently at **stage 2**. The functionality of this loader might change once  **stage 4** is reached.
 
-#### CSS
+**Info** [JSON modules](https://github.com/tc39/proposal-json-modules) is currently at **stage 2**. This plugin might change or even will become obsolete once the next stage is reached.
+
+#### CssPlugin
+Bundler uses CssPlugin by default.
+You can import css files directly in your typescript files. The CSS loader will convert the file into a javascript module with a default string export.
 CSS is native to browsers and bundler therefore focuses on making css usage really easy.
 It supports [postcss-preset-env](https://preset-env.cssdb.org) with **stage 2** features and **nesting-rules** enabled so you can use the latest css features out of the box.
-Bundler uses CSS loader by default. You can import css files directly in your typescript files. The CSS loader will convert the file into a javascript module with a default string export.
 
 ```css
 /* src/styles.css */
@@ -135,22 +103,72 @@ import styles from "./styles.css"
 console.log(styles) // article > p { color: red; }
 ```
 
+#### HtmlPlugin
+Bundler uses HtmlPlugin by default.
+It handles `.html` files
+
+#### WebmanifestPlugin
+Bundler uses WebmanifestPlugin by default.
+It handles webmanifest files that are loaded in a html file.
+
+WebmanifestPlugin handles the icons that are declared in the manifest file.
+```json
+// src/manifest.json
+{
+  "name": "My App",
+  "short_name": "App",
+  "icons": [
+    {
+      "src": "images/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "images/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#000000",
+  "display": "standalone",
+  "theme_color": "#ffffff"
+}
+```
+
+```html
+<!-- src/index.html -->
+<html>
+  <head>
+    <link rel="manifest" href="manifest.json">
+  </head>
+  <body>
+  </body>
+</html>
+```
+
+#### ImagePlugin
+Bundler uses ImagePlugin by default.
+It handles `.png`, `.jpg` and `.ico` files.
+
+#### SvgPlugin
+Bundler uses SvgPlugin by default.
+It handles `.svg` files.
+
 ## Examples
 ### Hello world
 - [hello world](https://github.com/timreichen/Bundler/tree/master/examples/hello%20world)
 ### Components
 - [lit-element](https://github.com/timreichen/Bundler/tree/master/examples/lit-element)
 - [React](https://github.com/timreichen/Bundler/tree/master/examples/react)
-### File dependencies
-- [dynamic import](https://github.com/timreichen/Bundler/tree/master/examples/dynamic%20import)
-- [json import](https://github.com/timreichen/Bundler/tree/master/examples/json%20import)
-- [css import](https://github.com/timreichen/Bundler/tree/master/examples/css%20import)
-### Bundler API
-- [custom bundler](https://github.com/timreichen/Bundler/tree/master/examples/custom%20bundler)
-- [top level await](https://github.com/timreichen/Bundler/tree/master/examples/top%20level%20await)
-- [smart splitting](https://github.com/timreichen/Bundler/tree/master/examples/smart%20splitting)
 ### Other
+- [css](https://github.com/timreichen/Bundler/tree/master/examples/css)
+- [json](https://github.com/timreichen/Bundler/tree/master/examples/json)
+- [images](https://github.com/timreichen/Bundler/tree/master/examples/images)
+- [webmanifest](https://github.com/timreichen/Bundler/tree/master/examples/webmanifest)
+- [dynamic import](https://github.com/timreichen/Bundler/tree/master/examples/dynamic%20import)
+- [smart splitting](https://github.com/timreichen/Bundler/tree/master/examples/smart%20splitting)
 - [Threejs](https://github.com/timreichen/Bundler/tree/master/examples/threejs)
 
 ## Unstable
-This module requires deno to run with the `--unstable` flag and is likely to change in the future. Do not use in production!
+This module requires deno to run with the `--unstable` flag. Itis likely to change in the future.

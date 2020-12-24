@@ -1,8 +1,7 @@
-import { b } from "./b.ts";
+import "./b.ts";
+import "./c.ts";
 
-console.log(b);
-
-const h1 = document.body.querySelector("h1");
-h1.innerHTML =
-  `File b.js was smart split. Therefore the browser should have fetched both a.js and b.js.`;
-document.body.appendChild(h1);
+const ol = document.body.querySelector("ul");
+const li = document.createElement("li");
+li.innerHTML = "a.ts loaded";
+ol.appendChild(li);

@@ -1,0 +1,3 @@
+.vscode
+examples/**/dist
+.DS_Store

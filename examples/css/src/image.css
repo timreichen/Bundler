@@ -1,0 +1,6 @@
+#image {
+    width: 225px;
+    height: 225px;
+    background: url("image.png");
+    margin: auto auto;
+}

@@ -1,32 +1,33 @@
-import { Args, colors, fs, ImportMap, path } from "./deps.ts";
-import { Sha256 } from "./deps.ts";
-
-import { bundle } from "./bundler.ts";
+import { Bundler } from "./bundler.ts";
+import {
+  Args,
+  colors,
+  fs,
+  ImportMap,
+  path,
+  postcssPresetEnv,
+  Sha256,
+  ts,
+} from "./deps.ts";
 import { invalidSubcommandError, Program } from "./deps.ts";
+import { Graph } from "./graph.ts";
+import { Logger, LogLevel, logLevels } from "./logger.ts";
+import { CssPlugin } from "./plugins/css/css.ts";
+import { CssoPlugin } from "./plugins/css/csso.ts";
+import { CssInjectOutputsPlugin } from "./plugins/css/inject_outputs.ts";
+import { HtmlPlugin } from "./plugins/html/html.ts";
+import { ImagePlugin } from "./plugins/image/image.ts";
+import { SvgPlugin } from "./plugins/image/svg.ts";
+import { JSONPlugin } from "./plugins/json/json.ts";
+import { WebmanifestPlugin } from "./plugins/json/webmanifest.ts";
+import { Plugin } from "./plugins/plugin.ts";
+import { SystemPlugin } from "./plugins/typescript/system.ts";
+import { TerserPlugin } from "./plugins/typescript/terser.ts";
+import { TypescriptPlugin } from "./plugins/typescript/typescript.ts";
+import { isURL, removeRelativePrefix } from "./_util.ts";
 
-import { css } from "./plugins/transformers/css.ts";
-import { postcssPresetEnv } from "./deps.ts";
-
-import { isURL } from "./_util.ts";
-import { cssLoader } from "./plugins/loaders/css.ts";
-import { typescriptLoader } from "./plugins/loaders/typescript.ts";
-import { typescriptInjectSpecifiers } from "./plugins/transformers/typescript_inject_specifiers.ts";
-import { terser } from "./plugins/transformers/terser.ts";
-import type { FileMap, Graph } from "./graph.ts";
-import { jsonLoader } from "./plugins/loaders/json.ts";
-import { json } from "./plugins/transformers/json.ts";
-import type { CompilerOptions } from "./_import_export.ts";
-
-interface Meta {
-  options: {
-    fileMap: FileMap;
-    optimize: boolean;
-  };
-  graph: Graph;
-}
-
-const postCSSPlugins = [
-  (postcssPresetEnv as Function)({
+const use = [
+  postcssPresetEnv({
     stage: 2,
     features: {
       "nesting-rules": true,
@@ -34,131 +35,117 @@ const postCSSPlugins = [
   }),
 ];
 
-const loaders = [
-  typescriptLoader({
-    test: (input: string) =>
-      input.startsWith("http") || /\.(tsx?|jsx?)$/.test(input),
-  }),
-  cssLoader({
-    use: postCSSPlugins,
-  }),
-  jsonLoader(),
-];
+interface Meta {
+  graph: Graph;
+}
 
-async function runBundle(
-  {
-    _,
-    "out-dir": outDir = "dist",
-    "import-map": importMapPath,
-    config: configPath,
-    optimize,
+const hashes: { [file: string]: string } = {};
+const logger = new Logger({ logLevel: logLevels.info });
+
+async function main(data: {
+  inputs: string[];
+  initialGraph: Graph;
+  compilerOptions: ts.CompilerOptions;
+  importMap: ImportMap;
+  outputMap: any;
+  outDirPath: string;
+  depsDirPath: string;
+  cacheDirPath: string;
+  cacheFilePath: string;
+
+  logLevel: LogLevel;
+  reload: boolean;
+  optimize: boolean;
+  watch: boolean;
+}) {
+  const {
+    inputs,
+    initialGraph,
+    compilerOptions,
+    importMap,
+    outputMap,
+    outDirPath,
+    depsDirPath,
+    cacheDirPath,
+    cacheFilePath,
+
+    logLevel,
     reload,
+    optimize,
     watch,
-    // "log-level": number,
-    quiet,
-  }: // "log-level": logLevel,
-    Args,
-) {
-  const importMap =
-    (importMapPath
-      ? JSON.parse(await Deno.readTextFile(importMapPath))
-      : { imports: {}, scopes: {} }) as ImportMap;
-  const compilerOptions =
-    (configPath
-      ? (JSON.parse(await Deno.readTextFile(configPath)) as {
-        compilerOptions: CompilerOptions;
-      })
-        .compilerOptions
-      : {}) as CompilerOptions;
+  } = data;
 
-  const depsDir = "deps";
-  const cacheDir = ".cache";
-  const metaFilePath = path.join(outDir, cacheDir, "meta.json");
-
-  const transformers = [
-    css({
-      use: postCSSPlugins,
-    }),
-    json({ optimize }),
-    typescriptInjectSpecifiers({
+  const plugins: Plugin[] = [
+    new TypescriptPlugin({
       test: (input: string) =>
-        input.startsWith("http") || /\.(css|tsx?|jsx?|json)$/.test(input),
-      compilerOptions: {
-        target: "es2015",
-        ...compilerOptions,
-        module: "system",
-      },
+        /\.(t|j)sx?$/.test(input) ||
+        (isURL(input) && !/([\.][a-zA-Z]\w*)$/.test(input)),
+    }),
+    new CssPlugin({ use }),
+    new HtmlPlugin(),
+    new ImagePlugin(),
+    new SvgPlugin(),
+    new JSONPlugin(),
+    new WebmanifestPlugin(),
+    new SystemPlugin({ compilerOptions }),
+    new CssInjectOutputsPlugin(),
+    new CssoPlugin(),
+    new TerserPlugin({
+      test: (input: string) => /\.(t|j)sx?$/.test(input),
     }),
   ];
 
-  const optimizers = [
-    terser(),
-  ];
+  const bundler = new Bundler(plugins, {
+    importMap,
+    outputMap,
+    outDirPath,
+    depsDirPath,
+    cacheDirPath,
+    cacheFilePath,
 
-  const { graph: initialGraph }: Meta = !reload && await fs.exists(metaFilePath)
-    ? JSON.parse(await Deno.readTextFile(metaFilePath))
-    : { graph: {} };
+    logLevel,
+  });
 
-  const hashes: { [file: string]: string } = {};
-
-  async function main() {
-    const inputMap: { [input: string]: string } = {};
-
-    const fileMap: FileMap = {};
-
-    for (const inp of _) {
-      let [input, name] = String(inp).split("=");
-      name = name ||
-        path.basename(input || "").replace(/\.(css|tsx?|jsx?)$/, ".js");
-
-      inputMap[input] = isURL(input)
-        ? await fetch(input).then((data) => data.text())
-        : await Deno.readTextFile(input);
-      fileMap[input] = path.join(outDir, name);
-    }
-
-    const { outputMap, cacheMap, graph } = await bundle(
-      inputMap,
-      {
-        outDir,
-        depsDir,
-        cacheDir,
-        importMap,
-        graph: initialGraph,
-        fileMap,
-        loaders,
-        transformers,
-        optimizers,
-        reload,
-        optimize,
-        quiet,
-      },
+  try {
+    const time = performance.now();
+    const { bundles, graph } = await bundler.bundle(
+      inputs,
+      { initialGraph, reload, optimize },
     );
 
-    await fs.ensureFile(metaFilePath);
+    for (const [output, source] of Object.entries(bundles)) {
+      await fs.ensureFile(output);
+      if (typeof source === "string") {
+        await Deno.writeTextFile(output, source);
+      } else {
+        await Deno.writeFile(output, source);
+      }
+    }
+
+    // TODO check if has changes
+    await fs.ensureFile(cacheFilePath);
     await Deno.writeTextFile(
-      metaFilePath,
-      JSON.stringify(
-        {
-          fileMap,
-          graph,
-        },
-        null,
-        " ",
-      ),
+      cacheFilePath,
+      JSON.stringify({ graph: graph }, null, " "),
     );
 
-    for (const [output, source] of Object.entries(cacheMap)) {
-      await fs.ensureFile(output);
-      await Deno.writeTextFile(output, source);
-    }
+    logger.info(
+      colors.blue("Done"),
+      `${Math.ceil(performance.now() - time)}ms`,
+    );
 
-    for (const [output, source] of Object.entries(outputMap)) {
-      await fs.ensureFile(output);
-      await Deno.writeFile(output, new Uint8Array(source));
+    if (watch) {
+      await watchFn(graph);
     }
+  } catch (error) {
+    console.error(error);
+    if (watch) {
+      await watchFn(initialGraph);
+    }
+  }
 
-    const paths = Object.values(graph).map((entry) => entry.path);
+  async function watchFn(graph: Graph) {
+    const paths = Object.values(graph).map((entry) => entry.filePath);
     for (const path of paths) {
       if (!hashes[path]) {
         hashes[path] = new Sha256().update(await Deno.readFile(path)).hex();
@@ -166,49 +153,130 @@ async function runBundle(
     }
 
     const watcher = Deno.watchFs(paths);
+    // only reload on first time when watched
+    logger.info(
+      colors.blue(`Watcher`),
+      `Process terminated! Restarting on file change...`,
+    );
 
-    if (watch) {
-      // only reload on first time when watched
-      reload = false;
-      console.log(
-        colors.blue(`Watcher`),
-        `Process terminated! Restarting on file change...`,
-      );
-
-      // console.log(colors.yellow(`Watch`), `${paths.length} files`)
-      loop:
-      for await (const { kind, paths } of watcher) {
-        let needsUpdate = false;
-        // checks if actual file content changed
-        if (kind === "modify") {
-          for (const filePath of paths) {
-            const hash = new Sha256().update(await Deno.readFile(filePath))
-              .hex();
-            if (hashes[filePath] !== hash) {
-              hashes[filePath] = hash;
-              needsUpdate = true;
-            }
-
-            const relativeFilePath = path.relative(path.resolve(), filePath);
-            delete initialGraph[relativeFilePath];
-            delete inputMap[relativeFilePath];
+    logger.debug(colors.blue(`Watch`), paths);
+    let needsUpdate = false;
+    loop:
+    for await (const { kind, paths } of watcher) {
+      // checks if actual file content changed
+      if (kind === "modify") {
+        for (const filePath of paths) {
+          const hash = new Sha256().update(await Deno.readFile(filePath))
+            .hex();
+          if (hashes[filePath] !== hash) {
+            hashes[filePath] = hash;
+            needsUpdate = true;
+            break loop;
           }
-        } else {
-          needsUpdate = true;
         }
-        if (needsUpdate) {
-          setTimeout(() => main(), 100);
-          console.log(
-            colors.blue(`Watcher`),
-            `File change detected! Restarting!`,
-          );
-          break loop;
-        }
+      } else {
+        needsUpdate = true;
+        break loop;
       }
+    }
+
+    logger.info(
+      colors.blue(`Watcher`),
+      `File change detected! Restarting!`,
+    );
+    setTimeout(async () => {
+      try {
+        await main({ ...data, reload: false });
+      } catch (error) {
+        console.error(error);
+        await watchFn(graph);
+      }
+    }, 100);
+  }
+}
+
+async function runBundle(
+  {
+    _,
+    "out-dir": outDir = "dist",
+    "import-map": importMapPath,
+    config: configFilePath,
+    optimize,
+    reload,
+    watch,
+    "log-level": logLevelName,
+    quiet,
+  }: Args,
+) {
+  let logLevel = logLevels.info;
+
+  if (logLevelName) {
+    if (!["debug", "info"].includes(logLevelName)) {
+      throw Error(
+        `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: debug, info]`,
+      );
+    }
+    logLevel = quiet
+      ? logLevels.none
+      : logLevels[logLevelName as keyof typeof logLevels];
+  }
+
+  const inputs: string[] = [];
+
+  const outputMap: { [input: string]: string } = {};
+
+  for (const inp of _) {
+    let [input, name] = String(inp).split("=");
+    input = removeRelativePrefix(input);
+
+    inputs.push(input);
+    if (name) {
+      outputMap[input] = path.join(outDir, name);
     }
   }
 
-  main();
+  const depsDirName = "deps";
+  const cacheDirName = ".cache";
+  const cacheFileName = "cache.json";
+
+  const outDirPath = outDir;
+  const depsDirPath = path.join(outDir, depsDirName);
+  const cacheDirPath = path.join(outDir, cacheDirName);
+  const cacheFilePath = path.join(cacheDirPath, cacheFileName);
+
+  const { graph: initialGraph }: Meta = fs.existsSync(cacheFilePath)
+    ? JSON.parse(await Deno.readTextFile(cacheFilePath))
+    : { graph: {} };
+
+  const config = configFilePath && fs.existsSync(configFilePath)
+    ? JSON.parse(await Deno.readTextFile(configFilePath))
+    : {};
+  const compilerOptions = config.compilerOptions
+    ? ts.convertCompilerOptionsFromJson(
+      config.compilerOptions,
+      Deno.cwd(),
+    )
+    : {};
+  const importMap: ImportMap =
+    (importMapPath
+      ? JSON.parse(await Deno.readTextFile(importMapPath))
+      : { imports: {} });
+  await main({
+    inputs,
+    initialGraph,
+    compilerOptions,
+    importMap,
+    outputMap,
+    outDirPath,
+    depsDirPath,
+    cacheDirPath,
+    cacheFilePath,
+
+    logLevel,
+    reload,
+    optimize,
+    watch,
+  });
 }
 
 const program = new Program(
@@ -250,12 +318,12 @@ Docs: https://deno.land/manual/linking_to_external_code/import_maps
 Specification: https://wicg.github.io/import-maps/
 Examples: https://github.com/WICG/import-maps#the-import-map`,
   })
-  // .option({
-  //   name: "log-level",
-  //   alias: "L",
-  //   description: "Set log level [possible values: debug, info]",
-  //   args: [{ name: "log-level" }],
-  // })
+  .option({
+    name: "log-level",
+    alias: "L",
+    description: "Set log level [possible values: debug, info]",
+    args: [{ name: "log-level" }],
+  })
   .option({
     name: "optimize",
     boolean: true,
@@ -293,7 +361,7 @@ function help(args: { [key: string]: string }) {
   }
   for (const cmd of _) {
     if (!program.commands[cmd]) {
-      return console.log(
+      return console.error(
         invalidSubcommandError(cmd, Object.keys(program.commands)),
       );
     }

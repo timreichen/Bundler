@@ -1,11 +1,4 @@
-import {
-  css,
-  customElement,
-  html,
-  LitElement,
-  property,
-  unsafeCSS,
-} from "lit-element";
+import { customElement, html, LitElement, unsafeCSS } from "lit-element";
 
 import styles from "./styles.css";
 
@@ -15,12 +8,12 @@ export class MyElement extends LitElement {
 
   render() {
     return html`
-    <h1>Hello from LitElement</h1>
+    <h1>Hello from LitElement!</h1>
     <button @click="${this.clickHandler}">Click Me</button>
     `;
   }
 
-  clickHandler(event) {
+  clickHandler() {
     alert("clicked");
   }
 }

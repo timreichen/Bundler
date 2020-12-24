@@ -5,18 +5,18 @@ import {
   path,
   resolveWithImportMap,
   Sha256,
+  ts,
 } from "./deps.ts";
 
-import { resolve as resolveDependencySpecifier } from "./dependencies.ts";
+import { getDependencies, resolve as resolveDependency } from "./dependency.ts";
 import { isURL } from "./_util.ts";
-import { getImportExports } from "./_import_export.ts";
 
 const { green } = colors;
 
 /**
  * API for rust cache_dir
  */
-function cachedir(): string {
+export function cachedir(): string {
   const env = Deno.env;
   const os = Deno.build.os;
 
@@ -77,65 +77,68 @@ export function resolve(url: string): string {
   return createCacheModulePathForURL(url);
 }
 
+const metadataExtension = ".metadata.json";
+
 /**
  * API for deno cache
  * Fetches path files recusively and caches them to deno cache dir.
  */
 export async function cache(
-  specifier: string,
-  { importMap = { imports: {} }, reload = false }: {
+  filePath: string,
+  { importMap = { imports: {} }, reload = false, compilerOptions = {} }: {
     importMap?: ImportMap;
     reload?: boolean | string;
+    compilerOptions?: ts.CompilerOptions;
   } = {},
 ) {
-  if (!isURL(specifier)) return;
+  if (!isURL(filePath)) return;
 
-  const fragments = typeof reload === "string" ? reload.split(",") : null;
-  function needsReload(specifier: string) {
-    return fragments ? fragments.includes(specifier) : reload;
-  }
+  const resolvedSpecifier = resolveWithImportMap(filePath, importMap);
 
-  const queue = [specifier];
-  const checkedSpecifiers: Set<string> = new Set();
-  while (queue.length) {
-    const specifier = queue.pop()!;
-    const resolvedSpecifier = resolveWithImportMap(specifier, importMap);
-    if (checkedSpecifiers.has(resolvedSpecifier)) continue;
-    checkedSpecifiers.add(resolvedSpecifier);
-
-    const cachedFilePath = createCacheModulePathForURL(resolvedSpecifier);
+  const filePaths = new Set([resolvedSpecifier]);
+  for (const filePath of filePaths) {
+    const cachedFilePath = createCacheModulePathForURL(filePath);
 
     let source: string;
-    if (needsReload(resolvedSpecifier) || !await fs.exists(cachedFilePath)) {
-      console.log(green("Download"), resolvedSpecifier);
-      const response = await fetch(resolvedSpecifier, { redirect: "follow" });
+
+    const reloadFilePaths = typeof reload === "string" ? reload.split(",") : [];
+    if (
+      reloadFilePaths.includes(filePath) || !await fs.exists(cachedFilePath)
+    ) {
+      console.info(green("Download"), filePath);
+      const response = await fetch(filePath, { redirect: "follow" });
       const text = await response.text();
       if (response.status !== 200) {
         throw Error(
-          `Import '${resolvedSpecifier}' failed: ${response.status} ${text}`,
+          `Import '${filePath}' failed: ${text}`,
         );
       }
 
       source = text;
       const headers: { [key: string]: string } = {};
       for (const [key, value] of response.headers) headers[key] = value;
-      const metaFilePath = `${cachedFilePath}.metadata.json`;
+      const metaFilePath = `${cachedFilePath}${metadataExtension}`;
       await fs.ensureFile(cachedFilePath);
       await Deno.writeTextFile(cachedFilePath, source);
       await Deno.writeTextFile(
         metaFilePath,
-        JSON.stringify({ url: resolvedSpecifier, headers }, null, " "),
+        JSON.stringify({ url: filePath, headers }, null, " "),
       );
-    } else {
-      source = await Deno.readTextFile(cachedFilePath);
+
+      const { imports, exports } = await getDependencies(
+        filePath,
+        source,
+        { compilerOptions },
+      );
+
+      const dependencyFilePaths = [
+        ...Object.keys(imports),
+        ...Object.keys(exports),
+      ];
+
+      dependencyFilePaths.forEach((dependencyFilePath) => {
+        return filePaths.add(resolveDependency(filePath, dependencyFilePath));
+      });
     }
-
-    const { imports } = await getImportExports(cachedFilePath, source);
-
-    queue.push(
-      ...Object.keys(imports).map((dependency) =>
-        resolveDependencySpecifier(specifier, dependency)
-      ),
-    );
   }
 }

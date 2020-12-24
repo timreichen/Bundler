@@ -1,0 +1,17 @@
+System.register("examples/hello world/src/index.ts", ["examples/hello world/src/world.ts"], function (exports_1, context_1) {
+    "use strict";
+    var world_ts_1, h1;
+    var __moduleName = context_1 && context_1.id;
+    return {
+        setters: [
+            function (world_ts_1_1) {
+                world_ts_1 = world_ts_1_1;
+            }
+        ],
+        execute: function () {
+            h1 = document.createElement("h1");
+            h1.innerHTML = `Hello ${world_ts_1.world}`;
+            document.body.appendChild(h1);
+        }
+    };
+});

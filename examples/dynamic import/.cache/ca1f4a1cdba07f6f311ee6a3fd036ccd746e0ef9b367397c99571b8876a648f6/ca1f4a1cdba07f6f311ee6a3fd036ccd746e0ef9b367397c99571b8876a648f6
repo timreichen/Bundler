@@ -1,0 +1,11 @@
+System.register("examples/dynamic import/src/message.ts", [], function (exports_1, context_1) {
+    "use strict";
+    var message;
+    var __moduleName = context_1 && context_1.id;
+    return {
+        setters: [],
+        execute: function () {
+            exports_1("message", message = "Hello from dynamic import");
+        }
+    };
+});

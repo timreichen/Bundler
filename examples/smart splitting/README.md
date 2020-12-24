@@ -3,8 +3,8 @@
 ## 1. Bundle
 Run
 ```sh
-bundler bundle src/a.ts=a.js src/b.ts=b.js
+bundler bundle src/index.html=index.html src/a.ts=a.js src/b.ts=b.js src/c.ts=c.js
 ```
 
 ## 2. Serve
-Serve ```index.html```
+Serve ```index.html``` with `dist` as root

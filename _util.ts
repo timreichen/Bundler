@@ -1,5 +1,4 @@
 import {
-  basename,
   extname,
   isAbsolute,
   sep,

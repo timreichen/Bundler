@@ -60,12 +60,11 @@ Bundler automatically analyzes the dependency graph and splits dependencies into
 
 #### TypescriptPlugin
 Bundler uses TypescriptPlugin by default.
-You can import `typescript` and `javascript` files directly in your files.
-The `typescript` plugin handles modules relative and absolute paths with and without extensions as well as urls.
+It handles `.ts`, `.tsx`, `.js` and `.jsx` files. This plugin handles modules relative and absolute paths with and without extensions as well as urls.
 
 #### JsonPlugin
 Bundler uses JsonPlugin by default.
-You can import `json` files directly in your files. The `json` loader will convert the file into a javascript module with a default string export.
+It handles `.json` files. This plugin will convert the file into a javascript module with a default string export.
 
 ```json
 /* src/data.json */
@@ -84,7 +83,7 @@ console.log(data) // { "foo": "bar" }
 
 #### CssPlugin
 Bundler uses CssPlugin by default.
-You can import css files directly in your typescript files. The CSS loader will convert the file into a javascript module with a default string export.
+It handles `.css` files. This plugin will convert the file into a javascript module with a default string export.
 CSS is native to browsers and bundler therefore focuses on making css usage really easy.
 It supports [postcss-preset-env](https://preset-env.cssdb.org) with **stage 2** features and **nesting-rules** enabled so you can use the latest css features out of the box.
 
@@ -105,13 +104,11 @@ console.log(styles) // article > p { color: red; }
 
 #### HtmlPlugin
 Bundler uses HtmlPlugin by default.
-It handles `.html` files
+It handles `.html` files.
 
 #### WebmanifestPlugin
 Bundler uses WebmanifestPlugin by default.
-It handles webmanifest files that are loaded in a html file.
-
-WebmanifestPlugin handles the icons that are declared in the manifest file.
+It handles webmanifest files that are loaded in a html file. This plugin handles the icons that are declared in the manifest file.
 ```json
 // src/manifest.json
 {
@@ -149,7 +146,7 @@ WebmanifestPlugin handles the icons that are declared in the manifest file.
 
 #### ImagePlugin
 Bundler uses ImagePlugin by default.
-It handles `.png`, `.jpg` and `.ico` files.
+It handles `.png`, `.jpg`, `.jpeg` and `.ico` files.
 
 #### SvgPlugin
 Bundler uses SvgPlugin by default.

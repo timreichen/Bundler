@@ -1,8 +1,7 @@
-import { Bundler } from "../../bundler.ts";
 import { Asset } from "../../graph.ts";
 import { Data, Plugin, TestFunction } from "../plugin.ts";
 
-export class JSONPlugin extends Plugin {
+export class JsonPlugin extends Plugin {
   constructor(
     { test = (input: string) => input.endsWith(".json") }: {
       test?: TestFunction;

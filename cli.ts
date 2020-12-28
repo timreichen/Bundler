@@ -18,7 +18,7 @@ import { CssInjectOutputsPlugin } from "./plugins/css/inject_outputs.ts";
 import { HtmlPlugin } from "./plugins/html/html.ts";
 import { ImagePlugin } from "./plugins/image/image.ts";
 import { SvgPlugin } from "./plugins/image/svg.ts";
-import { JSONPlugin } from "./plugins/json/json.ts";
+import { JsonPlugin } from "./plugins/json/json.ts";
 import { WebmanifestPlugin } from "./plugins/json/webmanifest.ts";
 import { Plugin } from "./plugins/plugin.ts";
 import { SystemPlugin } from "./plugins/typescript/system.ts";
@@ -85,8 +85,8 @@ async function main(data: {
     new HtmlPlugin(),
     new ImagePlugin(),
     new SvgPlugin(),
-    new JSONPlugin(),
     new WebmanifestPlugin(),
+    new JsonPlugin(),
     new SystemPlugin({ compilerOptions }),
     new CssInjectOutputsPlugin(),
     new CssoPlugin(),

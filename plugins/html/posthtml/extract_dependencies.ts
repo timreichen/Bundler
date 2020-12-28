@@ -42,7 +42,7 @@ export function posthtmlExtractLinkUrl(
         );
         const rel = node.attrs?.rel;
         let type: string;
-
+          
         switch (rel) {
           case "stylesheet":
             type = "style";

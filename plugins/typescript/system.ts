@@ -12,6 +12,7 @@ import { CssInjectImportsPlugin } from "../css/inject_imports.ts";
 import { CssRemoveImportsPlugin } from "../css/remove_imports.ts";
 import { Chunk } from "../../chunk.ts";
 
+
 const printer = ts.createPrinter(
   { removeComments: false },
 );
@@ -387,7 +388,7 @@ export class SystemPlugin extends Plugin {
 
         source = await bundler.transformSource(
           dependency,
-          input,
+          chunk.inputHistory[0],
           chunk,
           data,
         ) as string;
@@ -412,6 +413,7 @@ export class SystemPlugin extends Plugin {
         ];
 
         for (const plugin of plugins) {
+          
           if (plugin.transform && await plugin.test(dependency, data)) {
             source = await plugin.transform(
               dependency,

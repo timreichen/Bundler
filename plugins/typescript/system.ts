@@ -11,7 +11,7 @@ import { DefaultExportPlugin } from "../default_export.ts";
 import { CssInjectImportsPlugin } from "../css/inject_imports.ts";
 import { CssRemoveImportsPlugin } from "../css/remove_imports.ts";
 import { Chunk } from "../../chunk.ts";
-
+import { InstanciateImagePlugin } from "../image/instanciate_image.ts";
 
 const printer = ts.createPrinter(
   { removeComments: false },
@@ -413,12 +413,26 @@ export class SystemPlugin extends Plugin {
         ];
 
         for (const plugin of plugins) {
-          
           if (plugin.transform && await plugin.test(dependency, data)) {
             source = await plugin.transform(
               dependency,
               source,
               input,
+              data,
+            ) as string;
+          }
+        }
+
+        const imagePlugins = [
+          new InstanciateImagePlugin(),
+        ];
+
+        for (const plugin of imagePlugins) {
+          if (plugin.transform && await plugin.test(dependency, data)) {
+            source = await plugin.transform(
+              dependency,
+              source,
+              chunk.inputHistory[0],
               data,
             ) as string;
           }

@@ -58,7 +58,7 @@ export class HtmlPlugin extends Plugin {
       ),
     ]);
     await processor.process(source);
-    
+
     return {
       input,
       filePath,

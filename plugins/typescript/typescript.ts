@@ -107,6 +107,9 @@ export class TypescriptPlugin extends Plugin {
         if (dynamic) {
           chunkList.push([...inputHistory, dependency]);
         } else {
+          if (/\.(png|jpe?g|ico)$/.test(dependency)) {
+            chunkList.push([...inputHistory, dependency]);
+          }
           dependencies.add(dependency);
         }
       });

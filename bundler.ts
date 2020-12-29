@@ -233,7 +233,7 @@ export class Bundler {
         [bundleInput],
       ];
       for (const inputHistory of chunkList) {
-        let pluginName: string | undefined;
+        let pluginName: string | undefined;
         const time = performance.now();
         const input = inputHistory[inputHistory.length - 1];
         const dependencyList: Set<string> = new Set([input]);
@@ -264,7 +264,7 @@ export class Bundler {
         }
 
         if (!pluginName) {
-          throw Error(`No plugin for createChunks found: ${input}`)
+          throw Error(`No plugin for createChunks found: ${input}`);
         }
 
         this.logger.debug(

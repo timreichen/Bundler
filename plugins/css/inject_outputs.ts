@@ -1,6 +1,4 @@
-import { Bundler } from "../../bundler.ts";
 import { postcss } from "../../deps.ts";
-import { Graph } from "../../graph.ts";
 import { Data, Plugin, Source, TestFunction } from "../plugin.ts";
 import { postcssInjectOutputsPlugin } from "./postcss_plugins/inject_outputs.ts";
 

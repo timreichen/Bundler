@@ -19,18 +19,19 @@ const printer = ts.createPrinter(
 const sourceFile = ts.createSourceFile("x.ts", "", ts.ScriptTarget.Latest);
 
 function createSystemInstantiate(input: string): string {
-  const __exp = ts.createVariableStatement(
+  const __exp = ts.factory.createVariableStatement(
     undefined,
-    ts.createVariableDeclarationList(
-      [ts.createVariableDeclaration(
-        ts.createIdentifier("__exp"),
+    ts.factory.createVariableDeclarationList(
+      [ts.factory.createVariableDeclaration(
+        ts.factory.createIdentifier("__exp"),
         undefined,
-        ts.createCall(
-          ts.createIdentifier("__instantiate"),
+        undefined,
+        ts.factory.createCallExpression(
+          ts.factory.createIdentifier("__instantiate"),
           undefined,
           [
-            ts.createStringLiteral(input),
-            ts.createFalse(),
+            ts.factory.createStringLiteral(input),
+            ts.factory.createFalse(),
           ],
         ),
       )],
@@ -42,15 +43,16 @@ function createSystemInstantiate(input: string): string {
 }
 
 function exportString(key: string, value: string) {
-  const statement = ts.createVariableStatement(
-    [ts.createModifier(ts.SyntaxKind.ExportKeyword)],
-    ts.createVariableDeclarationList(
-      [ts.createVariableDeclaration(
-        ts.createIdentifier(key),
+  const statement = ts.factory.createVariableStatement(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createVariableDeclarationList(
+      [ts.factory.createVariableDeclaration(
+        ts.factory.createIdentifier(key),
         undefined,
-        ts.createElementAccess(
-          ts.createIdentifier("__exp"),
-          ts.createStringLiteral(value),
+        undefined,
+        ts.factory.createElementAccessExpression(
+          ts.factory.createIdentifier("__exp"),
+          ts.factory.createStringLiteral(value),
         ),
       )],
       ts.NodeFlags.Const,
@@ -61,15 +63,11 @@ function exportString(key: string, value: string) {
 }
 
 function defaultExportString(value: string) {
-  const assignment = ts.createExportAssignment(
-    undefined,
-    undefined,
-    undefined,
-    ts.createElementAccess(
-      ts.createIdentifier("__exp"),
-      ts.createStringLiteral(value),
-    ),
+  const assignment = ts.factory.createElementAccessExpression(
+    ts.factory.createIdentifier("__exp"),
+    ts.factory.createStringLiteral(value),
   );
+
   return printer.printNode(ts.EmitHint.Unspecified, assignment, sourceFile);
 }
 
@@ -337,17 +335,16 @@ export function createModuleImport(
   specifier: string,
   filePath: string,
 ): string {
-  const declaration = ts.createImportDeclaration(
+  const declaration = ts.factory.createImportDeclaration(
     undefined,
     undefined,
-    ts.createImportClause(
-      undefined,
-      ts.createNamespaceImport(ts.createIdentifier(specifier)),
+    ts.factory.createImportClause(
       false,
+      ts.factory.createIdentifier(specifier),
+      undefined,
     ),
-    ts.createStringLiteral(filePath),
+    ts.factory.createStringLiteral(filePath),
   );
-  const sourceFile = ts.createSourceFile("x.ts", "", ts.ScriptTarget.Latest);
   return printer.printNode(ts.EmitHint.Unspecified, declaration, sourceFile);
 }
 

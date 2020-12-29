@@ -10,8 +10,8 @@ export class DefaultExportPlugin extends Plugin {
     bundleInput: string,
     data: Data,
   ) {
-    const identifier = ts.createIdentifier(source as string);
-    const ast = ts.createExportDefault(identifier);
+    const identifier = ts.factory.createIdentifier(source as string);
+    const ast = ts.factory.createExportDefault(identifier);
     const sourceFile = ts.createSourceFile(
       input,
       source as string,
@@ -19,7 +19,7 @@ export class DefaultExportPlugin extends Plugin {
     );
     return printer.printList(
       ts.ListFormat.SourceFileStatements,
-      ts.createNodeArray([ast]),
+      ts.factory.createNodeArray([ast]),
       sourceFile,
     );
   }

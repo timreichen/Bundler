@@ -32,15 +32,15 @@ export class CssInjectImportsPlugin extends Plugin {
         outputFilePath,
       );
 
-      const importNode = ts.createImportDeclaration(
+      const importNode = ts.factory.createImportDeclaration(
         undefined,
         undefined,
-        ts.createImportClause(
-          ts.createIdentifier(identifier),
-          undefined,
+        ts.factory.createImportClause(
           false,
+          ts.factory.createIdentifier(identifier),
+          undefined,
         ),
-        ts.createStringLiteral(addRelativePrefix(resolvedSpecifier)),
+        ts.factory.createStringLiteral(addRelativePrefix(resolvedSpecifier)),
       );
       importNodes[identifier] = importNode;
     }
@@ -51,7 +51,7 @@ export class CssInjectImportsPlugin extends Plugin {
     );
     const string = printer.printList(
       ts.ListFormat.SourceFileStatements,
-      ts.createNodeArray(Object.values(importNodes)),
+      ts.factory.createNodeArray(Object.values(importNodes)),
       sourceFile,
     );
 

@@ -104,7 +104,20 @@ console.log(styles) // article > p { color: red; }
 
 #### HtmlPlugin
 Bundler uses HtmlPlugin by default.
-It handles `.html` files.
+It handles `.html` files and its `<script>`, `<link>`, `<style>`, `<img>` tags as well as inline styles.
+
+```html
+<!-- src/index.html -->
+<html>
+  <head>
+  <script type="module" src="index.ts"></script>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div style="background: url('image.jpg')"></div>
+  </body>
+</html>
+```
 
 #### WebmanifestPlugin
 Bundler uses WebmanifestPlugin by default.

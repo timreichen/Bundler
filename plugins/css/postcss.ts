@@ -5,7 +5,7 @@ export class PostcssPlugin extends Plugin {
   use: postcss.AcceptedPlugin[];
   constructor(
     {
-      test = ({ input }: { input: string }) => input.endsWith(".css"),
+      test = (input: string) => input.endsWith(".css"),
       use = [],
     }: {
       test?: TestFunction;

@@ -1,5 +1,5 @@
 import { Sha256 } from "https://deno.land/std@0.79.0/hash/sha256.ts";
-import { path, ts } from "../../deps.ts";
+import { path, postcss, ts } from "../../deps.ts";
 import { Data, Plugin, TestFunction } from "../plugin.ts";
 import { typescriptInjectInstantiateNameTransformer } from "./transformers/inject_instanciate_name.ts";
 import { typescriptInjectOutputsTranformer } from "./transformers/inject_outputs.ts";
@@ -12,6 +12,7 @@ import { CssInjectImportsPlugin } from "../css/inject_imports.ts";
 import { CssRemoveImportsPlugin } from "../css/remove_imports.ts";
 import { Chunk } from "../../chunk.ts";
 import { InstanciateImagePlugin } from "../image/instanciate_image.ts";
+import { PostcssPlugin } from "../css/postcss.ts";
 
 const printer = ts.createPrinter(
   { removeComments: false },
@@ -352,17 +353,21 @@ const systemLoader = createSystemLoader();
 
 export class SystemPlugin extends Plugin {
   compilerOptions: ts.CompilerOptions;
+  use: postcss.AcceptedPlugin[];
   constructor(
     {
       test = (input: string) => /\.(t|j)sx?$/.test(input),
       compilerOptions = {},
+      use = [],
     }: {
       test?: TestFunction;
       compilerOptions?: ts.CompilerOptions;
+      use?: postcss.AcceptedPlugin[];
     } = {},
   ) {
     super({ test });
     this.compilerOptions = compilerOptions;
+    this.use = use;
   }
   async createBundle(
     chunk: Chunk,
@@ -392,6 +397,9 @@ export class SystemPlugin extends Plugin {
 
         const cssImports = {};
         const plugins: Plugin[] = [
+          new PostcssPlugin({
+            use: this.use,
+          }),
           new CssRemoveImportsPlugin({
             imports: cssImports,
           }),

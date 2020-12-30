@@ -87,7 +87,7 @@ async function main(data: {
     new SvgPlugin(),
     new WebmanifestPlugin(),
     new JsonPlugin(),
-    new SystemPlugin({ compilerOptions }),
+    new SystemPlugin({ compilerOptions, use }),
     new CssInjectOutputsPlugin(),
     new CssoPlugin(),
     new TerserPlugin({

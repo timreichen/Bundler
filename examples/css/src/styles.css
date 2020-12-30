@@ -1,0 +1,7 @@
+@import url("h1.css");
+@import url("import.css");
+
+#images {
+  display: flex;
+  flex-wrap: wrap;
+}

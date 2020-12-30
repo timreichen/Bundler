@@ -1,29 +1,35 @@
-import { Bundler } from "../../bundler.ts";
 import { Imports } from "../../dependency.ts";
-import { fs, path, posthtml } from "../../deps.ts";
-import { Asset, Graph } from "../../graph.ts";
-import { Chunks, Data, Plugin, TestFunction } from "../plugin.ts";
+import { fs, path, postcss, posthtml } from "../../deps.ts";
+import { Asset } from "../../graph.ts";
+import { Data, Plugin, TestFunction } from "../plugin.ts";
 import { Chunk } from "../../chunk.ts";
 import {
-  posthtmlExtractImageUrl,
-  posthtmlExtractLinkUrl,
-  posthtmlExtractScriptUrl,
+  posthtmlExtractImageImports,
+  posthtmlExtractInlineStyleImports,
+  posthtmlExtractLinkImports,
+  posthtmlExtractScriptImports,
+  posthtmlExtractStyleImports,
 } from "./posthtml/extract_dependencies.ts";
 import {
   posthtmlInjectOutputImage,
+  posthtmlInjectOutputInlineStyle,
   posthtmlInjectOutputLink,
   posthtmlInjectOutputScript,
+  posthtmlInjectOutputStyle,
 } from "./posthtml/inject_outputs.ts";
 
 const encoder = new TextEncoder();
 
 export class HtmlPlugin extends Plugin {
+  use: postcss.AcceptedPlugin[];
   constructor(
-    { test = (input: string) => input.endsWith(".html") }: {
+    { test = (input: string) => input.endsWith(".html"), use = [] }: {
       test?: TestFunction;
+      use?: postcss.AcceptedPlugin[];
     } = {},
   ) {
     super({ test });
+    this.use = use;
   }
   async load(filePath: string) {
     return Deno.readTextFile(filePath);
@@ -41,20 +47,30 @@ export class HtmlPlugin extends Plugin {
 
     const imports: Imports = {};
     const processor = posthtml([
-      posthtmlExtractScriptUrl(
+      posthtmlExtractScriptImports(
         filePath,
         imports,
         { importMap: bundler.importMap },
       ),
-      posthtmlExtractLinkUrl(
+      posthtmlExtractLinkImports(
         filePath,
         imports,
         { importMap: bundler.importMap },
       ),
-      posthtmlExtractImageUrl(
+      posthtmlExtractImageImports(
         filePath,
         imports,
         { importMap: bundler.importMap },
+      ),
+      posthtmlExtractStyleImports(
+        filePath,
+        imports,
+        { importMap: bundler.importMap, use: this.use },
+      ),
+      posthtmlExtractInlineStyleImports(
+        filePath,
+        imports,
+        { importMap: bundler.importMap, use: this.use },
       ),
     ]);
     await processor.process(source);
@@ -97,16 +113,30 @@ export class HtmlPlugin extends Plugin {
     const needsUpdate = reload || !exists ||
       Deno.statSync(outputFilePath).mtime! <
         Deno.statSync(filePath).mtime!;
-
     if (!needsUpdate) return;
     const source = await bundler.getSource(
       input,
       data,
     ) as string;
+
     const processor = posthtml([
       posthtmlInjectOutputScript(filePath, graph, bundler.importMap),
       posthtmlInjectOutputLink(filePath, graph, bundler.importMap),
       posthtmlInjectOutputImage(filePath, graph, bundler.importMap),
+      posthtmlInjectOutputStyle(
+        filePath,
+        chunk.inputHistory[0],
+        graph,
+        bundler,
+        this.use,
+      ),
+      posthtmlInjectOutputInlineStyle(
+        filePath,
+        chunk.inputHistory[0],
+        graph,
+        bundler,
+        this.use,
+      ),
     ]);
     const { html } = await processor.process(source as string);
     return encoder.encode(html);

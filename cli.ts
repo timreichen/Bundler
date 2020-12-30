@@ -82,7 +82,9 @@ async function main(data: {
         (isURL(input) && !/([\.][a-zA-Z]\w*)$/.test(input)),
     }),
     new CssPlugin({ use }),
-    new HtmlPlugin(),
+    new HtmlPlugin({
+      use,
+    }),
     new ImagePlugin(),
     new SvgPlugin(),
     new WebmanifestPlugin(),

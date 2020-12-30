@@ -1,5 +1,5 @@
 import { path, postcss } from "../../../deps.ts";
-import { addRelativePrefix } from "../../../_util.ts";
+import { addRelativePrefix, isURL } from "../../../_util.ts";
 import { resolve as resolveDependency } from "../../../dependency.ts";
 import { Bundler } from "../../../bundler.ts";
 import { stripCssUrlSpecifier } from "../_utils.ts";
@@ -32,6 +32,7 @@ export const postcssInjectOutputsPlugin = (
       while (match = regex.exec(value)) {
         const matchValue = match[0];
         const url = stripCssUrlSpecifier(matchValue);
+        if (isURL(url)) continue;
         const resolvedUrl = resolveDependency(filePath, url, bundler.importMap);
         const { output: outputFilePath } = graph[resolvedUrl];
         const relativeOutputFilePath = addRelativePrefix(

@@ -1,12 +1,11 @@
 import { Imports } from "../../dependency.ts";
 import { postcss } from "../../deps.ts";
-import { Chunks, Data, Plugin, TestFunction } from "../plugin.ts";
+import { Data, Plugin, TestFunction } from "../plugin.ts";
 import { Chunk } from "../../chunk.ts";
 import { postcssExtractDependenciesPlugin } from "./postcss_plugins/extract_dependencies.ts";
 import { stripCssUrlSpecifier } from "./_utils.ts";
 import { resolve as resolveDependency } from "../../dependency.ts";
-import { Bundler } from "../../bundler.ts";
-import { Asset, Graph } from "../../graph.ts";
+import { Asset } from "../../graph.ts";
 import { resolve as resolveCache } from "../../cache.ts";
 
 export class CssPlugin extends Plugin {

@@ -83,15 +83,16 @@ export class CssPlugin extends Plugin {
     chunk: Chunk,
     data: Data,
   ) {
-    const { bundler, graph, reload } = data;
+    
+    const { bundler, reload } = data;
     const input = chunk.inputHistory[chunk.inputHistory.length - 1];
-    let source = await chunk.getSource(input, data) as string;
 
     let bundleNeedsUpdate = false;
-
+    
     for (const dependency of chunk.dependencies) {
       const resolvedFilePath = resolveCache(dependency);
       const needsUpdate = reload || !await chunk.hasCache(resolvedFilePath);
+      let source
       if (needsUpdate) {
         bundleNeedsUpdate = true;
         source = chunk.sources[dependency] = await bundler.transformSource(
@@ -113,10 +114,14 @@ export class CssPlugin extends Plugin {
     if (!bundleNeedsUpdate) {
       return;
     }
-
+    
+    let source = await chunk.getSource(input, data) as string;
+    
     const regex = /@import (url\([^\)]+?\)|[^\)]+?)\;/g;
     let match;
+
     while (match = regex.exec(source)) {
+      
       const matchValue = match[0];
       const url = stripCssUrlSpecifier(match[1]);
       const resolvedOutputFilePath = resolveDependency(

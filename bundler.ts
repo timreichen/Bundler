@@ -16,7 +16,11 @@ function humanizeSize(size: number) {
   return `${Math.ceil(size / Math.pow(1024, i))}${unit}`;
 }
 
-type OutputMap = Record<string, string>;
+export type OutputMap = {
+  [input: string]: string;
+};
+
+export type Inputs = { input: string; options: Record<string, any> }[];
 
 export class Bundler {
   plugins: Plugin[];
@@ -58,9 +62,13 @@ export class Bundler {
     this.cacheDirPath = cacheDirPath;
     this.cacheFilePath = cacheFilePath;
   }
-  createOutput(filePath: string, extension: string) {
+  createOutput(
+    filePath: string,
+    extension: string,
+    dir: string = this.depsDirPath,
+  ) {
     return path.join(
-      this.depsDirPath,
+      dir,
       `${new Sha256().update(filePath).hex()}${extension}`,
     );
   }
@@ -93,7 +101,7 @@ export class Bundler {
     return source;
   }
   async createGraph(
-    inputs: string[],
+    inputs: { input: string; options: Record<string, any> }[],
     {
       reload = false,
       optimize = false,
@@ -107,7 +115,9 @@ export class Bundler {
     } = {},
   ) {
     const time = performance.now();
-    const list: Map<string, any> = new Map(inputs.map((input) => [input, {}]));
+    const list: Map<string, any> = new Map(
+      inputs.map(({ input, options }) => [input, options]),
+    );
     const graph: Graph = {};
 
     const exists = await fs.exists(cacheFilePath);
@@ -139,6 +149,7 @@ export class Bundler {
           exports: {},
           type: type,
         };
+
         for (const plugin of this.plugins) {
           if (
             plugin.createAsset &&
@@ -167,12 +178,13 @@ export class Bundler {
           throw Error(`no plugin for createAsset found: ${input}`);
         }
       }
+
       Object.entries(asset.imports).forEach(([dependency, d]) => {
         list.set(dependency, d);
       });
-      Object.entries(asset.exports).forEach(([dependency, d]) => {
-        list.set(dependency, d);
-      });
+      Object.entries(asset.exports).forEach(([dependency, d]) =>
+        list.set(dependency, d)
+      );
       graph[input] = asset;
     }
     this.logger.debug(
@@ -212,7 +224,7 @@ export class Bundler {
     return chunk;
   }
   async createChunks(
-    inputs: string[],
+    inputs: Inputs,
     graph: Graph,
     { reload = false, optimize = false, chunks = new Map() }: {
       reload?: boolean;
@@ -228,7 +240,7 @@ export class Bundler {
       reload,
       optimize,
     };
-    for (const bundleInput of inputs) {
+    for (const { input: bundleInput } of inputs) {
       const chunkList = [
         [bundleInput],
       ];
@@ -307,6 +319,7 @@ export class Bundler {
       reload,
       optimize,
     };
+
     for (const [input, chunk] of chunks.entries()) {
       let plugin: Plugin | undefined;
       for (const potentialPlugin of this.plugins) {
@@ -325,6 +338,7 @@ export class Bundler {
       }
 
       const time = performance.now();
+
       const bundleSource = await plugin.createBundle!(
         chunk,
         data,
@@ -388,6 +402,7 @@ export class Bundler {
         }
       }
     }
+
     this.logger.debug(
       colors.green("Create"),
       "Bundles",
@@ -429,7 +444,7 @@ export class Bundler {
     return source;
   }
   async bundle(
-    inputs: string[],
+    inputs: Inputs,
     { initialGraph = {}, reload = false, optimize = false }: {
       initialGraph?: Graph;
       reload?: boolean;
@@ -440,13 +455,12 @@ export class Bundler {
       inputs,
       { initialGraph, reload, cacheFilePath: this.cacheFilePath },
     );
-    // console.log(graph);
+
     const chunks = await this.createChunks(
       inputs,
       graph,
       { reload, optimize },
     );
-    // console.log(chunks);
     const bundles = await this.createBundles(
       graph,
       chunks,

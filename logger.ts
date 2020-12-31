@@ -8,7 +8,7 @@ export class LogLevel {
 }
 
 export const logLevels = {
-  none: new LogLevel("None", 0),
+  none: new LogLevel("None", Infinity),
   // trace: new LogLevel("Trace", 10),
   debug: new LogLevel("Debug", 20),
   info: new LogLevel("Info", 30),

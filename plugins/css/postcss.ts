@@ -23,7 +23,7 @@ export class PostcssPlugin extends Plugin {
     data: Data,
   ) {
     const processor = postcss.default(this.use);
-    
+
     const { css } = await processor.process(source as string);
     return css;
   }

@@ -211,6 +211,29 @@ export function getDependenciesTypescriptTransformer(
               } at position ${node.pos}.`,
             );
           }
+        } else if (
+          ts.isNewExpression(node) && ts.isIdentifier(node.expression) &&
+          node.expression.escapedText === "Worker"
+        ) {
+          const argument = node.arguments?.[0];
+          if (argument && ts.isStringLiteral(argument)) {
+            const filePath = argument.text;
+            imports[filePath] = imports[filePath] ||
+              { type: "webworker" };
+          }
+        } else if (
+          ts.isCallExpression(node) &&
+          ts.isPropertyAccessExpression(node.expression) &&
+          node.expression.name.escapedText === "register" &&
+          ts.isPropertyAccessExpression(node.expression.expression) &&
+          node.expression.expression.name.escapedText === "serviceWorker"
+        ) {
+          const argument = node.arguments?.[0];
+          if (argument && ts.isStringLiteral(argument)) {
+            const filePath = argument.text;
+            imports[filePath] = imports[filePath] ||
+              { type: "serviceworker" };
+          }
         }
         return ts.visitEachChild(node, visit, context);
       };

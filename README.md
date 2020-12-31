@@ -5,23 +5,22 @@ A bundler that transpiles and bundles deno code for the web.
 
 - no configuration setup
 - handles relative, absolute and [url imports](https://deno.land/manual/linking_to_external_code) with and without file extension
-- handles dynamic imports
 - [smart splits](#Smart-splitting) dependencies
-- [`--optimize` option](#Options) minifies `javascript` and `css` files
+- [`--optimize` option](#Options) minifies `javascript` and `css` code
 - [`--watch` option](#Options) observes all dependencies and re-bundles on files changes
-- handles `typescript` and `javascript` files
-- handles `html` files and `src` and `href` imports
-- handles `css` files and `css` `@import` statements
+- handles `ts`, `tsx`, `js`, `jsx` `html`, `css`, `json`, `png`, `jpg`, `jpeg`, `ico`, `svg`
+- handles dynamic imports
+- handles `<div style="…">`attributes and `<style>` tags as well as `@import` imports
 - supports `css` postcss-preset-env *stage 2* and *nesting-rules* by default
-- handles `json` and `webmanifest` files
-- handles `image` files
+- handles `html` `webmanifest` imports
+- handles `web worker` and `service worker` imports
 
 ### But there is `deno bundle`…
 Deno offers `deno bundle` to transpile a file to a standalone module. This might work in some occations but is limited.
 Bundler works in a similar way to `deno bundle` but is created with the web in mind.
 
 #### Key differences
-- Bundler supports `css`, `html`, `json`, `webmanifest` and `image` files
+- Bundler supports not only `ts`, `tsx`, `js` and `jsx` but lots of other file types
 - Bundler splits dynamic imports into separate files and injects paths. It splits code that is imported in multiple files so it is only loaded once.
 - The `--optimize` option allows for code minification.
 - The `--watch` option observes all dependencies and re-bundles on files changes.
@@ -59,12 +58,10 @@ Bundler automatically analyzes the dependency graph and splits dependencies into
 ### Plugins
 
 #### TypescriptPlugin
-Bundler uses TypescriptPlugin by default.
-It handles `.ts`, `.tsx`, `.js` and `.jsx` files. This plugin handles modules relative and absolute paths with and without extensions as well as urls.
+TypescriptPlugin handles `.ts`, `.tsx`, `.js` and `.jsx` files. This plugin handles modules relative and absolute paths with and without extensions as well as urls.
 
 #### JsonPlugin
-Bundler uses JsonPlugin by default.
-It handles `.json` files. This plugin will convert the file into a javascript module with a default string export.
+JsonPlugin handles `.json` files. This plugin will convert the file into a javascript module with a default string export.
 
 ```json
 /* src/data.json */
@@ -82,8 +79,7 @@ console.log(data) // { "foo": "bar" }
 **Info** [JSON modules](https://github.com/tc39/proposal-json-modules) is currently at **stage 2**. This plugin might change or even will become obsolete once the next stage is reached.
 
 #### CssPlugin
-Bundler uses CssPlugin by default.
-It handles `.css` files. This plugin will convert the file into a javascript module with a default string export.
+CssPlugin handles `.css` files. This plugin will convert the file into a javascript module with a default string export.
 CSS is native to browsers and bundler therefore focuses on making css usage really easy.
 It supports [postcss-preset-env](https://preset-env.cssdb.org) with **stage 2** features and **nesting-rules** enabled so you can use the latest css features out of the box.
 
@@ -103,8 +99,7 @@ console.log(styles) // article > p { color: red; }
 ```
 
 #### HtmlPlugin
-Bundler uses HtmlPlugin by default.
-It handles `.html` files and its `<script>`, `<link>`, `<style>`, `<img>` tags as well as inline styles.
+HtmlPlugin handles `.html` files and its `<script>`, `<link>`, `<style>`, `<img>` tags as well as inline styles.
 
 ```html
 <!-- src/index.html -->
@@ -119,9 +114,8 @@ It handles `.html` files and its `<script>`, `<link>`, `<style>`, `<img>` tags a
 </html>
 ```
 
-#### WebmanifestPlugin
-Bundler uses WebmanifestPlugin by default.
-It handles webmanifest files that are loaded in a html file. This plugin handles the icons that are declared in the manifest file.
+#### WebManifestPlugin
+WebManifestPlugin handles webmanifest files that are loaded in a html file. This plugin handles the icons that are declared in the manifest file.
 ```json
 // src/manifest.json
 {
@@ -158,13 +152,24 @@ It handles webmanifest files that are loaded in a html file. This plugin handles
 ```
 
 #### ImagePlugin
-Bundler uses ImagePlugin by default.
-It handles `.png`, `.jpg`, `.jpeg` and `.ico` files.
+ImagePlugin handles `.png`, `.jpg`, `.jpeg` and `.ico` files.
 
 #### SvgPlugin
-Bundler uses SvgPlugin by default.
-It handles `.svg` files.
+SvgPlugin handles `.svg` files.
 
+#### WebWorkerPlugin
+WebWorkerPlugin handles web worker files that are loaded in a typescript or javascript file.
+**Note** Bundler does not analyse ast variables. This plugin will only recognize a web worker, if it is instantiated by `new Worker`.
+```ts
+const worker = new Worker("worker.ts");
+```
+
+#### ServiceWorkerPlugin
+ServiceWorkerPlugin handles service worker files that are loaded in a typescript or javascript file.
+**Note** Bundler does not analyse ast variables. This plugin will only recognize a service worker, if it is instantiated by `navigator.serviceWorker.register`.
+```ts
+navigator.serviceWorker.register("sw.ts")
+```
 ## Examples
 ### Hello world
 - [hello world](https://github.com/timreichen/Bundler/tree/master/examples/hello%20world)

@@ -114,8 +114,11 @@ export class HtmlPlugin extends Plugin {
       Deno.statSync(outputFilePath).mtime! <
         Deno.statSync(filePath).mtime!;
     if (!needsUpdate) return;
-    const source = await bundler.getSource(
+
+    const source = await bundler.transformSource(
       input,
+      chunk.inputHistory[0],
+      chunk,
       data,
     ) as string;
 

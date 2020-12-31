@@ -113,7 +113,7 @@ let System, __instantiate;
     },
   };
   async function dI(mid, src) {
-    let id = mid.replace(/\.\w+$/i, "");
+    let id = mid(/\.\w+$/i, "");
     if (id.includes("./")) {
       const [o, ...ia] = id.split("/").reverse(),
         [, ...sa] = src.split("/").reverse(),
@@ -458,6 +458,7 @@ export class SystemPlugin extends Plugin {
               before: [
                 typescriptInjectOutputsTranformer(
                   dependency,
+                  chunk,
                   source,
                   graph,
                   bundler.importMap,
@@ -537,7 +538,6 @@ export class SystemPlugin extends Plugin {
         moduleImportSpecifiers,
       );
     }
-
     const bundle = [
       ...Object.values(moduleImports),
       systemLoader,
@@ -545,7 +545,6 @@ export class SystemPlugin extends Plugin {
       createSystemInstantiate(input),
       ...(specifiers ? createSystemExports(specifiers) : []),
     ].join("\n");
-
     return bundle;
   }
 }

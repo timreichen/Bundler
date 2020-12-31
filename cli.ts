@@ -1,4 +1,4 @@
-import { Bundler } from "./bundler.ts";
+import { Bundler, Inputs, OutputMap } from "./bundler.ts";
 import {
   Args,
   colors,
@@ -15,15 +15,18 @@ import { Logger, LogLevel, logLevels } from "./logger.ts";
 import { CssPlugin } from "./plugins/css/css.ts";
 import { CssoPlugin } from "./plugins/css/csso.ts";
 import { CssInjectOutputsPlugin } from "./plugins/css/inject_outputs.ts";
+import { PostcssPlugin } from "./plugins/css/postcss.ts";
 import { HtmlPlugin } from "./plugins/html/html.ts";
 import { ImagePlugin } from "./plugins/image/image.ts";
 import { SvgPlugin } from "./plugins/image/svg.ts";
 import { JsonPlugin } from "./plugins/json/json.ts";
 import { WebmanifestPlugin } from "./plugins/json/webmanifest.ts";
 import { Plugin } from "./plugins/plugin.ts";
+import { ServiceWorkerPlugin } from "./plugins/typescript/serviceworker.ts";
 import { SystemPlugin } from "./plugins/typescript/system.ts";
 import { TerserPlugin } from "./plugins/typescript/terser.ts";
 import { TypescriptPlugin } from "./plugins/typescript/typescript.ts";
+import { WebWorkerPlugin } from "./plugins/typescript/webworker.ts";
 import { isURL, removeRelativePrefix } from "./_util.ts";
 
 const use = [
@@ -40,14 +43,13 @@ interface Meta {
 }
 
 const hashes: { [file: string]: string } = {};
-const logger = new Logger({ logLevel: logLevels.info });
 
 async function main(data: {
-  inputs: string[];
+  inputs: Inputs;
   initialGraph: Graph;
   compilerOptions: ts.CompilerOptions;
   importMap: ImportMap;
-  outputMap: any;
+  outputMap: OutputMap;
   outDirPath: string;
   depsDirPath: string;
   cacheDirPath: string;
@@ -58,6 +60,8 @@ async function main(data: {
   optimize: boolean;
   watch: boolean;
 }) {
+  const logger = new Logger({ logLevel: data.logLevel });
+
   const {
     inputs,
     initialGraph,
@@ -76,12 +80,15 @@ async function main(data: {
   } = data;
 
   const plugins: Plugin[] = [
+    new WebWorkerPlugin(),
+    new ServiceWorkerPlugin(),
     new TypescriptPlugin({
       test: (input: string) =>
         /\.(t|j)sx?$/.test(input) ||
         (isURL(input) && !/([\.][a-zA-Z]\w*)$/.test(input)),
     }),
     new CssPlugin({ use }),
+    new PostcssPlugin({ use }),
     new HtmlPlugin({
       use,
     }),
@@ -110,6 +117,7 @@ async function main(data: {
 
   try {
     const time = performance.now();
+
     const { bundles, graph } = await bundler.bundle(
       inputs,
       { initialGraph, reload, optimize },
@@ -130,7 +138,6 @@ async function main(data: {
       cacheFilePath,
       JSON.stringify({ graph: graph }, null, " "),
     );
-
     logger.info(
       colors.blue("Done"),
       `${Math.ceil(performance.now() - time)}ms`,
@@ -148,6 +155,7 @@ async function main(data: {
 
   async function watchFn(graph: Graph) {
     const paths = Object.values(graph).map((entry) => entry.filePath);
+
     for (const path of paths) {
       if (!hashes[path]) {
         hashes[path] = new Sha256().update(await Deno.readFile(path)).hex();
@@ -161,7 +169,7 @@ async function main(data: {
       `Process terminated! Restarting on file change...`,
     );
 
-    logger.debug(colors.blue(`Watch`), paths);
+    // logger.debug(colors.blue(`Watch`), paths);
     let needsUpdate = false;
     loop:
     for await (const { kind, paths } of watcher) {
@@ -223,18 +231,31 @@ async function runBundle(
       : logLevels[logLevelName as keyof typeof logLevels];
   }
 
-  const inputs: string[] = [];
+  const inputs: Inputs = [];
 
-  const outputMap: { [input: string]: string } = {};
+  const outputMap: OutputMap = {};
 
   for (const inp of _) {
-    let [input, name] = String(inp).split("=");
-    input = removeRelativePrefix(input);
+    const match =
+      /^(?<input>[^\s]+?)(?:\=(?<name>[^\s]+?)(?:\{(?<options>.*?)\})?)$/
+        .exec(String(inp));
 
-    inputs.push(input);
+    const { input: inputString, name, options: optionString } = match!.groups!;
+    const input = removeRelativePrefix(inputString);
+
     if (name) {
       outputMap[input] = path.join(outDir, name);
     }
+    let options = {};
+    if (optionString) {
+      const optionStrings = optionString.split(",");
+      const optionPairs = optionStrings.map((string) => string.split("="));
+      options = Object.fromEntries(optionPairs);
+    }
+    inputs.push({
+      input,
+      options,
+    });
   }
 
   const depsDirName = "deps";

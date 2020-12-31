@@ -1,11 +1,12 @@
-import { colors, path, ts } from "../../../deps.ts";
+import { colors, ImportMap, path, ts } from "../../../deps.ts";
 import { addRelativePrefix } from "../../../_util.ts";
 import { resolve as resolveDependency } from "../../../dependency.ts";
 import { Graph } from "../../../graph.ts";
-import { ImportMap } from "https://deno.land/x/importmap@0.1.4/mod.ts";
+import { Chunk } from "../../../chunk.ts";
 
 export function typescriptInjectOutputsTranformer(
   input: string,
+  chunk: Chunk,
   source: string,
   graph: Graph,
   importMap: ImportMap,
@@ -105,6 +106,67 @@ export function typescriptInjectOutputsTranformer(
             `The argument in dynamic import is not a static string. Cannot resolve ${
               node.getFullText(sourceFile)
             } at position ${node.pos}.`,
+          );
+        }
+      } else if (
+        ts.isNewExpression(node) && ts.isIdentifier(node.expression) &&
+        node.expression.escapedText === "Worker"
+      ) {
+        const argument = node.arguments?.[0];
+        if (argument && ts.isStringLiteral(argument)) {
+          const resolvedFilePath = resolveDependency(
+            input,
+            argument.text,
+            importMap,
+          );
+
+          const bundleInput = chunk.inputHistory[0];
+          const bundleOutputPath = path.dirname(graph[bundleInput].output);
+          const outputFilePath = graph[resolvedFilePath].output;
+
+          const relativeOutput = path.relative(
+            bundleOutputPath,
+            outputFilePath,
+          );
+          const relativeFilePath = addRelativePrefix(relativeOutput);
+
+          return context.factory.updateNewExpression(
+            node,
+            node.expression,
+            node.typeArguments,
+            [ts.factory.createStringLiteral(relativeFilePath)],
+          );
+        }
+      } else if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.escapedText === "register" &&
+        ts.isPropertyAccessExpression(node.expression.expression) &&
+        node.expression.expression.name.escapedText === "serviceWorker"
+      ) {
+        const argument = node.arguments?.[0];
+        if (argument && ts.isStringLiteral(argument)) {
+          const resolvedFilePath = resolveDependency(
+            input,
+            argument.text,
+            importMap,
+          );
+
+          const bundleInput = chunk.inputHistory[0];
+          const bundleOutputPath = path.dirname(graph[bundleInput].output);
+          const outputFilePath = graph[resolvedFilePath].output;
+
+          const relativeOutput = path.relative(
+            bundleOutputPath,
+            outputFilePath,
+          );
+          const relativeFilePath = addRelativePrefix(relativeOutput);
+
+          return context.factory.updateCallExpression(
+            node,
+            node.expression,
+            node.typeArguments,
+            [ts.factory.createStringLiteral(relativeFilePath)],
           );
         }
       }

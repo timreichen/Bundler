@@ -55,7 +55,8 @@ export class TypescriptPlugin extends Plugin {
     input: string,
     data: Data,
   ) {
-    const { bundler } = data;
+    const { bundler, graph } = data;
+
     const filePath = resolveCache(input);
     const compilerOptions = {};
     const dependencies = {
@@ -89,7 +90,7 @@ export class TypescriptPlugin extends Plugin {
       output: bundler.outputMap[input] || bundler.createOutput(filePath, ".js"),
       imports,
       exports,
-      type: "script",
+      type: graph[input].type || "script",
     } as Asset;
   }
   async createChunk(
@@ -102,7 +103,7 @@ export class TypescriptPlugin extends Plugin {
     const list = new Set([input]);
     const dependencies: Set<string> = new Set();
     for (const input of list) {
-      const { imports, exports } = graph[input];
+      const { imports, exports, type } = graph[input];
       Object.entries(imports).forEach(([dependency, { dynamic }]) => {
         if (dynamic) {
           chunkList.push([...inputHistory, dependency]);
@@ -110,7 +111,11 @@ export class TypescriptPlugin extends Plugin {
           if (/\.(png|jpe?g|ico)$/.test(dependency)) {
             chunkList.push([...inputHistory, dependency]);
           }
-          dependencies.add(dependency);
+          if (["webworker", "serviceworker"].includes(graph[dependency].type)) {
+            chunkList.push([...inputHistory, dependency]);
+          } else {
+            dependencies.add(dependency);
+          }
         }
       });
       Object.keys(exports).forEach((dependency) =>

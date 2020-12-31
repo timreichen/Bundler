@@ -83,45 +83,43 @@ export class CssPlugin extends Plugin {
     chunk: Chunk,
     data: Data,
   ) {
-    
     const { bundler, reload } = data;
     const input = chunk.inputHistory[chunk.inputHistory.length - 1];
 
     let bundleNeedsUpdate = false;
-    
+
     for (const dependency of chunk.dependencies) {
       const resolvedFilePath = resolveCache(dependency);
       const needsUpdate = reload || !await chunk.hasCache(resolvedFilePath);
-      let source
+
       if (needsUpdate) {
         bundleNeedsUpdate = true;
-        source = chunk.sources[dependency] = await bundler.transformSource(
-          dependency,
-          input,
-          chunk,
-          data,
-        ) as string;
+        const source = chunk.sources[dependency] = await bundler
+          .transformSource(
+            dependency,
+            input,
+            chunk,
+            data,
+          ) as string;
 
         await chunk.setCache(
           resolvedFilePath,
           source,
         );
       } else {
-        source = await chunk.getCache(input);
-        chunk.sources[dependency] = source;
+        chunk.sources[dependency] = await chunk.getCache(dependency);
       }
     }
     if (!bundleNeedsUpdate) {
       return;
     }
-    
+
     let source = await chunk.getSource(input, data) as string;
-    
+
     const regex = /@import (url\([^\)]+?\)|[^\)]+?)\;/g;
     let match;
 
     while (match = regex.exec(source)) {
-      
       const matchValue = match[0];
       const url = stripCssUrlSpecifier(match[1]);
       const resolvedOutputFilePath = resolveDependency(
@@ -135,6 +133,9 @@ export class CssPlugin extends Plugin {
       ) as string;
 
       source = source.replace(matchValue, dependencySource);
+      // if replaced value is longer, adjust regex.lastIndex by difference
+      const difference = dependencySource.length - matchValue.length;
+      regex.lastIndex += difference > 0 ? difference : 0;
     }
 
     return source;

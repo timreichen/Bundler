@@ -8,19 +8,20 @@ A bundler that transpiles and bundles deno code for the web.
 - [smart splits](#Smart-splitting) dependencies
 - [`--optimize` option](#Options) minifies `javascript` and `css` code
 - [`--watch` option](#Options) observes all dependencies and re-bundles on files changes
-- handles `ts`, `tsx`, `js`, `jsx` `html`, `css`, `json`, `png`, `jpg`, `jpeg`, `ico`, `svg`
+- handles `ts`, `tsx`, `js`, `jsx` `html`, `css`, `json`, `png`, `jpg`, `jpeg`, `ico`, `svg`, `wasm`
 - handles dynamic imports
-- handles `<div style="…">`attributes and `<style>` tags as well as `@import` imports
+- handles `style` attributes and `<style>` tags as well as `@import` declarations
 - supports `css` postcss-preset-env *stage 2* and *nesting-rules* by default
 - handles `html` `webmanifest` imports
 - handles `web worker` and `service worker` imports
+- handles `fetch`
 
 ### But there is `deno bundle`…
 Deno offers `deno bundle` to transpile a file to a standalone module. This might work in some occations but is limited.
 Bundler works in a similar way to `deno bundle` but is created with the web in mind.
 
 #### Key differences
-- Bundler supports not only `ts`, `tsx`, `js` and `jsx` but lots of other file types
+- Bundler supports not only `ts`, `tsx`, `js` and `jsx` but a lot of other platform types (`ts`, `tsx`, `js`, `jsx` `html`, `css`, `json`, `png`, `jpg`, `jpeg`, `ico`, `svg`, `wasm`)
 - Bundler splits dynamic imports into separate files and injects paths. It splits code that is imported in multiple files so it is only loaded once.
 - The `--optimize` option allows for code minification.
 - The `--watch` option observes all dependencies and re-bundles on files changes.
@@ -99,7 +100,7 @@ console.log(styles) // article > p { color: red; }
 ```
 
 #### HtmlPlugin
-HtmlPlugin handles `.html` files and its `<script>`, `<link>`, `<style>`, `<img>` tags as well as inline styles.
+HtmlPlugin handles `.html` files and its `<script>`, `<link>`, `<style>`, `<img>` tags as well as `style` attributes.
 
 ```html
 <!-- src/index.html -->
@@ -157,6 +158,13 @@ ImagePlugin handles `.png`, `.jpg`, `.jpeg` and `.ico` files.
 #### SvgPlugin
 SvgPlugin handles `.svg` files.
 
+#### WasmPlugin
+WasmPlugin handles `.wasm` files that are loaded in a typescript or javascript file.
+
+```ts
+fetch("simple.wasm").then(response => …)
+```
+
 #### WebWorkerPlugin
 WebWorkerPlugin handles web worker files that are loaded in a typescript or javascript file.
 **Note** Bundler does not analyse ast variables. This plugin will only recognize a web worker, if it is instantiated by `new Worker`.
@@ -176,11 +184,14 @@ navigator.serviceWorker.register("sw.ts")
 ### Components
 - [lit-element](https://github.com/timreichen/Bundler/tree/master/examples/lit-element)
 - [React](https://github.com/timreichen/Bundler/tree/master/examples/react)
-### Other
+### Others
 - [css](https://github.com/timreichen/Bundler/tree/master/examples/css)
 - [json](https://github.com/timreichen/Bundler/tree/master/examples/json)
 - [images](https://github.com/timreichen/Bundler/tree/master/examples/images)
+- [wasm](https://github.com/timreichen/Bundler/tree/master/examples/wasm)
 - [webmanifest](https://github.com/timreichen/Bundler/tree/master/examples/webmanifest)
+- [webworker](https://github.com/timreichen/Bundler/tree/master/examples/webworker)
+- [serviceworker](https://github.com/timreichen/Bundler/tree/master/examples/serviceworker)
 - [dynamic import](https://github.com/timreichen/Bundler/tree/master/examples/dynamic%20import)
 - [smart splitting](https://github.com/timreichen/Bundler/tree/master/examples/smart%20splitting)
 - [Threejs](https://github.com/timreichen/Bundler/tree/master/examples/threejs)

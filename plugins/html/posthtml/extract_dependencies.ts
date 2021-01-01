@@ -1,4 +1,8 @@
-import { Imports, resolve as resolveDependency } from "../../../dependency.ts";
+import {
+  Imports,
+  resolve as resolveDependency,
+  Type,
+} from "../../../dependency.ts";
 import { ImportMap } from "../../../deps.ts";
 import { isURL } from "../../../_util.ts";
 import { postcss } from "../../../deps.ts";
@@ -44,7 +48,7 @@ export function posthtmlExtractLinkImports(
           importMap,
         );
         const rel = node.attrs?.rel;
-        let type: string;
+        let type: Type;
 
         switch (rel) {
           case "stylesheet":

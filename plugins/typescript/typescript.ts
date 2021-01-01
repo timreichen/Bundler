@@ -111,7 +111,11 @@ export class TypescriptPlugin extends Plugin {
           if (/\.(png|jpe?g|ico)$/.test(dependency)) {
             chunkList.push([...inputHistory, dependency]);
           }
-          if (["webworker", "serviceworker"].includes(graph[dependency].type)) {
+          if (
+            ["webworker", "serviceworker", "wasm"].includes(
+              graph[dependency].type,
+            )
+          ) {
             chunkList.push([...inputHistory, dependency]);
           } else {
             dependencies.add(dependency);

@@ -44,11 +44,19 @@ export function resolve(
   return ensureExtension(resolvedPath, ".ts");
 }
 
+export type Type =
+  | "html"
+  | "script"
+  | "style"
+  | "image"
+  | "webmanifest"
+  | "webworker"
+  | "serviceworker";
 export interface Imports {
   [filePath: string]: {
     specifiers: string[];
     dynamic?: true;
-    type: string;
+    type: Type;
   };
 }
 export interface Exports {
@@ -197,10 +205,10 @@ export function getDependenciesTypescriptTransformer(
           ts.isCallExpression(node) &&
           node.expression.kind === ts.SyntaxKind.ImportKeyword
         ) {
-          const arg = node.arguments[0];
-          if (ts.isStringLiteral(arg)) {
+          const argument = node.arguments[0];
+          if (ts.isStringLiteral(argument)) {
             // import("./x.ts")
-            filePath = arg.text;
+            filePath = argument.text;
             imports[filePath] = imports[filePath] || {};
             imports[filePath].dynamic = true;
           } else {
@@ -210,6 +218,18 @@ export function getDependenciesTypescriptTransformer(
                 node.getFullText(sourceFile)
               } at position ${node.pos}.`,
             );
+          }
+        } else if (
+          ts.isCallExpression(node) && ts.isIdentifier(node.expression) &&
+          node.expression.escapedText === "fetch"
+        ) {
+          const argument = node.arguments[0];
+          if (ts.isStringLiteral(argument)) {
+            const filePath = argument.text;
+            // if is url, do not add as dependency
+            if (!isURL(filePath)) {
+              imports[filePath] = imports[filePath] || {};
+            }
           }
         } else if (
           ts.isNewExpression(node) && ts.isIdentifier(node.expression) &&

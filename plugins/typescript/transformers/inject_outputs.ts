@@ -1,5 +1,5 @@
 import { colors, ImportMap, path, ts } from "../../../deps.ts";
-import { addRelativePrefix } from "../../../_util.ts";
+import { addRelativePrefix, isURL } from "../../../_util.ts";
 import { resolve as resolveDependency } from "../../../dependency.ts";
 import { Graph } from "../../../graph.ts";
 import { Chunk } from "../../../chunk.ts";
@@ -76,12 +76,12 @@ export function typescriptInjectOutputsTranformer(
         ts.isCallExpression(node) &&
         node.expression.kind === ts.SyntaxKind.ImportKeyword
       ) {
-        const arg = node.arguments[0];
-        if (ts.isStringLiteral(arg)) {
+        const argument = node.arguments[0];
+        if (ts.isStringLiteral(argument)) {
           // import("./x.ts")
           const resolvedFilePath = resolveDependency(
             input,
-            arg.text,
+            argument.text,
             importMap,
           );
 
@@ -107,6 +107,37 @@ export function typescriptInjectOutputsTranformer(
               node.getFullText(sourceFile)
             } at position ${node.pos}.`,
           );
+        }
+      } else if (
+        ts.isCallExpression(node) && ts.isIdentifier(node.expression) &&
+        node.expression.escapedText === "fetch"
+      ) {
+        const argument = node.arguments[0];
+        if (ts.isStringLiteral(argument)) {
+          const resolvedFilePath = resolveDependency(
+            input,
+            argument.text,
+            importMap,
+          );
+          // if is url, skip injection
+          if (!isURL(resolvedFilePath)) {
+            const bundleInput = chunk.inputHistory[0];
+            const bundleOutputPath = path.dirname(graph[bundleInput].output);
+            const outputFilePath = graph[resolvedFilePath].output;
+
+            const relativeOutput = path.relative(
+              bundleOutputPath,
+              outputFilePath,
+            );
+            const relativeFilePath = addRelativePrefix(relativeOutput);
+
+            return context.factory.updateCallExpression(
+              node,
+              node.expression,
+              node.typeArguments,
+              [context.factory.createStringLiteral(relativeFilePath)],
+            );
+          }
         }
       } else if (
         ts.isNewExpression(node) && ts.isIdentifier(node.expression) &&

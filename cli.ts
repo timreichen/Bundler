@@ -27,6 +27,7 @@ import { SystemPlugin } from "./plugins/typescript/system.ts";
 import { TerserPlugin } from "./plugins/typescript/terser.ts";
 import { TypescriptPlugin } from "./plugins/typescript/typescript.ts";
 import { WebWorkerPlugin } from "./plugins/typescript/webworker.ts";
+import { WasmPlugin } from "./plugins/wasm/wasm.ts";
 import { isURL, removeRelativePrefix } from "./_util.ts";
 
 const use = [
@@ -102,6 +103,7 @@ async function main(data: {
     new TerserPlugin({
       test: (input: string) => /\.(t|j)sx?$/.test(input),
     }),
+    new WasmPlugin(),
   ];
 
   const bundler = new Bundler(plugins, {

@@ -1,6 +1,5 @@
 navigator.serviceWorker.addEventListener("message", (event) => {
   const h1 = document.body.querySelector("h1");
-  document.body.appendChild(h1);
   h1.innerHTML = event.data;
 });
 

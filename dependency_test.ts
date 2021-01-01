@@ -340,3 +340,51 @@ Deno.test({
     });
   },
 });
+
+Deno.test({
+  name: "dependency WebWorker",
+  fn() {
+    const fileName = "foo/a.ts";
+    const sourceText = `const new Worker("./b.ts")`;
+    const { imports, exports } = getDependencies(
+      fileName,
+      sourceText,
+    );
+    assertEquals(imports, {
+      "./b.ts": { type: "webworker" },
+    });
+    assertEquals(exports, {});
+  },
+});
+
+Deno.test({
+  name: "dependency fetch",
+  fn() {
+    const fileName = "foo/a.ts";
+    const sourceText = `fetch("./b.ts")`;
+    const { imports, exports } = getDependencies(
+      fileName,
+      sourceText,
+    );
+    assertEquals(imports, {
+      "./b.ts": {},
+    });
+    assertEquals(exports, {});
+  },
+});
+
+Deno.test({
+  name: "dependency ServiceWorker",
+  fn() {
+    const fileName = "foo/a.ts";
+    const sourceText = `navigator.serviceWorker.register("./b.ts")`;
+    const { imports, exports } = getDependencies(
+      fileName,
+      sourceText,
+    );
+    assertEquals(imports, {
+      "./b.ts": { type: "serviceworker" },
+    });
+    assertEquals(exports, {});
+  },
+});

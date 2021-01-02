@@ -5,7 +5,7 @@ import {
   PerspectiveCamera,
   Scene,
   WebGLRenderer,
-} from "./three.module.js";
+} from "https://unpkg.com/three/build/three.module.js";
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(

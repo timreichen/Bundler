@@ -280,8 +280,9 @@ async function runBundle(
     ? ts.convertCompilerOptionsFromJson(
       config.compilerOptions,
       Deno.cwd(),
-    )
+    ).options
     : {};
+
   const importMap: ImportMap =
     (importMapPath
       ? JSON.parse(await Deno.readTextFile(importMapPath))

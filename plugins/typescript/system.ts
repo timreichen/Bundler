@@ -19,6 +19,43 @@ const printer = ts.createPrinter(
 );
 const sourceFile = ts.createSourceFile("x.ts", "", ts.ScriptTarget.Latest);
 
+const defaultCompilerOptions: ts.CompilerOptions = {
+  jsx: ts.JsxEmit.React,
+  jsxFactory: "React.createElement",
+  jsxFragmentFactory: "React.Fragment",
+  allowJs: false,
+  allowUmdGlobalAccess: false,
+  allowUnreachableCode: false,
+  allowUnusedLabels: false,
+  alwaysStrict: true,
+  assumeChangesOnlyAffectDirectDependencies: false,
+  checkJs: false,
+  disableSizeLimit: false,
+  generateCpuProfile: "profile.cpuprofile",
+  lib: [],
+  noFallthroughCasesInSwitch: false,
+  noImplicitAny: true,
+  noImplicitReturns: true,
+  noImplicitThis: true,
+  noImplicitUseStrict: false,
+  noStrictGenericChecks: false,
+  noUnusedLocals: false,
+  noUnusedParameters: false,
+  preserveConstEnums: false,
+  removeComments: false,
+  // resolveJsonModule: true,
+  strict: true,
+  strictBindCallApply: true,
+  strictFunctionTypes: true,
+  strictNullChecks: true,
+  strictPropertyInitialization: true,
+  suppressExcessPropertyErrors: false,
+  suppressImplicitAnyIndexErrors: false,
+  useDefineForClassFields: false,
+
+  target: ts.ScriptTarget.ES2015,
+};
+
 function createSystemInstantiate(input: string): string {
   const __exp = ts.factory.createVariableStatement(
     undefined,
@@ -447,10 +484,7 @@ export class SystemPlugin extends Plugin {
           source,
           {
             compilerOptions: {
-              target: ts.ScriptTarget.ES2015,
-              jsx: ts.JsxEmit.React,
-              jsxFactory: "React.createElement",
-              jsxFragmentFactory: "React.Fragment",
+              ...defaultCompilerOptions,
               ...this.compilerOptions,
               module: ts.ModuleKind.System,
             },

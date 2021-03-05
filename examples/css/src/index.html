@@ -1,6 +1,7 @@
 <html>
 
 <head>
+  <base>
   <script type="module" src="index.ts"></script>
   <link rel="stylesheet" href="styles.css">
   </link>
@@ -17,9 +18,9 @@
 <body>
   <h1>Hello World from CSS</h1>
   <div id="images">
-    <div id="import">import</div>
-    <div id="style">style</div>
-    <div style="background: url('image.png'); width: 225px; height: 225px;">inline style</div>
-    <div id="script">script</div>
+    <div id="import">@import</div>
+    <div id="style">&lt;style&gt;</div>
+    <div style="background: url('image.png'); width: 225px; height: 225px;">style="inline"</div>
+    <div id="script">&lt;script&gt;</div>
   </div>
 </body>

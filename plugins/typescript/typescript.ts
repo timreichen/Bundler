@@ -1,13 +1,18 @@
+import { ImportMap, path, Sha256, ts } from "../../deps.ts";
 import {
+  ChunkList,
+  Context,
   Dependencies,
-  getDependenciesTypescriptTransformer,
-  resolve as resolveDependency,
-} from "../../dependency.ts";
-import { ImportMap, ts } from "../../deps.ts";
-import { Data, Plugin, TestFunction } from "../plugin.ts";
-import { cache, resolve as resolveCache } from "../../cache.ts";
-import { Asset } from "../../graph.ts";
-import { Chunk } from "../../chunk.ts";
+  DependencyType,
+  Format,
+  Item,
+  Plugin,
+} from "../plugin.ts";
+import { resolve as resolveDependency } from "../../dependency.ts";
+import { typescriptExtractDependenciesTransformer } from "./transformers/extract_dependencies.ts";
+import { resolve as resolveCache } from "../../cache.ts";
+import { getAsset } from "../../graph.ts";
+import { isURL } from "../../_util.ts";
 
 function resolveDependencies(
   filePath: string,
@@ -38,97 +43,159 @@ function resolveDependencies(
 
   return dependencies;
 }
+
 export class TypescriptPlugin extends Plugin {
+  compilerOptions: ts.CompilerOptions;
   constructor(
-    { test = (input: string) => /\.(t|j)sx?$/.test(input) }: {
-      test?: TestFunction;
+    {
+      compilerOptions = {},
+    }: {
+      compilerOptions?: ts.CompilerOptions;
     } = {},
   ) {
-    super({ test });
+    super();
+    this.compilerOptions = compilerOptions;
   }
-  async load(input: string, { importMap }: any) {
-    await cache(input, { importMap });
+  async test(item: Item, context: Context) {
+    const input = item.history[0];
+    return /\.(t|j)sx?$/.test(input) ||
+      (isURL(input) &&
+        !/([\.][a-zA-Z]\w*)$/.test(
+          input,
+        )); /* is handle url without extension as script */
+  }
+  async readSource(input: string, context: Context) {
     const filePath = resolveCache(input);
     return await Deno.readTextFile(filePath);
   }
   async createAsset(
-    input: string,
-    data: Data,
+    item: Item,
+    context: Context,
   ) {
-    const { bundler, graph } = data;
+    const input = item.history[0];
 
-    const filePath = resolveCache(input);
-    const compilerOptions = {};
-    const dependencies = {
-      imports: {},
-      exports: {},
-    };
-
-    const source = await bundler.getSource(input, data);
-
+    const { bundler, outputMap, depsDirPath, outDirPath, importMap } = context;
+    const source = await bundler.readSource(item, context) as string;
     const sourceFile = ts.createSourceFile(
       input,
-      source as string,
+      source,
       ts.ScriptTarget.Latest,
     );
-
+    const dependencies: Dependencies = { imports: {}, exports: {} };
     ts.transform(
       sourceFile,
-      [getDependenciesTypescriptTransformer(dependencies)],
-      compilerOptions,
+      [typescriptExtractDependenciesTransformer(dependencies)],
+      this.compilerOptions,
     );
-
-    const { imports, exports } = resolveDependencies(
+    const resolvedDependencies = resolveDependencies(
       input,
       dependencies,
-      { importMap: bundler.importMap },
+      { importMap },
     );
+
+    const extension = ".js";
+    return {
+      filePath: input,
+      output: outputMap[input] || path.join(
+        depsDirPath,
+        `${new Sha256().update(input).hex()}${extension}`,
+      ),
+      dependencies: resolvedDependencies,
+      format: Format.Script,
+    };
+  }
+
+  async createChunk(
+    item: Item,
+    context: Context,
+    chunkList: ChunkList,
+  ) {
+    const dependencies: Item[] = [];
+
+    const dependencyList: Item[] = [item];
+    const checkedItems: any = {};
+    for (const dependencyItem of dependencyList) {
+      const { history, type } = dependencyItem;
+      const input = history[0];
+      if (checkedItems[type]?.[input]) continue;
+      const asset = getAsset(context.graph, type, input);
+      checkedItems[type] = checkedItems[type] || {};
+      checkedItems[type][input] = asset;
+
+      switch (asset.format) {
+        case Format.Script: {
+          switch (type) {
+            case DependencyType.Import:
+            case DependencyType.Export:
+              dependencies.push(dependencyItem);
+              Object.entries(
+                asset.dependencies.imports,
+              ).forEach(([dependency, { type, format }]) => {
+                if (dependency !== input) {
+                  dependencyList.push({
+                    history: [dependency, ...history],
+                    type,
+                    format,
+                  });
+                }
+              });
+              Object.entries(
+                asset.dependencies.exports,
+              ).forEach(([dependency, { type, format }]) => {
+                if (dependency !== input) {
+                  dependencyList.push({
+                    history: [dependency, ...history],
+                    type,
+                    format,
+                  });
+                }
+              });
+              break;
+            case DependencyType.DynamicImport:
+            case DependencyType.ServiceWorker:
+            case DependencyType.WebWorker:
+            case DependencyType.Fetch:
+              chunkList.push(dependencyItem);
+              break;
+          }
+          break;
+        }
+        case Format.Json: {
+          switch (type) {
+            case DependencyType.Import: {
+              dependencies.push(dependencyItem);
+              break;
+            }
+            default: {
+              chunkList.push(dependencyItem);
+              break;
+            }
+          }
+          break;
+        }
+        case Format.Style: {
+          switch (type) {
+            case DependencyType.Import: {
+              dependencies.push(dependencyItem);
+              break;
+            }
+            default: {
+              chunkList.push(dependencyItem);
+              break;
+            }
+          }
+          break;
+        }
+        default: {
+          chunkList.push(dependencyItem);
+          break;
+        }
+      }
+    }
 
     return {
-      input,
-      filePath,
-      output: bundler.outputMap[input] || bundler.createOutput(filePath, ".js"),
-      imports,
-      exports,
-      type: graph[input].type || "script",
-    } as Asset;
-  }
-  async createChunk(
-    inputHistory: string[],
-    chunkList: string[][],
-    data: Data,
-  ) {
-    const { bundler, graph } = data;
-    const input = inputHistory[inputHistory.length - 1];
-    const list = new Set([input]);
-    const dependencies: Set<string> = new Set();
-    for (const input of list) {
-      const { imports, exports, type } = graph[input];
-      Object.entries(imports).forEach(([dependency, { dynamic }]) => {
-        if (dynamic) {
-          chunkList.push([...inputHistory, dependency]);
-        } else {
-          if (/\.(png|jpe?g|ico)$/.test(dependency)) {
-            chunkList.push([...inputHistory, dependency]);
-          }
-          if (
-            ["webworker", "serviceworker", "wasm"].includes(
-              graph[dependency].type,
-            )
-          ) {
-            chunkList.push([...inputHistory, dependency]);
-          } else {
-            dependencies.add(dependency);
-          }
-        }
-      });
-      Object.keys(exports).forEach((dependency) =>
-        dependencies.add(dependency)
-      );
-    }
-    return new Chunk(bundler, {
-      inputHistory,
+      ...item,
       dependencies,
-    });
+    };
   }
 }

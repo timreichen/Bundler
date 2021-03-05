@@ -1,28 +1,24 @@
 import { csso as cssoCore } from "../../deps.ts";
-import { Data, Plugin, Source, TestFunction } from "../plugin.ts";
+import { Context, Format, Item, Plugin } from "../plugin.ts";
 
 const syntax = cssoCore.syntax;
 
 export class CssoPlugin extends Plugin {
-  constructor(
-    {
-      test = (input: string, { optimize }: Data) =>
-        optimize && input.endsWith(".css"),
-    }: {
-      test?: TestFunction;
-    } = {},
-  ) {
-    super({ test });
+  async test(item: Item, context: Context) {
+    return item.format === Format.Style;
   }
-
-  async transform(
-    input: string,
-    source: Source,
-    bundleInput: string,
-    data: Data,
+  async optimizeBundle(
+    output: string,
+    context: Context,
   ) {
-    const ast = syntax.parse(source as string);
+    const bundle = context.bundles[output] as string;
+    const ast = syntax.parse(bundle);
     const compressedAst = (syntax as any).compress(ast).ast;
-    return syntax.generate(compressedAst);
+    const code = syntax.generate(compressedAst);
+
+    if (code === undefined) {
+      throw new Error(`error during csso minification.`);
+    }
+    return code;
   }
 }

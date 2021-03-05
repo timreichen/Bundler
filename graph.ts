@@ -1,12 +1,24 @@
-import { Exports, Imports } from "./dependency.ts";
+import { Dependencies, DependencyType, Format } from "./plugins/plugin.ts";
 
 export interface Asset {
-  input: string;
-  output: string;
   filePath: string;
-  imports: Imports;
-  exports: Exports;
-  type: string;
+  output: string;
+  dependencies: Dependencies;
+  format: Format | null;
 }
 
-export type Graph = Record<string, Asset>;
+export type GraphEntry = {
+  [key in DependencyType]?: Asset;
+};
+
+export type Graph = Record<string, GraphEntry>;
+
+export function getAsset(graph: Graph, type: DependencyType, input: string) {
+  const asset = graph[input]?.[type];
+  if (!asset) {
+    throw new Error(
+      `asset does not exist in graph: ${input} ${type}`,
+    );
+  }
+  return asset;
+}

@@ -6,14 +6,18 @@ import {
 import { yellow } from "https://deno.land/std@0.66.0/fmt/colors.ts";
 
 /**
- * returns true if path starts with http:// or https://, else false
+ * returns true if path can be parsed by URL and protocol starts with http
  * ```ts
  * isURL("https://foo") // output: true
  * isURL("/foo/bar") // output: false
  * ```
  */
 export function isURL(path: string) {
-  return path.startsWith("http");
+  try {
+    new URL(path);
+    return true;
+  } catch (error) {}
+  return false;
 }
 
 export function removeRelativePrefix(path: string) {
@@ -48,4 +52,18 @@ export function ensureExtension(path: string, extension: string) {
     path += extension;
   }
   return path;
+}
+
+export function timestamp(time: number) {
+  const delta = performance.now() - time;
+  const unit = delta < 1000 ? "ms" : "s";
+  return `${Math.ceil(delta)}${unit}`;
+}
+
+export function size(size: number) {
+  const units = [" bytes", "kb", "mb", "gb", "tb"];
+  const index = Math.floor(Math.log(size) / Math.log(1024));
+  const number = size / Math.pow(1024, index);
+  const unit = units[index];
+  return `${Math.ceil(number)}${unit}`;
 }

@@ -1,147 +1,170 @@
-import { Imports } from "../../dependency.ts";
-import { fs, path, postcss, posthtml } from "../../deps.ts";
-import { Asset } from "../../graph.ts";
-import { Data, Plugin, TestFunction } from "../plugin.ts";
-import { Chunk } from "../../chunk.ts";
+import { fs, path, postcss, posthtml, Sha256 } from "../../deps.ts";
+import { getAsset } from "../../graph.ts";
 import {
-  posthtmlExtractImageImports,
-  posthtmlExtractInlineStyleImports,
-  posthtmlExtractLinkImports,
-  posthtmlExtractScriptImports,
-  posthtmlExtractStyleImports,
+  Chunk,
+  ChunkList,
+  Context,
+  Dependencies,
+  Format,
+  Item,
+  Plugin,
+} from "../plugin.ts";
+import {
+  posthtmlExtractImageDependencies,
+  posthtmlExtractInlineStyleDependencies,
+  posthtmlExtractLinkDependencies,
+  posthtmlExtractScriptDependencies,
+  posthtmlExtractStyleDependencies,
 } from "./posthtml/extract_dependencies.ts";
 import {
-  posthtmlInjectOutputImage,
-  posthtmlInjectOutputInlineStyle,
-  posthtmlInjectOutputLink,
-  posthtmlInjectOutputScript,
-  posthtmlInjectOutputStyle,
-} from "./posthtml/inject_outputs.ts";
-
-const encoder = new TextEncoder();
+  posthtmlInjectImageDependencies,
+  posthtmlInjectInlineStyleDependencies,
+  posthtmlInjectLinkDependencies,
+  posthtmlInjectScriptDependencies,
+  posthtmlInjectStyleDependencies,
+} from "./posthtml/inject_dependencies.ts";
 
 export class HtmlPlugin extends Plugin {
   use: postcss.AcceptedPlugin[];
   constructor(
-    { test = (input: string) => input.endsWith(".html"), use = [] }: {
-      test?: TestFunction;
+    { use = [] }: {
       use?: postcss.AcceptedPlugin[];
     } = {},
   ) {
-    super({ test });
+    super();
     this.use = use;
   }
-  async load(filePath: string) {
+  async test(item: Item) {
+    const input = item.history[0];
+    return input.endsWith(".html");
+  }
+  async readSource(filePath: string) {
     return Deno.readTextFile(filePath);
   }
   async createAsset(
-    input: string,
-    data: Data,
+    item: Item,
+    context: Context,
   ) {
-    const { bundler } = data;
-    const filePath = input;
-    const source = await bundler.getSource(
-      filePath,
-      data,
-    ) as string;
-
-    const imports: Imports = {};
+    const input = item.history[0];
+    const { bundler, importMap, outputMap, depsDirPath } = context;
+    const source = await bundler.readSource(item, context) as string;
+    const dependencies: Dependencies = { imports: {}, exports: {} };
     const processor = posthtml([
-      posthtmlExtractScriptImports(
-        filePath,
-        imports,
-        { importMap: bundler.importMap },
+      posthtmlExtractScriptDependencies(dependencies)(
+        input,
+        { importMap },
       ),
-      posthtmlExtractLinkImports(
-        filePath,
-        imports,
-        { importMap: bundler.importMap },
+      posthtmlExtractLinkDependencies(dependencies)(
+        input,
+        { importMap },
       ),
-      posthtmlExtractImageImports(
-        filePath,
-        imports,
-        { importMap: bundler.importMap },
+      posthtmlExtractImageDependencies(dependencies)(
+        input,
+        { importMap },
       ),
-      posthtmlExtractStyleImports(
-        filePath,
-        imports,
-        { importMap: bundler.importMap, use: this.use },
+      posthtmlExtractStyleDependencies(dependencies)(
+        input,
+        { importMap, use: this.use },
       ),
-      posthtmlExtractInlineStyleImports(
-        filePath,
-        imports,
-        { importMap: bundler.importMap, use: this.use },
+      posthtmlExtractInlineStyleDependencies(dependencies)(
+        input,
+        { importMap, use: this.use },
       ),
     ]);
     await processor.process(source);
 
+    const extension = path.extname(input);
     return {
-      input,
-      filePath,
-      output: bundler.outputMap[input] ||
-        bundler.createOutput(filePath, path.extname(input)),
-      imports,
-      exports: {},
-      type: "html",
-    } as Asset;
+      filePath: input,
+      output: outputMap[input] ||
+        path.join(
+          depsDirPath,
+          `${new Sha256().update(input).hex()}${extension}`,
+        ),
+      dependencies,
+      format: Format.Html,
+    };
   }
   async createChunk(
-    inputHistory: string[],
-    chunkList: string[][],
-    data: Data,
+    item: Item,
+    context: Context,
+    chunkList: ChunkList,
   ) {
-    const { bundler, graph } = data;
-    const input = inputHistory[inputHistory.length - 1];
-    const asset = graph[input];
-    const dependencies = Object.keys(asset.imports);
-    dependencies.forEach((dependency) =>
-      chunkList.push([...inputHistory, dependency])
+    const { history, type, format } = item;
+    const input = history[0];
+    const { graph } = context;
+    const dependencies: Item[] = [item];
+    const asset = getAsset(graph, type, input);
+    Object.entries(asset.dependencies.imports).forEach(
+      ([dependency, { type, format }]) => {
+        if (dependency && dependency !== input) {
+          dependencies.push({
+            history: [dependency, ...history],
+            type,
+            format,
+          });
+        }
+      },
     );
-    return new Chunk(bundler, {
-      inputHistory,
-      dependencies: new Set([input]),
-    });
+    Object.entries(asset.dependencies.exports).forEach(
+      ([dependency, { type, format }]) => {
+        if (dependency && dependency !== input) {
+          dependencies.push({
+            history: [dependency, ...history],
+            type,
+            format,
+          });
+        }
+      },
+    );
+
+    chunkList.push(...dependencies);
+
+    return {
+      ...item,
+      dependencies,
+    };
   }
+
   async createBundle(
     chunk: Chunk,
-    data: Data,
+    context: Context,
   ) {
-    const { bundler, graph, reload } = data;
-    const input = chunk.inputHistory[chunk.inputHistory.length - 1];
-    const { filePath, output: outputFilePath } = graph[input];
-    const exists = await fs.exists(outputFilePath);
-    const needsUpdate = reload || !exists ||
-      Deno.statSync(outputFilePath).mtime! <
-        Deno.statSync(filePath).mtime!;
-    if (!needsUpdate) return;
+    const bundleInput = chunk.history[0];
+    const { bundler, graph, reload } = context;
+    const bundleAsset = getAsset(graph, chunk.type, bundleInput);
+    const { filePath } = bundleAsset;
+    const needsReload = reload === true ||
+      Array.isArray(reload) && reload.includes(bundleInput);
+    const needsUpdate = needsReload;
+    // || !await bundler.hasCache(bundleInput, bundleInput, context);
+
+    if (!needsUpdate && await fs.exists(bundleAsset.output)) return;
 
     const source = await bundler.transformSource(
-      input,
-      chunk.inputHistory[0],
+      bundleInput,
       chunk,
-      data,
+      context,
     ) as string;
 
+    const bundleOutput = bundleAsset.output;
     const processor = posthtml([
-      posthtmlInjectOutputScript(filePath, graph, bundler.importMap),
-      posthtmlInjectOutputLink(filePath, graph, bundler.importMap),
-      posthtmlInjectOutputImage(filePath, graph, bundler.importMap),
-      posthtmlInjectOutputStyle(
-        filePath,
-        chunk.inputHistory[0],
-        graph,
-        bundler,
+      posthtmlInjectScriptDependencies(filePath, bundleOutput, context),
+      posthtmlInjectLinkDependencies(filePath, bundleOutput, context),
+      posthtmlInjectImageDependencies(filePath, bundleOutput, context),
+      posthtmlInjectStyleDependencies(
+        chunk,
+        context,
         this.use,
       ),
-      posthtmlInjectOutputInlineStyle(
-        filePath,
-        chunk.inputHistory[0],
-        graph,
-        bundler,
+      posthtmlInjectInlineStyleDependencies(
+        chunk,
+        context,
         this.use,
       ),
     ]);
     const { html } = await processor.process(source as string);
-    return encoder.encode(html);
+    // await bundler.setCache(bundleInput, bundleInput, html, context);
+    return html;
   }
 }

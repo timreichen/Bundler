@@ -1,142 +1,190 @@
-import { Imports } from "../../dependency.ts";
-import { postcss } from "../../deps.ts";
-import { Data, Plugin, TestFunction } from "../plugin.ts";
-import { Chunk } from "../../chunk.ts";
-import { postcssExtractDependenciesPlugin } from "./postcss_plugins/extract_dependencies.ts";
-import { stripCssUrlSpecifier } from "./_utils.ts";
-import { resolve as resolveDependency } from "../../dependency.ts";
-import { Asset } from "../../graph.ts";
+import { fs, path, postcss, Sha256 } from "../../deps.ts";
+import {
+  Chunk,
+  ChunkList,
+  Context,
+  Dependencies,
+  DependencyType,
+  Format,
+  Item,
+  Plugin,
+} from "../plugin.ts";
+import { postcssExtractDependenciesPlugin } from "./postcss/extract_dependencies.ts";
 import { resolve as resolveCache } from "../../cache.ts";
+import { postcssInjectImportsPlugin } from "./postcss/inject_imports.ts";
+import { postcssInjectDependenciesPlugin } from "./postcss/inject_dependencies.ts";
+import { getAsset } from "../../graph.ts";
 
 export class CssPlugin extends Plugin {
   use: postcss.AcceptedPlugin[];
   constructor(
-    { test = (input: string) => input.endsWith(".css"), use = [] }: {
-      test?: TestFunction;
+    { use = [] }: {
       use?: postcss.AcceptedPlugin[];
     } = {},
   ) {
-    super({ test });
+    super();
     this.use = use;
   }
-  async load(filePath: string) {
+  async test(item: Item) {
+    const input = item.history[0];
+    return input.endsWith(".css");
+  }
+  async transformSource(
+    bundleInput: string,
+    chunk: Chunk,
+    context: Context,
+  ) {
+    const { graph, bundler } = context;
+    const asset = getAsset(graph, chunk.type, bundleInput);
+    const bundleOutput = asset.output;
+
+    const processor = postcss.default([
+      postcssInjectImportsPlugin(chunk, context, this.use),
+      postcssInjectDependenciesPlugin(bundleInput, bundleOutput, context),
+    ]);
+    const source = await bundler.readSource(chunk, context);
+
+    const { css } = await processor.process(source);
+    return css;
+  }
+  async readSource(filePath: string) {
     return await Deno.readTextFile(filePath);
   }
   async createAsset(
-    input: string,
-    data: Data,
+    item: Item,
+    context: Context,
   ) {
-    const filePath = input;
-    const { bundler } = data;
+    const input = item.history[0];
 
-    const imports: Imports = {};
+    const { bundler, importMap, outputMap, depsDirPath } = context;
+    const dependencies: Dependencies = { imports: {}, exports: {} };
     const use = [
       ...this.use,
-      postcssExtractDependenciesPlugin({ imports })(
+      postcssExtractDependenciesPlugin(dependencies)(
         input,
-        { importMap: bundler.importMap },
+        { importMap },
       ),
     ];
-    const source = await bundler.getSource(filePath, data);
+    const source = await bundler.readSource(item, context);
     const processor = postcss.default(use);
 
+    // TODO store AST to avoid re-parsing in other plugins
     await processor.process(source as string);
+    const extension = path.extname(input);
 
     return {
-      input,
-      filePath,
-      output: bundler.outputMap[input] ||
-        bundler.createOutput(filePath, ".css"),
-      imports,
-      exports: {},
-      type: "style",
-    } as Asset;
+      filePath: input,
+      output: outputMap[input] ||
+        path.join(
+          depsDirPath,
+          `${new Sha256().update(input).hex()}${extension}`,
+        ),
+      dependencies,
+      format: Format.Style,
+    };
   }
   async createChunk(
-    inputHistory: string[],
-    chunkList: string[][],
-    data: Data,
+    item: Item,
+    context: Context,
+    chunkList: ChunkList,
   ) {
-    const { bundler, graph } = data;
-    const input = inputHistory[inputHistory.length - 1];
-    const { imports, exports } = graph[input];
-    const list = new Set([input]);
-    Object.keys(imports).forEach((dependency) => list.add(dependency));
-    Object.keys(exports).forEach((dependency) => list.add(dependency));
+    const rootInput = item.history[0];
 
-    const dependencies: Set<string> = new Set();
+    const { graph } = context;
+    const dependencyList = [item];
 
-    for (const dependency of list) {
-      if (dependency.endsWith(".css")) {
-        dependencies.add(dependency);
+    for (const dependencyItem of dependencyList) {
+      const { history, type } = dependencyItem;
+      const input = history[0];
+
+      const asset = getAsset(graph, type, input);
+      if (
+        input === rootInput || asset.format === Format.Style
+      ) {
       } else {
-        chunkList.push([...inputHistory, dependency]);
+        chunkList.push(dependencyItem);
       }
+      Object.entries(asset.dependencies.imports).forEach(
+        ([dependency, { type, format }]) => {
+          if (dependency && dependency !== input) {
+            dependencyList.push({
+              history: [dependency, ...history],
+              type,
+              format,
+            });
+          }
+        },
+      );
+      Object.entries(asset.dependencies.exports).forEach(
+        ([dependency, { type, format }]) => {
+          if (dependency && dependency !== input) {
+            dependencyList.push({
+              history: [dependency, ...history],
+              type,
+              format,
+            });
+          }
+        },
+      );
     }
 
-    return new Chunk(bundler, {
-      inputHistory,
-      dependencies,
-    });
+    return {
+      ...item,
+      dependencies: dependencyList,
+    };
   }
   async createBundle(
     chunk: Chunk,
-    data: Data,
+    context: Context,
   ) {
-    const { bundler, reload } = data;
-    const input = chunk.inputHistory[chunk.inputHistory.length - 1];
+    const { graph, bundler, reload } = context;
 
-    let bundleNeedsUpdate = false;
+    let needsBundleUpdate = false;
 
-    for (const dependency of chunk.dependencies) {
-      const resolvedFilePath = resolveCache(dependency);
-      const needsUpdate = reload || !await chunk.hasCache(resolvedFilePath);
+    const bundleInput = chunk.history[0];
+
+    for (const dependencyItem of chunk.dependencies) {
+      const { history } = dependencyItem;
+      const input = history[0];
+      const resolvedFilePath = resolveCache(input);
+      const needsReload = reload === true ||
+        Array.isArray(reload) && reload.includes(input);
+      const needsUpdate = needsReload ||
+        !await bundler.hasCache(bundleInput, resolvedFilePath, context);
 
       if (needsUpdate) {
-        bundleNeedsUpdate = true;
-        const source = chunk.sources[dependency] = await bundler
+        needsBundleUpdate = true;
+        const source = await bundler
           .transformSource(
-            dependency,
-            input,
+            bundleInput,
             chunk,
-            data,
+            context,
           ) as string;
 
-        await chunk.setCache(
+        await bundler.setCache(
+          bundleInput,
           resolvedFilePath,
           source,
+          context,
         );
       } else {
-        chunk.sources[dependency] = await chunk.getCache(dependency);
+        context.sources[resolvedFilePath] = await bundler.getCache(
+          bundleInput,
+          resolvedFilePath,
+          context,
+        );
       }
     }
-    if (!bundleNeedsUpdate) {
+    const bundleAsset = getAsset(graph, chunk.type, bundleInput);
+    if (!needsBundleUpdate && await fs.exists(bundleAsset.output)) {
       return;
     }
 
-    let source = await chunk.getSource(input, data) as string;
-
-    const regex = /@import (url\([^\)]+?\)|[^\)]+?)\;/g;
-    let match;
-
-    while (match = regex.exec(source)) {
-      const matchValue = match[0];
-      const url = stripCssUrlSpecifier(match[1]);
-      const resolvedOutputFilePath = resolveDependency(
-        input,
-        url,
-        bundler.importMap,
-      );
-      const dependencySource = await chunk.getSource(
-        resolvedOutputFilePath,
-        data,
-      ) as string;
-
-      source = source.replace(matchValue, dependencySource);
-      // if replaced value is longer, adjust regex.lastIndex by difference
-      const difference = dependencySource.length - matchValue.length;
-      regex.lastIndex += difference > 0 ? difference : 0;
-    }
+    let source = await bundler.getCache(
+      bundleInput,
+      bundleInput,
+      context,
+    ) as string;
 
     return source;
   }

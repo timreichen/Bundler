@@ -8,30 +8,40 @@ export class LogLevel {
 }
 
 export const logLevels = {
-  none: new LogLevel("None", Infinity),
-  // trace: new LogLevel("Trace", 10),
+  trace: new LogLevel("Trace", 10),
   debug: new LogLevel("Debug", 20),
   info: new LogLevel("Info", 30),
+  warn: new LogLevel("Warn", 40),
+  error: new LogLevel("Error", 50),
 };
 
 export class Logger {
+  quiet: boolean;
   logLevel: LogLevel;
-  constructor({ logLevel }: { logLevel: LogLevel }) {
+  constructor(
+    { logLevel, quiet = false }: { logLevel: LogLevel; quiet?: boolean },
+  ) {
     this.logLevel = logLevel;
+    this.quiet = quiet;
   }
-  // trace(...data: any[]) {
-  //   const level = logLevels.trace.level;
-  //   if (this.logLevel.level > level) return;
-  //   console.info(...data);
-  // }
+  trace(...data: any[]) {
+    if (this.quiet || this.logLevel.level > logLevels.trace.level) return;
+    console.trace(...data);
+  }
   debug(...data: any[]) {
-    const level = logLevels.debug.level;
-    if (this.logLevel.level > level) return;
-    console.info(...data);
+    if (this.quiet || this.logLevel.level > logLevels.debug.level) return;
+    console.debug(...data);
   }
   info(...data: any[]) {
-    const level = logLevels.info.level;
-    if (this.logLevel.level > level) return;
+    if (this.quiet || this.logLevel.level > logLevels.info.level) return;
     console.info(...data);
+  }
+  warn(...data: any[]) {
+    if (this.quiet || this.logLevel.level > logLevels.warn.level) return;
+    console.warn(...data);
+  }
+  error(...data: any[]) {
+    if (this.quiet || this.logLevel.level > logLevels.error.level) return;
+    console.error(...data);
   }
 }

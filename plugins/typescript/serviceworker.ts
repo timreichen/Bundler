@@ -1,29 +1,36 @@
-import { Data, TestFunction } from "../plugin.ts";
-import { Asset } from "../../graph.ts";
-import { TypescriptPlugin } from "./typescript.ts";
+import { path, Sha256, ts } from "../../deps.ts";
+import { Context, DependencyType, Item } from "../plugin.ts";
+import { SystemPlugin } from "./system.ts";
 
-export class ServiceWorkerPlugin extends TypescriptPlugin {
+export class ServiceWorkerPlugin extends SystemPlugin {
   constructor(
     {
-      test = (input: string, { graph }) =>
-        /\.(t|j)sx?$/.test(input) && graph[input].type === "serviceworker",
+      compilerOptions = {},
     }: {
-      test?: TestFunction;
+      compilerOptions?: ts.CompilerOptions;
     } = {},
   ) {
-    super({ test });
+    super({ compilerOptions });
+  }
+  async test(item: Item, context: Context) {
+    return item.type === DependencyType.ServiceWorker &&
+      await super.test(item, context);
   }
   async createAsset(
-    input: string,
-    data: Data,
+    item: Item,
+    context: Context,
   ) {
-    const { bundler } = data;
-    const asset = await super.createAsset(input, data);
+    const input = item.history[0];
+    const { outDirPath } = context;
+    const extension = ".js";
     return {
-      ...asset,
-      output: bundler.outputMap[input] ||
-        bundler.createOutput(asset.filePath, ".js"),
-      type: "serviceworker",
-    } as Asset;
+      ...await super.createAsset(item, context),
+      // if is webworker or serviceworker, it should in dist dir rather than deps dir
+      // TODO where to put if source file is not in root?
+      output: path.join(
+        outDirPath,
+        `${new Sha256().update(input).hex()}${extension}`,
+      ),
+    };
   }
 }

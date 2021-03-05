@@ -1,58 +1,21 @@
-import { fs, path } from "../../deps.ts";
-import { Asset } from "../../graph.ts";
-import { Data, Plugin, TestFunction } from "../plugin.ts";
-import { Chunk } from "../../chunk.ts";
-import { isURL } from "../../_util.ts";
+import { FilePlugin } from "../file.ts";
+import { Context, Format, Item } from "../plugin.ts";
 
-export class WasmPlugin extends Plugin {
-  constructor(
-    { test = (input: string) => input.endsWith(".wasm") }: {
-      test?: TestFunction;
-    } = {},
-  ) {
-    super({ test });
+export class WasmPlugin extends FilePlugin {
+  async test(item: Item, context: Context) {
+    const input = item.history[0];
+    return input.endsWith(".wasm");
   }
-  async load(filePath: string) {
+  async readSource(filePath: string, context: Context) {
     return await Deno.readFile(filePath);
   }
-  async createAsset(input: string, data: Data) {
-    const { bundler } = data;
-    const filePath = input;
+  async createAsset(
+    item: Item,
+    context: Context,
+  ) {
     return {
-      input,
-      filePath,
-      output: bundler.outputMap[input] ||
-        bundler.createOutput(filePath, path.extname(input)),
-      imports: {},
-      exports: {},
-      type: "wasm",
-    } as Asset;
-  }
-  async createChunk(
-    inputHistory: string[],
-    chunkList: string[][],
-    data: Data,
-  ) {
-    const { bundler } = data;
-    const input = inputHistory[inputHistory.length - 1];
-    return new Chunk(bundler, {
-      inputHistory,
-      dependencies: new Set([input]),
-    });
-  }
-  async createBundle(
-    chunk: Chunk,
-    data: Data,
-  ) {
-    const { reload, graph } = data;
-
-    const input = chunk.inputHistory[chunk.inputHistory.length - 1];
-    const { filePath, output: outputFilePath } = graph[input];
-
-    const needsUpdate = reload || !await fs.exists(outputFilePath) ||
-      Deno.statSync(outputFilePath).mtime! < Deno.statSync(filePath).mtime!;
-
-    if (!needsUpdate) return;
-    return await chunk.getSource(input, data) as Uint8Array;
+      ...await super.createAsset(item, context),
+      format: Format.Wasm,
+    };
   }
 }

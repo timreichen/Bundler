@@ -1,4 +1,4 @@
-import { Bundler, Inputs, OutputMap } from "./bundler.ts";
+import { Bundler } from "./bundler.ts";
 import {
   Args,
   colors,
@@ -14,38 +14,22 @@ import { Graph } from "./graph.ts";
 import { Logger, LogLevel, logLevels } from "./logger.ts";
 import { CssPlugin } from "./plugins/css/css.ts";
 import { CssoPlugin } from "./plugins/css/csso.ts";
-import { CssInjectOutputsPlugin } from "./plugins/css/inject_outputs.ts";
-import { PostcssPlugin } from "./plugins/css/postcss.ts";
 import { HtmlPlugin } from "./plugins/html/html.ts";
 import { ImagePlugin } from "./plugins/image/image.ts";
 import { SvgPlugin } from "./plugins/image/svg.ts";
 import { JsonPlugin } from "./plugins/json/json.ts";
-import { WebmanifestPlugin } from "./plugins/json/webmanifest.ts";
+import { WebManifestPlugin } from "./plugins/json/webmanifest.ts";
 import { Plugin } from "./plugins/plugin.ts";
 import { ServiceWorkerPlugin } from "./plugins/typescript/serviceworker.ts";
 import { SystemPlugin } from "./plugins/typescript/system.ts";
 import { TerserPlugin } from "./plugins/typescript/terser.ts";
-import { TypescriptPlugin } from "./plugins/typescript/typescript.ts";
 import { WebWorkerPlugin } from "./plugins/typescript/webworker.ts";
 import { WasmPlugin } from "./plugins/wasm/wasm.ts";
-import { isURL, removeRelativePrefix } from "./_util.ts";
+import { isURL, removeRelativePrefix, timestamp } from "./_util.ts";
 
-const use = [
-  postcssPresetEnv({
-    stage: 2,
-    features: {
-      "nesting-rules": true,
-    },
-  }),
-];
-
-interface Meta {
-  graph: Graph;
-}
-
-const hashes: { [file: string]: string } = {};
-
-async function main(data: {
+type Inputs = string[];
+type OutputMap = Record<string, string>;
+type Options = {
   inputs: Inputs;
   initialGraph: Graph;
   compilerOptions: ts.CompilerOptions;
@@ -60,70 +44,131 @@ async function main(data: {
   reload: boolean;
   optimize: boolean;
   watch: boolean;
-}) {
-  const logger = new Logger({ logLevel: data.logLevel });
+  quiet: boolean;
+};
 
-  const {
-    inputs,
-    initialGraph,
-    compilerOptions,
-    importMap,
-    outputMap,
-    outDirPath,
-    depsDirPath,
-    cacheDirPath,
-    cacheFilePath,
+const depsDirName = "deps";
+const cacheDirName = ".cache";
+const cacheFileName = "cache.json";
 
-    logLevel,
-    reload,
-    optimize,
-    watch,
-  } = data;
+const use = [
+  postcssPresetEnv({
+    stage: 2,
+    features: {
+      "nesting-rules": true,
+    },
+  }),
+];
+
+interface CacheData {
+  graph: Graph;
+}
+
+const hashes: { [file: string]: string } = {};
+
+async function watchFn(options: Options, logger: Logger) {
+  const { initialGraph } = options;
+  const set = Object.keys(initialGraph).reduce((set, input) => {
+    if (!isURL(input) && fs.existsSync(input)) set.add(input);
+    return set;
+  }, new Set() as Set<string>);
+  const paths: string[] = [...set];
+
+  for (const path of paths) {
+    if (!hashes[path]) {
+      hashes[path] = new Sha256().update(await Deno.readFile(path)).hex();
+    }
+  }
+
+  const watcher = Deno.watchFs(paths);
+  // only reload on first time when watched
+  logger.info(
+    colors.brightBlue(`Watcher`),
+    `Process terminated! Restarting on file change...`,
+  );
+
+  loop:
+  for await (const { kind, paths } of watcher) {
+    // checks if actual file content changed
+    if (kind === "modify") {
+      for (const filePath of paths) {
+        const hash = new Sha256().update(await Deno.readFile(filePath))
+          .hex();
+        if (hashes[filePath] !== hash) {
+          hashes[filePath] = hash;
+          break loop;
+        }
+      }
+    } else {
+      break loop;
+    }
+  }
+
+  logger.info(
+    colors.brightBlue(`Watcher`),
+    `File change detected! Restarting!`,
+  );
+  setTimeout(async () => {
+    try {
+      await main({ ...options, reload: false });
+    } catch (error) {
+      console.error(error);
+      await watchFn(options, logger);
+    }
+  }, 100);
+}
+
+async function main({
+  inputs,
+  initialGraph,
+  compilerOptions,
+  importMap,
+  outputMap,
+  outDirPath,
+  depsDirPath,
+  cacheDirPath,
+  cacheFilePath,
+
+  logLevel,
+  reload,
+  optimize,
+  watch,
+  quiet,
+}: Options) {
+  const time = performance.now();
+
+  const logger = new Logger({ logLevel, quiet });
 
   const plugins: Plugin[] = [
-    new WebWorkerPlugin(),
-    new ServiceWorkerPlugin(),
-    new TypescriptPlugin({
-      test: (input: string) =>
-        /\.(t|j)sx?$/.test(input) ||
-        (isURL(input) && !/([\.][a-zA-Z]\w*)$/.test(input)),
-    }),
+    new ServiceWorkerPlugin({ compilerOptions }),
+    new WebWorkerPlugin({ compilerOptions }),
+    new SystemPlugin({ compilerOptions }),
     new CssPlugin({ use }),
-    new PostcssPlugin({ use }),
-    new HtmlPlugin({
-      use,
-    }),
+    new HtmlPlugin({ use }),
     new ImagePlugin(),
     new SvgPlugin(),
-    new WebmanifestPlugin(),
+    new WebManifestPlugin(),
     new JsonPlugin(),
-    new SystemPlugin({ compilerOptions, use }),
-    new CssInjectOutputsPlugin(),
-    new CssoPlugin(),
-    new TerserPlugin({
-      test: (input: string) => /\.(t|j)sx?$/.test(input),
-    }),
     new WasmPlugin(),
+    new CssoPlugin(),
+    new TerserPlugin(),
   ];
 
-  const bundler = new Bundler(plugins, {
-    importMap,
-    outputMap,
-    outDirPath,
-    depsDirPath,
-    cacheDirPath,
-    cacheFilePath,
-
-    logLevel,
-  });
+  const bundler = new Bundler(plugins, { logLevel, quiet });
 
   try {
-    const time = performance.now();
-
-    const { bundles, graph } = await bundler.bundle(
-      inputs,
-      { initialGraph, reload, optimize },
-    );
+    const { cache, graph, bundles } = await bundler.bundle(inputs, {
+      importMap,
+      graph: initialGraph,
+      outputMap,
+      outDirPath,
+      optimize,
+      reload,
+    });
+    for (const [cacheFilePath, source] of Object.entries(cache)) {
+      await fs.ensureFile(cacheFilePath);
+      await Deno.writeTextFile(cacheFilePath, source);
+    }
 
     for (const [output, source] of Object.entries(bundles)) {
       await fs.ensureFile(output);
@@ -140,71 +185,81 @@ async function main(data: {
       cacheFilePath,
       JSON.stringify({ graph: graph }, null, " "),
     );
+    const keys = Object.keys(bundles);
+    const length = keys.length;
+
     logger.info(
-      colors.blue("Done"),
-      `${Math.ceil(performance.now() - time)}ms`,
+      colors.brightBlue("Bundle"),
+      length ? `${length} file${length === 1 ? "" : "s"}` : `up-to-date`,
+      colors.dim(timestamp(time)),
     );
 
-    if (watch) {
-      await watchFn(graph);
-    }
+    initialGraph = graph;
   } catch (error) {
     console.error(error);
-    if (watch) {
-      await watchFn(initialGraph);
-    }
   }
 
-  async function watchFn(graph: Graph) {
-    const paths = Object.values(graph).map((entry) => entry.filePath);
+  const data = {
+    inputs,
+    initialGraph,
+    compilerOptions,
+    importMap,
+    outputMap,
+    outDirPath,
+    depsDirPath,
+    cacheDirPath,
+    cacheFilePath,
 
-    for (const path of paths) {
-      if (!hashes[path]) {
-        hashes[path] = new Sha256().update(await Deno.readFile(path)).hex();
-      }
-    }
+    logLevel,
+    reload,
+    optimize,
+    watch,
+    quiet,
+  };
 
-    const watcher = Deno.watchFs(paths);
-    // only reload on first time when watched
-    logger.info(
-      colors.blue(`Watcher`),
-      `Process terminated! Restarting on file change...`,
-    );
-
-    // logger.debug(colors.blue(`Watch`), paths);
-    let needsUpdate = false;
-    loop:
-    for await (const { kind, paths } of watcher) {
-      // checks if actual file content changed
-      if (kind === "modify") {
-        for (const filePath of paths) {
-          const hash = new Sha256().update(await Deno.readFile(filePath))
-            .hex();
-          if (hashes[filePath] !== hash) {
-            hashes[filePath] = hash;
-            needsUpdate = true;
-            break loop;
-          }
-        }
-      } else {
-        needsUpdate = true;
-        break loop;
-      }
-    }
-
-    logger.info(
-      colors.blue(`Watcher`),
-      `File change detected! Restarting!`,
-    );
-    setTimeout(async () => {
-      try {
-        await main({ ...data, reload: false });
-      } catch (error) {
-        console.error(error);
-        await watchFn(graph);
-      }
-    }, 100);
+  if (watch) {
+    await watchFn(data, logger);
   }
+}
+
+function getLogLevel(logLevelName: string): LogLevel {
+  if (!["debug", "info"].includes(logLevelName)) {
+    throw Error(
+      `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: debug, info]`,
+    );
+  }
+  return logLevels[logLevelName as keyof typeof logLevels];
+}
+
+function parseEntries(_: any, outDir: string) {
+  const entries: {
+    output: string;
+    input: string;
+    options: Record<string, any>;
+  }[] = [];
+
+  for (const inp of _) {
+    const match =
+      /^(?<input>(?:[^\=]|[\w\/\\\.])+?)(?:\=(?<output>(?:[^\=]|[\w\/\\\.])+?))?(?:\{(?<options>.*?)\})?$/
+        .exec(inp);
+
+    const { input: inputString, output, options: optionString } = match
+      ?.groups!;
+    const input = removeRelativePrefix(inputString);
+
+    let options = {};
+    if (optionString) {
+      const optionStrings = optionString.split(",");
+      const optionPairs = optionStrings.map((string) => string.split("="));
+      options = Object.fromEntries(optionPairs);
+    }
+    entries.push({
+      output,
+      input,
+      options,
+    });
+  }
+  return entries;
 }
 
 async function runBundle(
@@ -220,56 +275,25 @@ async function runBundle(
     quiet,
   }: Args,
 ) {
-  let logLevel = logLevels.info;
+  const logLevel = (logLevelName ? getLogLevel(logLevelName) : logLevels.info);
 
-  if (logLevelName) {
-    if (!["debug", "info"].includes(logLevelName)) {
-      throw Error(
-        `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: debug, info]`,
-      );
-    }
-    logLevel = quiet
-      ? logLevels.none
-      : logLevels[logLevelName as keyof typeof logLevels];
-  }
-
-  const inputs: Inputs = [];
+  const entries = parseEntries(_, outDir);
 
   const outputMap: OutputMap = {};
-
-  for (const inp of _) {
-    const match =
-      /^(?<input>[^\s]+?)(?:\=(?<name>[^\s]+?)(?:\{(?<options>.*?)\})?)$/
-        .exec(String(inp));
-
-    const { input: inputString, name, options: optionString } = match!.groups!;
-    const input = removeRelativePrefix(inputString);
-
-    if (name) {
-      outputMap[input] = path.join(outDir, name);
+  const inputs: Inputs = [];
+  for (const { input, output } of entries) {
+    inputs.push(input);
+    if (output) {
+      outputMap[input] = path.join(outDir, output);
     }
-    let options = {};
-    if (optionString) {
-      const optionStrings = optionString.split(",");
-      const optionPairs = optionStrings.map((string) => string.split("="));
-      options = Object.fromEntries(optionPairs);
-    }
-    inputs.push({
-      input,
-      options,
-    });
   }
-
-  const depsDirName = "deps";
-  const cacheDirName = ".cache";
-  const cacheFileName = "cache.json";
 
   const outDirPath = outDir;
   const depsDirPath = path.join(outDir, depsDirName);
   const cacheDirPath = path.join(outDir, cacheDirName);
   const cacheFilePath = path.join(cacheDirPath, cacheFileName);
 
-  const { graph: initialGraph }: Meta = fs.existsSync(cacheFilePath)
+  const { graph: initialGraph }: CacheData = fs.existsSync(cacheFilePath)
     ? JSON.parse(await Deno.readTextFile(cacheFilePath))
     : { graph: {} };
 
@@ -287,7 +311,8 @@ async function runBundle(
     (importMapPath
       ? JSON.parse(await Deno.readTextFile(importMapPath))
       : { imports: {} });
-  await main({
+
+  const options: Options = {
     inputs,
     initialGraph,
     compilerOptions,
@@ -299,10 +324,13 @@ async function runBundle(
     cacheFilePath,
 
     logLevel,
-    reload,
+    reload: typeof reload === "string" ? reload.split(",") : reload,
     optimize,
     watch,
-  });
+    quiet,
+  };
+
+  await main(options);
 }
 
 const program = new Program(
@@ -349,6 +377,14 @@ Examples: https://github.com/WICG/import-maps#the-import-map`,
     alias: "L",
     description: "Set log level [possible values: debug, info]",
     args: [{ name: "log-level" }],
+    // test: () => {
+    //   const logLevelNames = ["debug", "info"]
+    //   if (!logLevelNames.includes(logLevelName)) {
+    //     throw Error(
+    //       `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: debug, info]`,
+    //     );
+    //   }
+    // }
   })
   .option({
     name: "optimize",
@@ -379,31 +415,30 @@ Examples: https://github.com/WICG/import-maps#the-import-map`,
     description: `Watch files and re-bundle on change`,
   });
 
-function help(args: { [key: string]: string }) {
-  const { _ } = args;
-
-  if (!_.length) {
-    return program.help();
-  }
-  for (const cmd of _) {
-    if (!program.commands[cmd]) {
-      return console.error(
-        invalidSubcommandError(cmd, Object.keys(program.commands)),
-      );
-    }
-  }
-  const cmd = _[0];
-  const command = program.commands[cmd];
-
-  return command.help();
-}
-
 program
   .command({
     name: "help",
     description: "Prints this message or the help of the given subcommand(s)",
     fn(args: Args) {
-      help(args);
+      const { _ } = args;
+
+      if (!_.length) {
+        return program.help();
+      }
+      for (const cmd of _) {
+        if (!program.commands[cmd]) {
+          return console.error(
+            invalidSubcommandError(
+              cmd as string,
+              Object.keys(program.commands),
+            ),
+          );
+        }
+      }
+      const cmd = _[0];
+      const command = program.commands[cmd];
+
+      return command.help();
     },
   });
 

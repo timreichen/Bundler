@@ -1,87 +1,40 @@
-import { Sha256 } from "https://deno.land/std@0.79.0/hash/sha256.ts";
-import { path, postcss, ts } from "../../deps.ts";
-import { Data, Plugin, TestFunction } from "../plugin.ts";
-import { typescriptInjectInstantiateNameTransformer } from "./transformers/inject_instanciate_name.ts";
-import { typescriptInjectOutputsTranformer } from "./transformers/inject_outputs.ts";
-import { resolve as resolveCache } from "../../cache.ts";
-import { addRelativePrefix } from "../../_util.ts";
+import { fs, path, Sha256, ts } from "../../deps.ts";
+import { addRelativePrefix, isURL } from "../../_util.ts";
+import { Chunk, Context, DependencyType, Format } from "../plugin.ts";
+import { TypescriptPlugin } from "./typescript.ts";
+import { cache, resolve as resolveCache } from "../../cache.ts";
+import { getAsset } from "../../graph.ts";
+import { typescriptInjectDependenciesTranformer } from "./transformers/inject_dependencies.ts";
+import { typescriptInjectInstanceNameTransformer } from "./transformers/inject_instance_name.ts";
 
-import { TextPlugin } from "../text.ts";
-import { DefaultExportPlugin } from "../default_export.ts";
-import { CssInjectImportsPlugin } from "../css/inject_imports.ts";
-import { CssRemoveImportsPlugin } from "../css/remove_imports.ts";
-import { Chunk } from "../../chunk.ts";
-import { InstanciateImagePlugin } from "../image/instanciate_image.ts";
-import { PostcssPlugin } from "../css/postcss.ts";
-
-const printer = ts.createPrinter(
-  { removeComments: false },
-);
-const sourceFile = ts.createSourceFile("x.ts", "", ts.ScriptTarget.Latest);
-
-const defaultCompilerOptions: ts.CompilerOptions = {
-  jsx: ts.JsxEmit.React,
-  jsxFactory: "React.createElement",
-  jsxFragmentFactory: "React.Fragment",
-  allowJs: false,
-  allowUmdGlobalAccess: false,
-  allowUnreachableCode: false,
-  allowUnusedLabels: false,
-  alwaysStrict: true,
-  assumeChangesOnlyAffectDirectDependencies: false,
-  checkJs: false,
-  disableSizeLimit: false,
-  generateCpuProfile: "profile.cpuprofile",
-  lib: [],
-  noFallthroughCasesInSwitch: false,
-  noImplicitAny: true,
-  noImplicitReturns: true,
-  noImplicitThis: true,
-  noImplicitUseStrict: false,
-  noStrictGenericChecks: false,
-  noUnusedLocals: false,
-  noUnusedParameters: false,
-  preserveConstEnums: false,
-  removeComments: false,
-  // resolveJsonModule: true,
-  strict: true,
-  strictBindCallApply: true,
-  strictFunctionTypes: true,
-  strictNullChecks: true,
-  strictPropertyInitialization: true,
-  suppressExcessPropertyErrors: false,
-  suppressImplicitAnyIndexErrors: false,
-  useDefineForClassFields: false,
-
-  target: ts.ScriptTarget.ES2015,
-};
-
-function createSystemInstantiate(input: string): string {
-  const __exp = ts.factory.createVariableStatement(
+function createSystemInstantiate(input: string, hasSpecifiers: boolean) {
+  const expression = ts.factory.createCallExpression(
+    ts.factory.createIdentifier("__instantiate"),
     undefined,
-    ts.factory.createVariableDeclarationList(
-      [ts.factory.createVariableDeclaration(
-        ts.factory.createIdentifier("__exp"),
-        undefined,
-        undefined,
-        ts.factory.createCallExpression(
-          ts.factory.createIdentifier("__instantiate"),
-          undefined,
-          [
-            ts.factory.createStringLiteral(input),
-            ts.factory.createFalse(),
-          ],
-        ),
-      )],
-      ts.NodeFlags.Const,
-    ),
+    [
+      ts.factory.createStringLiteral(input),
+      ts.factory.createFalse(),
+    ],
   );
 
-  return printer.printNode(ts.EmitHint.Unspecified, __exp, sourceFile);
+  if (hasSpecifiers) {
+    return ts.factory.createVariableStatement(
+      undefined,
+      ts.factory.createVariableDeclarationList(
+        [ts.factory.createVariableDeclaration(
+          ts.factory.createIdentifier("__exp"),
+          undefined,
+          undefined,
+          expression,
+        )],
+        ts.NodeFlags.Const,
+      ),
+    );
+  }
+  return expression;
 }
-
 function exportString(key: string, value: string) {
-  const statement = ts.factory.createVariableStatement(
+  return ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createVariableDeclarationList(
       [ts.factory.createVariableDeclaration(
@@ -96,153 +49,50 @@ function exportString(key: string, value: string) {
       ts.NodeFlags.Const,
     ),
   );
-
-  return printer.printNode(ts.EmitHint.Unspecified, statement, sourceFile);
 }
-
 function defaultExportString(value: string) {
-  const assignment = ts.factory.createElementAccessExpression(
+  return ts.factory.createElementAccessExpression(
     ts.factory.createIdentifier("__exp"),
     ts.factory.createStringLiteral(value),
   );
-
-  return printer.printNode(ts.EmitHint.Unspecified, assignment, sourceFile);
 }
-
-export function createSystemExports(exportSpecifiers: string[]): string[] {
-  const strings = [];
+export function createSystemExports(exportSpecifiers: string[]) {
+  const strings: ts.Node[] = [];
   for (const key of exportSpecifiers) {
-    switch (key) {
-      case "default": {
-        strings.push(defaultExportString(key));
-        break;
-      }
-      default: {
-        strings.push(exportString(key, key));
-        break;
-      }
+    if (key === "default") {
+      strings.push(defaultExportString(key));
+    } else {
+      strings.push(exportString(key, key));
     }
   }
-  return strings;
+
+  return ts.factory.createNodeArray(strings);
 }
-
-function createSystemLoader() {
-  // return await fetch(
-  //   "https://raw.githubusercontent.com/denoland/deno/master/cli/system_loader.js",
-  // ).then((data) => data.text());
-
-  // content of https://raw.githubusercontent.com/denoland/deno/master/cli/system_loader.js
-  return `// Copyright 2018-2020 the Deno authors. All rights reserved. MIT license.
-
-// This is a specialised implementation of a System module loader.
-
-"use strict";
-
-// @ts-nocheck
-/* eslint-disable */
-let System, __instantiate;
-(() => {
-  const r = new Map();
-
-  System = {
-    register(id, d, f) {
-      r.set(id, { d, f, exp: {} });
-    },
-  };
-  async function dI(mid, src) {
-    let id = mid(/\.\w+$/i, "");
-    if (id.includes("./")) {
-      const [o, ...ia] = id.split("/").reverse(),
-        [, ...sa] = src.split("/").reverse(),
-        oa = [o];
-      let s = 0,
-        i;
-      while ((i = ia.shift())) {
-        if (i === "..") s++;
-        else if (i === ".") break;
-        else oa.push(i);
-      }
-      if (s < sa.length) oa.push(...sa.slice(s));
-      id = oa.reverse().join("/");
-    }
-    return r.has(id) ? gExpA(id) : import(mid);
-  }
-
-  function gC(id, main) {
-    return {
-      id,
-      import: (m) => dI(m, id),
-      meta: { url: id, main },
-    };
-  }
-
-  function gE(exp) {
-    return (id, v) => {
-      v = typeof id === "string" ? { [id]: v } : id;
-      for (const [id, value] of Object.entries(v)) {
-        Object.defineProperty(exp, id, {
-          value,
-          writable: true,
-          enumerable: true,
-        });
-      }
-    };
-  }
-
-  function rF(main) {
-    for (const [id, m] of r.entries()) {
-      const { f, exp } = m;
-      const { execute: e, setters: s } = f(gE(exp), gC(id, id === main));
-      delete m.f;
-      m.e = e;
-      m.s = s;
-    }
-  }
-
-  async function gExpA(id) {
-    if (!r.has(id)) return;
-    const m = r.get(id);
-    if (m.s) {
-      const { d, e, s } = m;
-      delete m.s;
-      delete m.e;
-      for (let i = 0; i < s.length; i++) s[i](await gExpA(d[i]));
-      const r = e();
-      if (r) await r;
-    }
-    return m.exp;
-  }
-
-  function gExp(id) {
-    if (!r.has(id)) return;
-    const m = r.get(id);
-    if (m.s) {
-      const { d, e, s } = m;
-      delete m.s;
-      delete m.e;
-      for (let i = 0; i < s.length; i++) s[i](gExp(d[i]));
-      e();
-    }
-    return m.exp;
-  }
-  __instantiate = (m, a) => {
-    System = __instantiate = undefined;
-    rF(m);
-    return a ? gExpA(m) : gExp(m);
-  };
-})();`;
+function createModuleImport(
+  specifier: string,
+  filePath: string,
+) {
+  return ts.factory.createImportDeclaration(
+    undefined,
+    undefined,
+    ts.factory.createImportClause(
+      false,
+      undefined,
+      ts.factory.createNamespaceImport(ts.factory.createIdentifier(specifier)),
+    ),
+    ts.factory.createStringLiteral(filePath),
+  );
 }
-
-export function injectBundleImport(
+function injectBundleImportSpecifiers(
+  input: string,
   source: string,
   specifiers: Record<string, string>,
 ): string {
   const sourceFile = ts.createSourceFile(
-    "x.ts",
+    input,
     source,
     ts.ScriptTarget.Latest,
   );
-
   const result = ts.transform(
     sourceFile,
     [bundleImportTransformer(specifiers)],
@@ -254,7 +104,6 @@ export function injectBundleImport(
     sourceFile,
   );
 }
-
 function bundleImportTransformer(specifiers: Record<string, string>) {
   return (context: ts.TransformationContext) => {
     const dependencies: string[] = [];
@@ -369,139 +218,223 @@ function bundleImportTransformer(specifiers: Record<string, string>) {
   };
 }
 
-export function createModuleImport(
-  specifier: string,
-  filePath: string,
-): string {
-  const declaration = ts.factory.createImportDeclaration(
+function createDefaultExport(
+  sourceFile: ts.SourceFile,
+  node: ts.Expression,
+) {
+  const defaultExport = ts.factory.createExportAssignment(
     undefined,
     undefined,
-    ts.factory.createImportClause(
-      false,
-      ts.factory.createIdentifier(specifier),
-      undefined,
-    ),
-    ts.factory.createStringLiteral(filePath),
+    undefined,
+    node,
   );
-  return printer.printNode(ts.EmitHint.Unspecified, declaration, sourceFile);
+
+  return printer.printNode(
+    ts.EmitHint.Unspecified,
+    defaultExport,
+    sourceFile,
+  );
 }
 
-const systemLoader = createSystemLoader();
+const systemLoader =
+  `// Copyright 2018-2020 the Deno authors. All rights reserved. MIT license.
 
-export class SystemPlugin extends Plugin {
-  compilerOptions: ts.CompilerOptions;
-  use: postcss.AcceptedPlugin[];
+  // This is a specialised implementation of a System module loader.
+
+  "use strict";
+
+  // @ts-nocheck
+  /* eslint-disable */
+  let System, __instantiate;
+  (() => {
+    const r = new Map();
+
+    System = {
+      register(id, d, f) {
+        r.set(id, { d, f, exp: {} });
+      },
+    };
+    async function dI(mid, src) {
+      let id = mid.replace(/\.\w+$/i, "");
+      if (id.includes("./")) {
+        const [o, ...ia] = id.split("/").reverse(),
+          [, ...sa] = src.split("/").reverse(),
+          oa = [o];
+        let s = 0,
+          i;
+        while ((i = ia.shift())) {
+          if (i === "..") s++;
+          else if (i === ".") break;
+          else oa.push(i);
+        }
+        if (s < sa.length) oa.push(...sa.slice(s));
+        id = oa.reverse().join("/");
+      }
+      return r.has(id) ? gExpA(id) : import(mid);
+    }
+
+    function gC(id, main) {
+      return {
+        id,
+        import: (m) => dI(m, id),
+        meta: { url: id, main },
+      };
+    }
+
+    function gE(exp) {
+      return (id, v) => {
+        v = typeof id === "string" ? { [id]: v } : id;
+        for (const [id, value] of Object.entries(v)) {
+          Object.defineProperty(exp, id, {
+            value,
+            writable: true,
+            enumerable: true,
+          });
+        }
+      };
+    }
+
+    function rF(main) {
+      for (const [id, m] of r.entries()) {
+        const { f, exp } = m;
+        const { execute: e, setters: s } = f(gE(exp), gC(id, id === main));
+        delete m.f;
+        m.e = e;
+        m.s = s;
+      }
+    }
+
+    async function gExpA(id) {
+      if (!r.has(id)) return;
+      const m = r.get(id);
+      if (m.s) {
+        const { d, e, s } = m;
+        delete m.s;
+        delete m.e;
+        for (let i = 0; i < s.length; i++) s[i](await gExpA(d[i]));
+        const r = e();
+        if (r) await r;
+      }
+      return m.exp;
+    }
+
+    function gExp(id) {
+      if (!r.has(id)) return;
+      const m = r.get(id);
+      if (m.s) {
+        const { d, e, s } = m;
+        delete m.s;
+        delete m.e;
+        for (let i = 0; i < s.length; i++) s[i](gExp(d[i]));
+        e();
+      }
+      return m.exp;
+    }
+    __instantiate = (m, a) => {
+      System = __instantiate = undefined;
+      rF(m);
+      return a ? gExpA(m) : gExp(m);
+    };
+  })();
+`;
+
+const printer: ts.Printer = ts.createPrinter({ removeComments: false });
+function printNodes(nodes: ts.Node[], sourceFile: ts.SourceFile) {
+  return printer.printList(
+    ts.ListFormat.None,
+    ts.factory.createNodeArray(nodes),
+    sourceFile,
+  );
+}
+
+export class SystemPlugin extends TypescriptPlugin {
   constructor(
     {
-      test = (input: string) => /\.(t|j)sx?$/.test(input),
       compilerOptions = {},
-      use = [],
     }: {
-      test?: TestFunction;
       compilerOptions?: ts.CompilerOptions;
-      use?: postcss.AcceptedPlugin[];
     } = {},
   ) {
-    super({ test });
-    this.compilerOptions = compilerOptions;
-    this.use = use;
+    super({ compilerOptions });
   }
+  async readSource(filePath: string, context: Context) {
+    if (isURL(filePath)) {
+      await cache(filePath);
+      filePath = resolveCache(filePath);
+    }
+    return await Deno.readTextFile(filePath);
+  }
+
   async createBundle(
     chunk: Chunk,
-    data: Data,
+    context: Context,
   ) {
-    const { bundler, graph, chunks, reload } = data;
-    const input = chunk.inputHistory[chunk.inputHistory.length - 1];
+    const bundleInput = chunk.history[0];
+
+    const compilerOptions: ts.CompilerOptions = {
+      target: ts.ScriptTarget.Latest,
+      jsx: ts.JsxEmit.React,
+      jsxFactory: "React.createElement",
+      jsxFragmentFactory: "React.Fragment",
+      ...this.compilerOptions,
+      module: ts.ModuleKind.System, // "module" cannot be overwritten
+    };
+
+    const { chunks, graph, importMap, reload, bundler } = context;
+
+    const bundleAsset = getAsset(graph, chunk.type, bundleInput);
+    const specifiers = bundleAsset.dependencies.exports[bundleInput]
+      ?.specifiers;
+
+    const hasSpecifiers = specifiers?.length > 0;
+
+    const specifierNodes =
+      (hasSpecifiers ? createSystemExports(specifiers) : []);
+
     const bundleSources: Record<string, string> = {};
     const moduleImportSpecifiers: Record<string, string> = {};
-    const moduleImports: Record<string, string> = {};
+    const moduleImportNodes: Record<string, ts.Node> = {};
+
     let bundleNeedsUpdate = false;
 
-    for (const dependency of chunk.dependencies) {
-      const resolvedFilePath = resolveCache(dependency);
-      const needsUpdate = reload ||
-        !await chunk.hasCache(resolvedFilePath);
-      let source: string;
-      if (needsUpdate) {
-        bundleNeedsUpdate = true;
+    const dependencyList = [{
+      history: chunk.history,
+      type: chunk.type,
+      format: chunk.format,
+    }, ...chunk.dependencies];
 
-        source = await bundler.transformSource(
-          dependency,
-          chunk.inputHistory[0],
-          chunk,
-          data,
-        ) as string;
+    let source: string | void;
 
-        const cssImports = {};
-        const plugins: Plugin[] = [
-          new PostcssPlugin({
-            use: this.use,
-          }),
-          new CssRemoveImportsPlugin({
-            imports: cssImports,
-          }),
-          new TextPlugin({
-            test: (input: string) =>
-              input.endsWith(".css") || input.endsWith(".svg"),
-          }),
-          new DefaultExportPlugin({
-            test: (input: string) =>
-              input.endsWith(".css") || input.endsWith(".svg") ||
-              input.endsWith(".json"),
-          }),
-          new CssInjectImportsPlugin({
-            imports: cssImports,
-          }),
-        ];
+    for (const dependencyItem of dependencyList) {
+      // TODO put functions outside for loop
+      /**
+       * create `System.register` call
+       */
+      function createSystemRegistry(source: string) {
+        const sourceFile = ts.createSourceFile(
+          input,
+          source,
+          ts.ScriptTarget.Latest,
+        );
 
-        for (const plugin of plugins) {
-          if (plugin.transform && await plugin.test(dependency, data)) {
-            source = await plugin.transform(
-              dependency,
-              source,
-              input,
-              data,
-            ) as string;
-          }
-        }
-
-        const imagePlugins = [
-          new InstanciateImagePlugin(),
-        ];
-
-        for (const plugin of imagePlugins) {
-          if (plugin.transform && await plugin.test(dependency, data)) {
-            source = await plugin.transform(
-              dependency,
-              source,
-              chunk.inputHistory[0],
-              data,
-            ) as string;
-          }
-        }
+        const transformers = {
+          before: [
+            typescriptInjectDependenciesTranformer(
+              sourceFile,
+              chunk,
+              { graph, importMap },
+            ),
+          ],
+          after: [
+            typescriptInjectInstanceNameTransformer(input),
+          ],
+        };
 
         const { diagnostics, outputText } = ts.transpileModule(
           source,
           {
-            compilerOptions: {
-              ...defaultCompilerOptions,
-              ...this.compilerOptions,
-              module: ts.ModuleKind.System,
-            },
-            transformers: {
-              before: [
-                typescriptInjectOutputsTranformer(
-                  dependency,
-                  chunk,
-                  source,
-                  graph,
-                  bundler.importMap,
-                ),
-              ],
-              after: [
-                typescriptInjectInstantiateNameTransformer(dependency),
-              ],
-            },
+            compilerOptions,
+            transformers,
             reportDiagnostics: true,
           },
         );
@@ -509,76 +442,197 @@ export class SystemPlugin extends Plugin {
         if (diagnostics?.length) {
           throw new Error(diagnostics[0].messageText as string);
         }
-        source = outputText;
 
-        const { output: dependencyOutput } = graph[dependency];
-        let dependencyChunk = chunks.get(dependency);
-        // check if dependency is shared between multiple chunks. If yes, create separate chunk
-        if (input !== dependency && !dependencyChunk) {
-          for (const [chunkInput, chunk] of chunks.entries()) {
+        return outputText;
+      }
+      /**
+       * create `import * as specifier` node
+       */
+      function createImportNode(specifier: string) {
+        const relativeOutputFilePath = addRelativePrefix(
+          path.relative(
+            path.dirname(bundleAsset.output),
+            dependencyAsset.output,
+          ),
+        );
+        const node = createModuleImport(
+          specifier,
+          relativeOutputFilePath,
+        );
+        return node;
+      }
+
+      /**
+       * check whether dependency is shared between chunks. If so, make sure that dependency creates its own chunk.
+       * This prevents code duplicate code across multiple bundle files
+       */
+      function checkSharedChunk(dependency: string) {
+        let dependencyChunk = chunks.find((chunk) =>
+          chunk.history[0] === dependency
+        );
+
+        if (
+          !dependencyChunk
+        ) {
+          // check if dependency is shared between multiple chunks. If yes, create separate chunk
+          for (const chunk of chunks) {
+            const chunkInput = chunk.history[0];
             if (
-              chunkInput !== dependency && chunkInput !== input &&
-              chunk.dependencies.has(dependency)
+              chunkInput !== dependency && chunkInput !== bundleInput &&
+              chunk.dependencies.find((dep) => dep.history[0] === dependency)
             ) {
-              const newChunk = new Chunk(bundler, {
-                inputHistory: [...chunk.inputHistory, dependency],
-                dependencies: new Set([dependency]),
-              });
-              dependencyChunk = newChunk;
-              chunks.set(dependency, newChunk);
+              dependencyChunk = {
+                history: [dependency, ...chunk.history],
+                dependencies: [
+                  {
+                    history: [dependency, ...chunk.history],
+                    type: DependencyType.Import,
+                    format: Format.Script,
+                  },
+                ],
+                format: Format.Script,
+                type: DependencyType.Import,
+              };
+              chunks.push(dependencyChunk);
               break;
             }
           }
         }
+        return dependencyChunk;
+      }
+
+      const { history, type } = dependencyItem;
+      const input = history[0];
+
+      const needsReload = reload === true ||
+        Array.isArray(reload) && reload.includes(input);
+
+      const needsUpdate = needsReload ||
+        !await bundler.hasCache(bundleInput, input, context);
+      const dependencyAsset = getAsset(graph, type, input);
+
+      if (needsUpdate) {
+        const { bundler } = context;
+
+        bundleNeedsUpdate = true;
+
+        // check if dependency should be inlined or have its own chunk
+        const dependencyChunk = checkSharedChunk(input);
 
         if (
-          dependency !== input && dependencyChunk &&
-          dependencyOutput.endsWith(".js")
+          // if should be imported instead of inlined
+          bundleInput !== input && dependencyChunk
         ) {
-          const specifier = `_${new Sha256().update(dependency).hex()}`;
-          const outputFilePath = graph[dependency].output;
-          const relativeOutputFilePath = addRelativePrefix(
-            path.relative(
-              path.dirname(graph[input].output),
-              outputFilePath,
-            ),
-          );
-          moduleImports[dependency] = createModuleImport(
-            specifier,
-            relativeOutputFilePath,
-          );
-          moduleImportSpecifiers[dependency] = specifier;
+          const specifier = `_${new Sha256().update(input).hex()}`;
+          const node = createImportNode(specifier);
+          moduleImportNodes[input] = node;
+          moduleImportSpecifiers[input] = specifier;
         } else {
-          bundleSources[dependency] = source;
+          let code;
+          const rootInput = history[history.length - 1];
+          switch (dependencyAsset.format) {
+            case Format.Script: {
+              source = await bundler.transformSource(
+                bundleInput,
+                dependencyItem,
+                context,
+              ) as string;
+              code = createSystemRegistry(source);
+              break;
+            }
+            case Format.Style: {
+              source = await bundler.transformSource(
+                rootInput,
+                dependencyItem,
+                context,
+              ) as string;
+              const sourceFile = ts.createSourceFile(
+                input,
+                source,
+                ts.ScriptTarget.Latest,
+              );
+              const node = ts.factory.createNoSubstitutionTemplateLiteral(
+                source,
+                source,
+              );
+              code = createSystemRegistry(
+                createDefaultExport(sourceFile, node),
+              );
+              break;
+            }
+            case Format.Json: {
+              source = await bundler.transformSource(
+                input,
+                dependencyItem,
+                context,
+              ) as string;
+              const sourceFile = ts.createSourceFile(
+                input,
+                source,
+                ts.ScriptTarget.Latest,
+              );
+              const node = ts.factory.createIdentifier(source);
+              code = createSystemRegistry(
+                createDefaultExport(sourceFile, node),
+              );
+              break;
+            }
+          }
+
+          if (code === undefined) {
+            throw new Error(
+              `code cannot be undefined: ${bundleInput} ${input}`,
+            );
+          }
+          bundleSources[input] = code;
+          await bundler.setCache(
+            bundleInput,
+            input,
+            code,
+            context,
+          );
         }
-        await chunk.setCache(
-          resolvedFilePath,
-          source,
-        );
       } else {
-        source = await chunk.getCache(resolvedFilePath);
-        bundleSources[dependency] = source;
+        source = await bundler.getCache(bundleInput, input, context);
+        bundleSources[input] = source;
       }
     }
 
-    if (!bundleNeedsUpdate) {
+    if (!bundleNeedsUpdate && await fs.exists(bundleAsset.output)) {
+      // exit if no changes occured
       return;
     }
-    const specifiers = graph[input].exports[input]?.specifiers;
 
-    if (Object.keys(moduleImports).length) {
-      bundleSources[input] = injectBundleImport(
-        bundleSources[input],
+    if (source === undefined) {
+      throw new Error(`source cannot be undefined`);
+    }
+
+    const instantiazeNodes = [
+      createSystemInstantiate(bundleInput, hasSpecifiers),
+      ...specifierNodes,
+    ];
+
+    // inject chunk import specifiers into system code
+    if (Object.keys(moduleImportSpecifiers).length) {
+      bundleSources[bundleInput] = injectBundleImportSpecifiers(
+        bundleInput,
+        bundleSources[bundleInput],
         moduleImportSpecifiers,
       );
     }
-    const bundle = [
-      ...Object.values(moduleImports),
+
+    const sourceFile = ts.createSourceFile(
+      bundleInput,
+      source,
+      ts.ScriptTarget.Latest,
+    );
+    const code = [
       systemLoader,
+      printNodes(Object.values(moduleImportNodes), sourceFile),
       ...Object.values(bundleSources),
-      createSystemInstantiate(input),
-      ...(specifiers ? createSystemExports(specifiers) : []),
+      printNodes(Object.values(instantiazeNodes), sourceFile),
     ].join("\n");
-    return bundle;
+
+    return code;
   }
 }

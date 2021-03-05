@@ -1,26 +1,29 @@
-import { terser, terser as terserCore } from "../../deps.ts";
-import { Bundles, Data, Plugin, TestFunction } from "../plugin.ts";
+import { terser } from "../../deps.ts";
+import { Context, Format, Item, Plugin } from "../plugin.ts";
 
 export class TerserPlugin extends Plugin {
   options: terser.MinifyOptions;
   constructor(
-    { test = (input: string) => input.endsWith(".js"), options = {} }: {
-      test?: TestFunction;
+    { options = {} }: {
       options?: terser.MinifyOptions;
     } = {},
   ) {
-    super({ test });
+    super();
     this.options = options;
   }
-
-  async optimize(
+  async test(item: Item, context: Context) {
+    return item.format === Format.Script;
+  }
+  async optimizeBundle(
     output: string,
-    bundles: Bundles,
-    data: Data,
+    context: Context,
   ) {
-    const source = bundles[output] as string;
+    const bundle = context.bundles[output] as string;
 
-    const { code } = await terserCore.minify(source, { ...this.options });
-    return code as string;
+    const { code } = await terser.minify(bundle, this.options);
+    if (code === undefined) {
+      throw new Error(`code must not be undefined after terser.minify()`);
+    }
+    return code;
   }
 }

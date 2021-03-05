@@ -1,5 +1,5 @@
-@import url("h1.css");
-@import url("import.css");
+/* @import "h1.css"; */
+@import "import.css";
 
 #images {
   display: flex;

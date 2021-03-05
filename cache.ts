@@ -8,10 +8,99 @@ import {
   ts,
 } from "./deps.ts";
 
-import { getDependencies, resolve as resolveDependency } from "./dependency.ts";
+import { resolve as resolveDependency } from "./dependency.ts";
 import { isURL } from "./_util.ts";
 
 const { green } = colors;
+
+type Options = { compilerOptions?: ts.CompilerOptions };
+
+function typescriptExtractDependenciesTransformer(
+  dependencies: Set<string>,
+) {
+  return (context: ts.TransformationContext) => {
+    function createVisitor(sourceFile: ts.SourceFile): ts.Visitor {
+      const visit: ts.Visitor = (node: ts.Node) => {
+        let filePath = ".";
+
+        if (ts.isImportDeclaration(node)) {
+          const importClause = node.importClause;
+          // if (importClause?.isTypeOnly) return node;
+          const moduleSpecifier = node.moduleSpecifier;
+          if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
+            filePath = moduleSpecifier.text;
+            dependencies.add(filePath);
+          }
+          if (importClause) {
+            importClause.getChildren(sourceFile).forEach((child) => {
+              if (ts.isNamespaceImport(child)) {
+                // import * as x from "./x.ts"
+                dependencies.add(filePath);
+              } else if (ts.isIdentifier(child)) {
+                // import x from "./x.ts"
+                dependencies.add(filePath);
+              } else if (ts.isNamedImports(child)) {
+                // import { x } from "./x.ts"
+                dependencies.add(filePath);
+              }
+            });
+          }
+          return node;
+        } else if (ts.isExportDeclaration(node)) {
+          // if (node.isTypeOnly) return node;
+          const moduleSpecifier = node.moduleSpecifier;
+          if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
+            filePath = moduleSpecifier.text;
+          }
+
+          const exportClause = node.exportClause;
+          if (exportClause) {
+            if (ts.isNamespaceExport(exportClause)) {
+              // export * as x from "./x.ts"
+              dependencies.add(filePath);
+            } else if (ts.isNamedExports(exportClause)) {
+              // export { x } from "./x.ts"
+              dependencies.add(filePath);
+            }
+          } else {
+            // export * from "./x.ts"
+            dependencies.add(filePath);
+          }
+          return node;
+        }
+        return ts.visitEachChild(node, visit, context);
+      };
+      return visit;
+    }
+    return (node: ts.Node) => {
+      const sourceFile = node.getSourceFile();
+      const visitor = createVisitor(sourceFile);
+      return ts.visitNode(node, visitor);
+    };
+  };
+}
+
+export function extractDependencies(
+  filePath: string,
+  source: string,
+  { compilerOptions = {} }: Options = {},
+): Set<string> {
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    source,
+    ts.ScriptTarget.Latest,
+  );
+
+  const dependencies: Set<string> = new Set();
+
+  ts.transform(
+    sourceFile,
+    [typescriptExtractDependenciesTransformer(dependencies)],
+    compilerOptions,
+  );
+
+  return dependencies;
+}
 
 /**
  * API for rust cache_dir
@@ -69,8 +158,8 @@ function createCacheModulePathForURL(url: string) {
 }
 
 /**
- * resolves path to cache file of a path. Returns null if path is not cached
- * @param path 
+ * resolves path to cache file of a url. Returns original url if path is not cached
+ * @param url 
  */
 export function resolve(url: string): string {
   if (!isURL(url)) return url;
@@ -87,7 +176,7 @@ export async function cache(
   filePath: string,
   { importMap = { imports: {} }, reload = false, compilerOptions = {} }: {
     importMap?: ImportMap;
-    reload?: boolean | string;
+    reload?: boolean | string[];
     compilerOptions?: ts.CompilerOptions;
   } = {},
 ) {
@@ -101,15 +190,17 @@ export async function cache(
 
     let source: string;
 
-    const reloadFilePaths = typeof reload === "string" ? reload.split(",") : [];
+    const needsReload = reload === true ||
+      Array.isArray(reload) && reload.includes(filePath);
     if (
-      reloadFilePaths.includes(filePath) || !await fs.exists(cachedFilePath)
+      needsReload || !await fs.exists(cachedFilePath)
     ) {
       console.info(green("Download"), filePath);
+
       const response = await fetch(filePath, { redirect: "follow" });
       const text = await response.text();
       if (response.status !== 200) {
-        throw Error(
+        throw new Error(
           `Import '${filePath}' failed: ${text}`,
         );
       }
@@ -125,20 +216,15 @@ export async function cache(
         JSON.stringify({ url: filePath, headers }, null, " "),
       );
 
-      const { imports, exports } = await getDependencies(
+      const dependencies = await extractDependencies(
         filePath,
         source,
         { compilerOptions },
       );
 
-      const dependencyFilePaths = [
-        ...Object.keys(imports),
-        ...Object.keys(exports),
-      ];
-
-      dependencyFilePaths.forEach((dependencyFilePath) => {
-        return filePaths.add(resolveDependency(filePath, dependencyFilePath));
-      });
+      dependencies.forEach((dependencyFilePath) =>
+        filePaths.add(resolveDependency(filePath, dependencyFilePath))
+      );
     }
   }
 }

@@ -1,5 +1,10 @@
-#css {
-  background: url("image.svg");
-  width: 250px;
-  height: 250px;
+* {
+  font-family: helvetica;
+}
+
+#gif {
+  background-image: url("image.gif");
+  background-repeat: no-repeat;
+  width: 200px;
+  height: 200px;
 }

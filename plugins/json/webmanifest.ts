@@ -1,105 +1,126 @@
-import { Chunk } from "../../chunk.ts";
-import { Imports } from "../../dependency.ts";
-import { fs, path } from "../../deps.ts";
-import { Asset } from "../../graph.ts";
+import { fs, path, Sha256 } from "../../deps.ts";
+import { getAsset } from "../../graph.ts";
 import { addRelativePrefix } from "../../_util.ts";
-import { Data, Plugin, TestFunction } from "../plugin.ts";
+import {
+  Chunk,
+  ChunkList,
+  Context,
+  Dependencies,
+  DependencyType,
+  Format,
+  Item,
+} from "../plugin.ts";
+import { JsonPlugin } from "./json.ts";
 
-export class WebmanifestPlugin extends Plugin {
-  constructor(
-    {
-      test = (input, { graph }) => graph[input].type === "webmanifest",
-    }: {
-      test?: TestFunction;
-    } = {},
-  ) {
-    super({ test });
+export class WebManifestPlugin extends JsonPlugin {
+  async test(item: Item, context: Context) {
+    return item.format === Format.WebManifest;
   }
   async createAsset(
-    input: string,
-    data: Data,
+    item: Item,
+    context: Context,
   ) {
-    const { bundler } = data;
-    const filePath = input;
-    const imports: Imports = {};
-    const source = await bundler.getSource(
-      filePath,
-      data,
-    );
-    const json = JSON.parse(source as string);
+    const { bundler, outputMap, depsDirPath } = context;
+    const input = item.history[0];
+    const dependencies: Dependencies = {
+      imports: {},
+      exports: {},
+    };
+
+    const source = await bundler.readSource(
+      item,
+      context,
+    ) as string;
+
+    const json = JSON.parse(source);
+
     json.icons?.forEach(({ src }: { src: string }) => {
-      const resolvedPath = path.join(path.dirname(filePath), src);
-      imports[resolvedPath] = {
-        specifiers: ["default"],
-        type: "image",
+      const resolvedPath = path.join(path.dirname(input), src);
+      dependencies.imports[resolvedPath] = {
+        specifiers: [],
+        type: DependencyType.Fetch,
+        format: Format.Image,
       };
     });
 
-    const extension = path.extname(filePath);
-
+    const extension = path.extname(input);
     return {
-      input,
-      filePath,
-      output: bundler.outputMap[input] ||
-        bundler.createOutput(filePath, extension),
-      imports,
-      exports: {},
-      type: "webmanifest",
-    } as Asset;
+      filePath: input,
+      output: outputMap[input] ||
+        path.join(
+          depsDirPath,
+          `${new Sha256().update(input).hex()}${extension}`,
+        ),
+      dependencies,
+      format: Format.WebManifest,
+    };
   }
   async createChunk(
-    inputHistory: string[],
-    chunkList: string[][],
-    { bundler, graph }: Data,
+    item: Item,
+    context: Context,
+    chunkList: ChunkList,
   ) {
-    const input = inputHistory[inputHistory.length - 1];
-    const { imports, exports } = graph[input];
-    const dependencies: Set<string> = new Set([input]);
+    const { history, type } = item;
+    const { graph } = context;
+    const input = history[0];
+    const asset = getAsset(graph, type, input);
+    const { imports, exports } = asset.dependencies;
+    const dependencies: Item[] = [item];
 
-    Object.keys(imports).forEach((dependency) =>
-      chunkList.push([...inputHistory, dependency])
+    Object.entries(imports).forEach(([dependency, { type, format }]) =>
+      chunkList.push({
+        history,
+        type,
+        format,
+      })
     );
-    Object.keys(exports).forEach((dependency) =>
-      chunkList.push([...inputHistory, dependency])
+    Object.entries(exports).forEach(([dependency, { type, format }]) =>
+      chunkList.push({
+        history,
+        type,
+        format,
+      })
     );
 
-    return new Chunk(bundler, {
-      inputHistory,
+    return {
+      ...item,
       dependencies,
-    });
+    };
   }
-
   async createBundle(
     chunk: Chunk,
-    data: Data,
+    context: Context,
   ) {
-    const { graph, bundler, reload } = data;
-    const input = chunk.inputHistory[chunk.inputHistory.length - 1];
+    const input = chunk.history[0];
 
-    const { filePath, output: outputFilePath } = graph[input];
-    const exists = await fs.exists(outputFilePath);
+    const { graph, bundler, reload } = context;
+
+    const asset = getAsset(graph, chunk.type, input);
+    const exists = await fs.exists(asset.output);
     const needsUpdate = reload || !exists ||
-      Deno.statSync(outputFilePath).mtime! <
-        Deno.statSync(filePath).mtime!;
+      Deno.statSync(asset.output).mtime! <
+        Deno.statSync(asset.filePath).mtime!;
 
     if (!needsUpdate) return;
-    const bundleOutput = path.dirname(graph[input].output);
+    const bundleOutput = path.dirname(asset.output);
 
-    const source = await bundler.getSource(
-      input,
-      data,
+    const source = await bundler.readSource(
+      chunk,
+      context,
     ) as string;
+
     const json = JSON.parse(source);
 
     json.icons?.forEach((item: any) => {
       const resolvedFilePath = path.join(path.dirname(input), item.src);
-      const { output: outputFilePath } = graph[resolvedFilePath];
+      const iconAsset = getAsset(graph, DependencyType.Fetch, resolvedFilePath);
 
       const relativeOutputFilePath = addRelativePrefix(
-        path.relative(bundleOutput, outputFilePath),
+        path.relative(bundleOutput, iconAsset.output),
       );
       item.src = relativeOutputFilePath;
     });
+
     const bundleSource = JSON.stringify(json, null, " ");
 
     return bundleSource;

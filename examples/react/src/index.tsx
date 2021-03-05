@@ -12,7 +12,7 @@ class MyElement extends React.Component {
 
   render() {
     return ([
-      <h1 key="header">Hello from React</h1>,
+      <h1 key="header">Hello from React!</h1>,
       <button key="button" onClick={this.handleClick}>Click Me</button>,
     ]);
   }

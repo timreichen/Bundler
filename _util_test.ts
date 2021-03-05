@@ -8,14 +8,14 @@ import {
 } from "./_util.ts";
 
 Deno.test({
-  name: "_util isURL",
+  name: "[_util] isURL",
   fn: () => {
     assertEquals(isURL("http://url.com"), true);
     assertEquals(isURL("http://url.com/path"), true);
     assertEquals(isURL("https://url.com"), true);
     assertEquals(isURL("https://url.com/path"), true);
 
-    assertEquals(isURL("file://path"), false);
+    assertEquals(isURL("file://path"), true);
     assertEquals(isURL("."), false);
     assertEquals(isURL("./"), false);
     assertEquals(isURL("./relative/path"), false);
@@ -24,7 +24,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "_util addRelativePrefix",
+  name: "[_util] addRelativePrefix",
   fn: () => {
     assertEquals(addRelativePrefix("a.ts"), "./a.ts");
     assertEquals(addRelativePrefix("./a.ts"), "./a.ts");
@@ -35,7 +35,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "_util removeRelativePrefix",
+  name: "[_util] removeRelativePrefix",
   fn: () => {
     assertEquals(removeRelativePrefix("a.ts"), "a.ts");
     assertEquals(removeRelativePrefix("./a.ts"), "a.ts");
@@ -46,7 +46,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "_util removeExtension",
+  name: "[_util] removeExtension",
   fn: () => {
     assertEquals(removeExtension("a.ts"), "a");
     assertEquals(removeExtension("./a.ts"), "./a");
@@ -58,7 +58,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "_util ensureExtension",
+  name: "[_util] ensureExtension",
   fn: () => {
     assertEquals(ensureExtension("a.ts", ".ts"), "a.ts");
     assertEquals(ensureExtension("a", ".js"), "a.js");

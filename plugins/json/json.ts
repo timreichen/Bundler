@@ -1,32 +1,22 @@
 import { Asset } from "../../graph.ts";
-import { Data, Plugin, TestFunction } from "../plugin.ts";
+import { FilePlugin } from "../file.ts";
+import { Context, Format, Item } from "../plugin.ts";
 
-export class JsonPlugin extends Plugin {
-  constructor(
-    { test = (input: string) => input.endsWith(".json") }: {
-      test?: TestFunction;
-    } = {},
-  ) {
-    super({ test });
+export class JsonPlugin extends FilePlugin {
+  async test(item: Item, context: Context) {
+    const input = item.history[0];
+    return input.endsWith(".json");
   }
-  async load(filePath: string) {
+  async readSource(filePath: string, context: Context) {
     return await Deno.readTextFile(filePath);
   }
   async createAsset(
-    input: string,
-    data: Data,
+    item: Item,
+    context: Context,
   ) {
-    const { bundler } = data;
-    const filePath = input;
-
     return {
-      input,
-      filePath,
-      output: bundler.outputMap[input] ||
-        bundler.createOutput(filePath, ".json"),
-      imports: {},
-      exports: {},
-      type: "json",
-    } as Asset;
+      ...await super.createAsset(item, context),
+      format: Format.Json,
+    };
   }
 }

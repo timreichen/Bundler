@@ -1,11 +1,21 @@
+import { ts } from "../../deps.ts";
+import { assertStringIncludes } from "../../test_deps.ts";
 import { createSystemExports } from "./system.ts";
-import { assertEquals } from "../../test_deps.ts";
+
+const printer: ts.Printer = ts.createPrinter({ removeComments: false });
 
 Deno.test({
-  name: "createSystemExports",
+  name: "[system plugin] createSystemExports",
   fn: async () => {
-    const ExportStrings = createSystemExports(["a", "b"]);
-    assertEquals(ExportStrings[0], `export const a = __exp["a"];`);
-    assertEquals(ExportStrings[1], `export const b = __exp["b"];`);
+    const sourceFile = ts.createSourceFile("x.ts", "", ts.ScriptTarget.Latest);
+    const ExportNodes = createSystemExports(["a", "b"]);
+    const ExportStrings = printer.printList(
+      ts.ListFormat.SourceFileStatements,
+      ExportNodes,
+      sourceFile,
+    );
+
+    assertStringIncludes(ExportStrings, `export const a = __exp["a"];`);
+    assertStringIncludes(ExportStrings, `export const b = __exp["b"];`);
   },
 });

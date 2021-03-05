@@ -1,148 +1,181 @@
-import {
-  Imports,
-  resolve as resolveDependency,
-  Type,
-} from "../../../dependency.ts";
+import { resolve as resolveDependency } from "../../../dependency.ts";
 import { ImportMap } from "../../../deps.ts";
 import { isURL } from "../../../_util.ts";
 import { postcss } from "../../../deps.ts";
-import { postcssExtractDependenciesPlugin } from "../../css/postcss_plugins/extract_dependencies.ts";
-import { walkAll } from "./_utils.ts";
+import { postcssExtractDependenciesPlugin } from "../../css/postcss/extract_dependencies.ts";
+import { getBase, resolveBase } from "../_util.ts";
+import { Dependencies, DependencyType, Format } from "../../plugin.ts";
 
-export function posthtmlExtractImageImports(
-  input: string,
-  imports: Imports,
-  { importMap }: { importMap: ImportMap },
+export function posthtmlExtractImageDependencies(
+  { imports }: Dependencies,
 ) {
-  return (tree: any) => {
-    tree.match({ tag: "img" }, (node: any) => {
-      const src = node.attrs?.src;
-      if (src && !isURL(src)) {
-        const resolvedUrl = resolveDependency(
-          input,
-          src,
-          importMap,
-        );
-        imports[resolvedUrl] = {
-          specifiers: ["default"],
-          type: "image",
-        };
-      }
-      return node;
-    });
-  };
-}
+  return (
+    input: string,
+    { importMap }: { importMap: ImportMap },
+  ) => {
+    return (tree: any) => {
+      const base = getBase(tree);
+      tree.walk((node: any) => {
+        if (node.tag === "img") {
+          let src = node.attrs?.src;
 
-export function posthtmlExtractLinkImports(
-  input: string,
-  imports: Imports,
-  { importMap }: { importMap: ImportMap },
-) {
-  return (tree: any) => {
-    tree.match({ tag: "link" }, (node: any) => {
-      const href = node.attrs?.href;
-      if (href && !isURL(href)) {
-        const resolvedUrl = resolveDependency(
-          input,
-          href,
-          importMap,
-        );
-        const rel = node.attrs?.rel;
-        let type: Type;
+          src = resolveBase(src, base);
 
-        switch (rel) {
-          case "stylesheet":
-            type = "style";
-            break;
-          case "manifest":
-            type = "webmanifest";
-            break;
-          case "icon":
-            type = "image";
-            break;
-          default:
-            throw new Error(`rel not supported: ${rel}`);
+          if (src && !isURL(src)) {
+            const resolvedUrl = resolveDependency(
+              input,
+              src,
+              importMap,
+            );
+            imports[resolvedUrl] = {
+              specifiers: [],
+              type: DependencyType.Fetch,
+              format: Format.Image,
+            };
+          }
         }
-        imports[resolvedUrl] = {
-          specifiers: ["default"],
-          type,
-        };
-      }
-      return node;
-    });
+
+        return node;
+      });
+    };
   };
 }
 
-export function posthtmlExtractScriptImports(
-  input: string,
-  imports: Imports,
-  { importMap }: { importMap: ImportMap },
+export function posthtmlExtractLinkDependencies(
+  { imports }: Dependencies,
 ) {
-  return (tree: any) => {
-    tree.match({ tag: "script" }, (node: any) => {
-      const src = node.attrs?.src;
-      if (src && !isURL(src)) {
-        const resolvedUrl = resolveDependency(
-          input,
-          src,
-          importMap,
-        );
-        imports[resolvedUrl] = {
-          specifiers: ["default"],
-          type: "script",
-        };
-      }
-      return node;
-    });
+  return (
+    input: string,
+    { importMap }: { importMap: ImportMap },
+  ) => {
+    return (tree: any) => {
+      const base = getBase(tree);
+      tree.walk((node: any) => {
+        if (node.tag === "link") {
+          let href = node.attrs?.href;
+          href = resolveBase(href, base);
+          if (href && !isURL(href)) {
+            const resolvedUrl = resolveDependency(
+              input,
+              href,
+              importMap,
+            );
+            const rel = node.attrs?.rel;
+
+            let format: Format;
+            switch (rel) {
+              case "stylesheet": {
+                format = Format.Style;
+                break;
+              }
+              case "icon": {
+                format = Format.Image;
+                break;
+              }
+              case "manifest": {
+                format = Format.WebManifest;
+                break;
+              }
+              default: {
+                throw new Error(`rel not supported: ${rel}`);
+              }
+            }
+            imports[resolvedUrl] = {
+              specifiers: [],
+              type: DependencyType.Fetch,
+              format,
+            };
+          }
+        }
+        return node;
+      });
+    };
   };
 }
 
-export function posthtmlExtractStyleImports(
-  input: string,
-  imports: Imports,
-  { importMap, use }: { importMap: ImportMap; use: postcss.AcceptedPlugin[] },
+export function posthtmlExtractScriptDependencies(
+  { imports }: Dependencies,
 ) {
-  const postcssPlugin = postcssExtractDependenciesPlugin({ imports });
-  const processor = postcss.default([
-    ...use,
-    postcssPlugin(input, { importMap }),
-  ]);
-  const promises: Promise<any>[] = [];
-  return (tree: any) => {
-    return new Promise(async (resolve) => {
-      tree.match({ tag: "style" }, async (node: any) => {
-        promises.push(processor.process(node.content));
+  return (
+    input: string,
+    { importMap }: { importMap: ImportMap },
+  ) => {
+    return (tree: any) => {
+      const base = getBase(tree);
+
+      tree.walk((node: any) => {
+        if (node.tag === "script") {
+          let src = node.attrs?.src;
+
+          src = resolveBase(src, base);
+          if (src && !isURL(src)) {
+            const resolvedUrl = resolveDependency(
+              input,
+              src,
+              importMap,
+            );
+            imports[resolvedUrl] = {
+              specifiers: [],
+              type: DependencyType.Import,
+              format: Format.Script,
+            };
+          }
+        }
+        return node;
+      });
+    };
+  };
+}
+
+export function posthtmlExtractStyleDependencies(
+  dependencies: Dependencies,
+) {
+  return (
+    input: string,
+    { importMap, use }: { importMap: ImportMap; use: postcss.AcceptedPlugin[] },
+  ) => {
+    const postcssPlugin = postcssExtractDependenciesPlugin(dependencies);
+    const processor = postcss.default([
+      ...use,
+      postcssPlugin(input, { importMap }),
+    ]);
+    const promises: Promise<any>[] = [];
+    return async (tree: any) => {
+      tree.walk((node: any) => {
+        if (node.tag === "style") {
+          promises.push(processor.process(node.content));
+        }
         return node;
       });
       await Promise.all(promises);
-      return resolve(tree);
-    });
+      return tree;
+    };
   };
 }
 
-export function posthtmlExtractInlineStyleImports(
-  input: string,
-  imports: Imports,
-  { importMap, use }: { importMap: ImportMap; use: postcss.AcceptedPlugin[] },
+export function posthtmlExtractInlineStyleDependencies(
+  dependencies: Dependencies,
 ) {
-  const postcssPlugin = postcssExtractDependenciesPlugin({ imports });
-  const processor = postcss.default([
-    ...use,
-    postcssPlugin(input, { importMap }),
-  ]);
-  const promises: Promise<any>[] = [];
-  return (tree: any) => {
-    return new Promise(async (resolve) => {
+  return (
+    input: string,
+    { importMap, use }: { importMap: ImportMap; use: postcss.AcceptedPlugin[] },
+  ) => {
+    const postcssPlugin = postcssExtractDependenciesPlugin(dependencies);
+    const processor = postcss.default([
+      ...use,
+      postcssPlugin(input, { importMap }),
+    ]);
+    const promises: Promise<any>[] = [];
+    return async (tree: any) => {
       tree.walk((node: any) => {
-        return walkAll(node, (node) => {
-          const style = node.attrs?.style;
-          if (style) {
-            promises.push(processor.process(style));
-          }
-        });
+        const style = node.attrs?.style;
+        if (style) {
+          promises.push(processor.process(style));
+        }
+        return node;
       });
       await Promise.all(promises);
-      return resolve(tree);
-    });
+      return tree;
+    };
   };
 }

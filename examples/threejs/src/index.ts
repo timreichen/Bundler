@@ -4,6 +4,7 @@ import {
   MeshBasicMaterial,
   PerspectiveCamera,
   Scene,
+  TextureLoader,
   WebGLRenderer,
 } from "https://unpkg.com/three/build/three.module.js";
 
@@ -23,8 +24,15 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 
 document.body.appendChild(renderer.domElement);
 
+function loadTexture(url: string) {
+  const loader = new TextureLoader();
+  return new Promise((resolve) => loader.load(url, resolve));
+}
+
+const texture = await loadTexture("./image.png");
 const geometry = new BoxGeometry(1, 1, 1);
-const material = new MeshBasicMaterial({ color: "#433F81" });
+const material = new MeshBasicMaterial({ color: "#433F81", map: texture });
+
 const cube = new Mesh(geometry, material);
 
 scene.add(cube);

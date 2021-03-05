@@ -2,7 +2,7 @@
 
 A Bundler with the web in mind.
 
-![Donate](https://img.shields.io/badge/Deno-≥%201.6-blue.svg?style=for-the-badge&logo=deno)
+![Donate](https://img.shields.io/badge/Deno-≥%201.8-blue.svg?style=for-the-badge&logo=deno)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg?style=for-the-badge)](https://www.paypal.com/donate?hosted_button_id=ACDW2YV2RTP8A)
 
 ## Table of Contents

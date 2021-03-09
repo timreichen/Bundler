@@ -1,7 +1,7 @@
-import { csso as cssoCore } from "../../deps.ts";
+import { csso } from "../../deps.ts";
 import { Context, Format, Item, Plugin } from "../plugin.ts";
 
-const syntax = cssoCore.syntax;
+const syntax = csso.syntax;
 
 export class CssoPlugin extends Plugin {
   async test(item: Item, context: Context) {
@@ -17,7 +17,7 @@ export class CssoPlugin extends Plugin {
     const code = syntax.generate(compressedAst);
 
     if (code === undefined) {
-      throw new Error(`error during csso minification.`);
+      throw new Error(`error during csso optimization.`);
     }
     return code;
   }

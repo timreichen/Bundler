@@ -18,3 +18,4 @@ export { default as posthtml } from "https://esm.sh/posthtml@0.15.1";
 export { default as postcssPresetEnv } from "https://esm.sh/postcss-preset-env@6.7.0?no-check";
 export * as terser from "https://esm.sh/terser@5.5.1";
 export { default as csso } from "https://esm.sh/csso@4.2.0";
+export { default as svgo } from "https://esm.sh/svgo@2.2.0";

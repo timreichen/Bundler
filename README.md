@@ -42,7 +42,7 @@ A Bundler with the web in mind.
     - [Images](#images)
       - [Test](#test-4)
       - [Optimization](#optimization-4)
-    - [wasm](#wasm)
+    - [Wasm](#wasm)
       - [Optimization](#optimization-5)
   - [Smart Splitting](#smart-splitting)
   - [Examples](#examples)
@@ -546,10 +546,9 @@ The file must have `.ico`, `.png`, `.jpg`, `.jpeg` or `.svg` extension.
 
 #### Optimization
 
-Bundler **does not yet** optimize or compress images with the `--optimize`
-option.
+Bundler compresses `.svg` files with the `--optimize` option.
 
-### wasm
+### Wasm
 
 wasm files cannot be imported directly into typescript or javascript (yet), so
 they will not be transformed in any way. Instead they should be fetched with via

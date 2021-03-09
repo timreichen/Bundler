@@ -17,6 +17,7 @@ import { CssoPlugin } from "./plugins/css/csso.ts";
 import { HtmlPlugin } from "./plugins/html/html.ts";
 import { ImagePlugin } from "./plugins/image/image.ts";
 import { SvgPlugin } from "./plugins/image/svg.ts";
+import { SvgoPlugin } from "./plugins/image/svgo.ts";
 import { JsonPlugin } from "./plugins/json/json.ts";
 import { WebManifestPlugin } from "./plugins/json/webmanifest.ts";
 import { Plugin } from "./plugins/plugin.ts";
@@ -143,15 +144,22 @@ async function main({
     new ServiceWorkerPlugin({ compilerOptions }),
     new WebWorkerPlugin({ compilerOptions }),
     new SystemPlugin({ compilerOptions }),
+
     new CssPlugin({ use }),
+
     new HtmlPlugin({ use }),
+
     new ImagePlugin(),
     new SvgPlugin(),
+
     new WebManifestPlugin(),
     new JsonPlugin(),
+
     new WasmPlugin(),
-    new CssoPlugin(),
+
     new TerserPlugin(),
+    new CssoPlugin(),
+    new SvgoPlugin(),
   ];
 
   const bundler = new Bundler(plugins, { logLevel, quiet });

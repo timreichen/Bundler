@@ -90,7 +90,7 @@ export class HtmlPlugin extends Plugin {
     context: Context,
     chunkList: ChunkList,
   ) {
-    const { history, type, format } = item;
+    const { history, type } = item;
     const input = history[0];
     const { graph } = context;
     const dependencies: Item[] = [item];
@@ -119,7 +119,7 @@ export class HtmlPlugin extends Plugin {
     );
 
     chunkList.push(...dependencies);
-
+      
     return {
       ...item,
       dependencies,
@@ -165,6 +165,7 @@ export class HtmlPlugin extends Plugin {
     ]);
     const { html } = await processor.process(source as string);
     // await bundler.setCache(bundleInput, bundleInput, html, context);
-    return html;
+    
+    return html; 
   }
 }

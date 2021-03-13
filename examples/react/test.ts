@@ -1,6 +1,5 @@
 import { Bundler } from "../../bundler.ts";
 import { HtmlPlugin } from "../../plugins/html/html.ts";
-import { CssPlugin } from "../../plugins/css/css.ts";
 import { DependencyType, Plugin } from "../../plugins/plugin.ts";
 import { SystemPlugin } from "../../plugins/typescript/system.ts";
 import { assertEquals } from "../../test_deps.ts";
@@ -34,8 +33,8 @@ Deno.test({
       "examples/react/src/index.tsx",
       "https://esm.sh/react@17.0.1",
       "https://esm.sh/react-dom@17.0.1",
-      "https://cdn.esm.sh/v15/react@17.0.1/esnext/react.js",
-      "https://cdn.esm.sh/v15/react-dom@17.0.1/esnext/react-dom.js",
+      "https://cdn.esm.sh/v23/react@17.0.1/deno/react.js",
+      "https://cdn.esm.sh/v23/react-dom@17.0.1/deno/react-dom.js",
     ]);
 
     const chunks = await bundler.createChunks(inputs, graph);

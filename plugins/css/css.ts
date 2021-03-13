@@ -1,10 +1,10 @@
 import { fs, path, postcss, Sha256 } from "../../deps.ts";
+
 import {
   Chunk,
   ChunkList,
   Context,
   Dependencies,
-  DependencyType,
   Format,
   Item,
   Plugin,
@@ -39,12 +39,15 @@ export class CssPlugin extends Plugin {
     const bundleOutput = asset.output;
 
     const processor = postcss.default([
+      ...this.use,
       postcssInjectImportsPlugin(chunk, context, this.use),
       postcssInjectDependenciesPlugin(bundleInput, bundleOutput, context),
     ]);
+
     const source = await bundler.readSource(chunk, context);
 
     const { css } = await processor.process(source);
+
     return css;
   }
   async readSource(filePath: string) {
@@ -70,6 +73,7 @@ export class CssPlugin extends Plugin {
 
     // TODO store AST to avoid re-parsing in other plugins
     await processor.process(source as string);
+
     const extension = path.extname(input);
 
     return {

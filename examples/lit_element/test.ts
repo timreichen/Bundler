@@ -63,7 +63,6 @@ Deno.test({
     assertEquals(chunks.map((chunk) => chunk.history[0]), [
       input,
       "examples/lit_element/src/index.ts",
-      "examples/lit_element/src/styles.css",
     ]);
     const bundles = await bundler.createBundles(chunks, graph, {
       importMap,
@@ -73,7 +72,6 @@ Deno.test({
     assertEquals(Object.keys(bundles), [
       "dist/deps/9f35838a4736c3bf3884faaaa3a31fff881050a44a87d4f858a3b87a250d09db.html",
       "dist/deps/9449cbe98e4f1727f4449e454327da2acc2a61fcc305023036f6b71006b5685f.js",
-      "dist/deps/12678e82a0dd3c2bd4d2fa95567cf7339d272f9ce45bebeb87ba93b136976843.css",
     ]);
   },
 });

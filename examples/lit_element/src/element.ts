@@ -1,6 +1,5 @@
 import { customElement, html, LitElement, unsafeCSS } from "lit-element";
-
-const styles = await fetch("./styles.css").then((data) => data.text());
+import styles from "./styles.css";
 
 @customElement("my-element")
 export class MyElement extends LitElement {

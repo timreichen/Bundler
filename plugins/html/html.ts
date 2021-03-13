@@ -119,7 +119,7 @@ export class HtmlPlugin extends Plugin {
     );
 
     chunkList.push(...dependencies);
-      
+
     return {
       ...item,
       dependencies,
@@ -165,7 +165,7 @@ export class HtmlPlugin extends Plugin {
     ]);
     const { html } = await processor.process(source as string);
     // await bundler.setCache(bundleInput, bundleInput, html, context);
-    
-    return html; 
+
+    return html;
   }
 }

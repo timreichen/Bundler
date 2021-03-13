@@ -1,4 +1,5 @@
 import { Bundler } from "../../bundler.ts";
+import { postcss, postcssPresetEnv } from "../../deps.ts";
 import { CssPlugin } from "../../plugins/css/css.ts";
 import { HtmlPlugin } from "../../plugins/html/html.ts";
 import { ImagePlugin } from "../../plugins/image/image.ts";
@@ -6,13 +7,22 @@ import { DependencyType, Plugin } from "../../plugins/plugin.ts";
 import { SystemPlugin } from "../../plugins/typescript/system.ts";
 import { assertEquals } from "../../test_deps.ts";
 
+const use: postcss.AcceptedPlugin[] = [
+  postcssPresetEnv({
+    stage: 2,
+    features: {
+      "nesting-rules": true,
+    },
+  }) as any,
+];
+
 Deno.test({
   name: "[example] css",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),
       new SystemPlugin(),
-      new CssPlugin(),
+      new CssPlugin({ use }),
       new ImagePlugin(),
     ];
     const bundler = new Bundler(plugins, { quiet: true });
@@ -45,7 +55,6 @@ Deno.test({
       DependencyType.Fetch,
     ]);
     assertEquals(Object.keys(graph["examples/css/src/script.css"]), [
-      // DependencyType.Fetch,
       DependencyType.Import,
     ]);
 
@@ -56,7 +65,6 @@ Deno.test({
       "examples/css/src/index.ts",
       "examples/css/src/styles.css",
       "examples/css/src/image.png",
-      // "examples/css/src/script.css",
     ]);
 
     const bundles = await bundler.createBundles(chunks, graph, {
@@ -68,7 +76,6 @@ Deno.test({
       "dist/deps/02e2f6aba4f195fc1c607a3c753a2a11def721b856585792ce37d7e77ed06087.js",
       "dist/deps/30a1023d732b9ad04797223b3b7e8cb4dc11c9984e224f841b53195bb1c1de11.css",
       "dist/deps/02463e3056e72d447d568ff98171fdf96a719fe955de7442769323a2557d5ab6.png",
-      // "dist/deps/1d0afb733fccd8b05b5522167e50bdc977962381a1bacc82e13bd8ee0e24939f.css",
     ]);
   },
 });

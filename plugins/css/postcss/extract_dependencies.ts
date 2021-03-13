@@ -1,4 +1,4 @@
-import { ImportMap, path, postcss, postcssValueParser } from "../../../deps.ts";
+import { ImportMap, postcss, postcssValueParser } from "../../../deps.ts";
 import { resolve as resolveDependency } from "../../../dependency.ts";
 import { isURL } from "../../../_util.ts";
 import { Dependencies, DependencyType, Format } from "../../plugin.ts";

@@ -5,6 +5,7 @@ import {
   fs,
   ImportMap,
   path,
+  postcss,
   postcssPresetEnv,
   Sha256,
   ts,
@@ -14,6 +15,7 @@ import { Graph } from "./graph.ts";
 import { Logger, LogLevel, logLevels } from "./logger.ts";
 import { CssPlugin } from "./plugins/css/css.ts";
 import { CssoPlugin } from "./plugins/css/csso.ts";
+import { FetchPlugin } from "./plugins/fetch.ts";
 import { HtmlPlugin } from "./plugins/html/html.ts";
 import { ImagePlugin } from "./plugins/image/image.ts";
 import { SvgPlugin } from "./plugins/image/svg.ts";
@@ -25,7 +27,6 @@ import { ServiceWorkerPlugin } from "./plugins/typescript/serviceworker.ts";
 import { SystemPlugin } from "./plugins/typescript/system.ts";
 import { TerserPlugin } from "./plugins/typescript/terser.ts";
 import { WebWorkerPlugin } from "./plugins/typescript/webworker.ts";
-import { WasmPlugin } from "./plugins/wasm/wasm.ts";
 import { isURL, removeRelativePrefix, timestamp } from "./_util.ts";
 
 type Inputs = string[];
@@ -52,13 +53,13 @@ const depsDirName = "deps";
 const cacheDirName = ".cache";
 const cacheFileName = "cache.json";
 
-const use = [
+const use: postcss.AcceptedPlugin[] = [
   postcssPresetEnv({
     stage: 2,
     features: {
       "nesting-rules": true,
     },
-  }),
+  }) as any,
 ];
 
 interface CacheData {
@@ -141,6 +142,8 @@ async function main({
   const logger = new Logger({ logLevel, quiet });
 
   const plugins: Plugin[] = [
+    new FetchPlugin(),
+
     new ServiceWorkerPlugin({ compilerOptions }),
     new WebWorkerPlugin({ compilerOptions }),
     new SystemPlugin({ compilerOptions }),
@@ -154,8 +157,6 @@ async function main({
 
     new WebManifestPlugin(),
     new JsonPlugin(),
-
-    new WasmPlugin(),
 
     new TerserPlugin(),
     new CssoPlugin(),
@@ -175,7 +176,7 @@ async function main({
     });
     for (const [cacheFilePath, source] of Object.entries(cache)) {
       await fs.ensureFile(cacheFilePath);
-      await Deno.writeTextFile(cacheFilePath, source);
+      await Deno.writeTextFile(cacheFilePath, source as string);
     }
 
     for (const [output, source] of Object.entries(bundles)) {
@@ -183,7 +184,7 @@ async function main({
       if (typeof source === "string") {
         await Deno.writeTextFile(output, source);
       } else {
-        await Deno.writeFile(output, source);
+        await Deno.writeFile(output, source as Uint8Array);
       }
     }
 

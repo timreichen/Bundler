@@ -11,7 +11,7 @@ A Bundler with the web in mind.
   - [Table of Contents](#table-of-contents)
   - [What is Bundler?](#what-is-bundler)
   - [Why use Bundler?](#why-use-bundler)
-    - [But there is `deno emit`, right?](#but-there-is-deno-emit-right)
+    - [But there is `deno bundle` and `Deno.emit`, right?](#but-there-is-deno-bundle-and-denoemit-right)
   - [Getting Started](#getting-started)
     - [Installation](#installation)
   - [Usage](#usage)
@@ -42,8 +42,7 @@ A Bundler with the web in mind.
     - [Images](#images)
       - [Test](#test-4)
       - [Optimization](#optimization-4)
-    - [Wasm](#wasm)
-      - [Optimization](#optimization-5)
+    - [Other](#other)
   - [Smart Splitting](#smart-splitting)
   - [Examples](#examples)
     - [Hello world](#hello-world)
@@ -58,26 +57,19 @@ are used to with deno.
 
 ## Why use Bundler?
 
-- handles relative and absolute imports as well as
-  [url imports](https://deno.land/manual/linking_to_external_code)
+- handles relative and absolute imports as well as [url imports](https://deno.land/manual/linking_to_external_code)
 - handles dynamic `import()` and `fetch()` statements
-- handles `css` `@import` statements and supports
-  [postcss-preset-env](https://preset-env.cssdb.org) **stage 2** and
-  **nesting-rules** by default
+- handles `css` `@import` statements and supports [postcss-preset-env](https://preset-env.cssdb.org) **stage 2** and **nesting-rules** by default
 - [smart splits](#smart-splitting) dependencies
 - handles `html` `<link>`, `<script>`, `<img>` and `<style>` tags,
   `<div style="">` attributes as well as `webmanifest` files
 - handles `WebWorker` and `ServiceWorker` imports
-- handles `ts`, `tsx`, `js`, `jsx` `html`, `css`, `json`, `png`, `jpg`, `jpeg`,
-  `ico`, `svg`, `wasm`
+- handles `ts`, `tsx`, `js`, `jsx` `html`, `css`, `json`, `png`, `jpg`, `jpeg`, `ico`, `svg`, and other file types
 - built in code optimazation and minification with `--optimize` option
 - built in file watcher with `--watch` option
 
-### But there is `deno emit`, right?
-
-`deno emit` can transpile and bundle a file to a standalone module. This might
-work for some occations but is limited to script files. Bundler works similar to
-`deno emit` but with the web in mind.
+### But there is `deno bundle` and `Deno.emit`, right?
+`deno bundle` CLI command and `Deno.emit` can transpile and bundle a file to a standalone module. This might work for some occations but is limited to script files. Bundler works similar to `Deno.emit` but with the web in mind.
 
 ## Getting Started
 
@@ -125,12 +117,11 @@ Typescript code will be transpiled into javascript code.
 
 #### Bundle
 
-Bundler will bundle `javascript` sources toghether similar to `deno bundle` but
-smart split dependencies and inject other file paths.
+Bundler will bundle `javascript` sources together while smart splitting dependencies and injecting file paths.
 
 #### Optimization
 
-Bundler will optimize and minify code with the `--optimize` option.
+Bundler will optimize and minify code with the `--optimize` option using [terser](https://github.com/terser/terser).
 
 #### Support
 
@@ -156,9 +147,9 @@ Bundler extracts dependencies from the following statements:
   <td>default import</td>
   <td>
 
-    ```ts
-    import x from "./x.ts";
-    ```
+```ts
+import x from "./x.ts";
+```
 
 </td>
   <td style="text-align:center">✅</td>
@@ -168,9 +159,9 @@ Bundler extracts dependencies from the following statements:
   <td>import statement</td>
   <td>
 
-    ```ts
-    import("./x.ts");
-    ```
+```ts
+import("./x.ts");
+```
 
 </td>
   <td style="text-align:center">✅</td>
@@ -332,12 +323,11 @@ navigator.serviceWorker.register("./x.ts");
 
 #### Test
 
-The file must end with `.json` or any kind of extension.
+The file path must end with `.json`.
 
 #### Transformation
 
-A `json` file will be transformed into an esm module if it is imported diretcly
-into typescript or javascript.
+A `json` file will be transformed into an esm module if it is imported diretcly into typescript or javascript.
 
 ```json
 /* src/data.json */
@@ -354,12 +344,11 @@ console.log(data); // { "foo": "bar" }
 
 #### Optimization
 
-Bundler will minify code with the `--optimize` option.
+Bundler will minify code with the `--optimize` option using `JSON.stringify` without spaces.
 
 ### Webmanifest
 
-Webmanifest files are specially treated `json` files and src properties in
-`icons` are extracted as dependencies.
+Webmanifest files are specially treated `json` files and src properties in `icons` are extracted as dependencies.
 
 ```html
 <!-- src/index.html -->
@@ -392,7 +381,7 @@ Webmanifest files are specially treated `json` files and src properties in
 
 #### Test
 
-The file can have any extension but must be imported with `rel="webmanifest"`.
+The file path can have any extension but must be imported with `rel="webmanifest"`.
 
 ### Html
 
@@ -418,11 +407,12 @@ Bundler extracts dependencies from the following statements:
   <td>script tag</td>
   <td>
 
-    ```html
-    <script src="x.ts">
-    ```
+```html
+<script src="x.ts">
+```
 
-</td>
+  </td>
+
   <td style="text-align:center">✅</td>
 </tr>
 
@@ -430,9 +420,9 @@ Bundler extracts dependencies from the following statements:
   <td>inline script</td>
   <td>
 
-    ```html
-    <script> const x: string = "x" </script>
-    ```
+```html
+<script> const x: string = "x" </script>
+```
 
 </td>
   <td style="text-align:center">✅</td>
@@ -442,17 +432,17 @@ Bundler extracts dependencies from the following statements:
   <td> link tag </td>
   <td>
 
-    ```html
-    <link rel="manifest" href="x.json">
-    ```
+```html
+<link rel="manifest" href="x.json">
+```
 
-    ```html
-    <link rel="stylesheet" href="x.css">
-    ```
+```html
+<link rel="stylesheet" href="x.css">
+```
 
-    ```html
-    <link rel="icon" href="x.png">
-    ```
+```html
+<link rel="icon" href="x.png">
+```
 
 </td>
   <td style="text-align:center">✅</td>
@@ -462,9 +452,9 @@ Bundler extracts dependencies from the following statements:
   <td>img tag</td>
   <td>
 
-    ```html
-    <img src="image.png">
-    ```
+```html
+<img src="image.png">
+```
 
 </td>
   <td style="text-align:center">✅</td>
@@ -474,9 +464,9 @@ Bundler extracts dependencies from the following statements:
   <td>style tag</td>
   <td>
 
-    ```html
-    <style> div { background: url(‘image.png'); } </style>
-    ```
+```html
+<style> div { background: url('image.png'); } </style>
+```
 
 </td>
   <td style="text-align:center">✅</td>
@@ -486,9 +476,9 @@ Bundler extracts dependencies from the following statements:
   <td>style attribute</td>
   <td>
 
-    ```html
-    <div style="background: url(‘image.png');"></div>
-    ```
+```html
+<div style="background: url(‘image.png');"></div>
+```
 
 </td>
   <td style="text-align:center">✅</td>
@@ -505,8 +495,7 @@ The file must have `.css` extension.
 
 #### Transformation
 
-A css file will be transformed into a esm module with a default string export if
-it is imported into typescript or javascript.
+A css file will be transformed into a esm module with a default string export if it is imported into typescript or javascript.
 
 ```css
 /* src/style.json */
@@ -523,7 +512,7 @@ console.log(data); // div { color: red }
 
 #### Optimization
 
-Bundler will optimize and minify code with the `--optimize` option.
+Bundler will optimize and minify code with the `--optimize` option using [csso](https://github.com/css/csso).
 
 #### Postcss
 
@@ -533,10 +522,7 @@ out of the box.
 
 #### A word on preprocessors
 
-The functionality of css has grown in recent years and is native to browsers.
-Therefore bundler focuses on making css usage really easy instead of supporting
-preprocessors like sass, scss, less or stylus. Most features a preprocessor does
-should be covered with todays css and postcss.
+The functionality of css has grown in recent years and is native to browsers. Therefore bundler focuses on making css usage really easy instead of supporting preprocessors like sass, scss, less or stylus. Most features a preprocessor does should be covered with todays css and postcss.
 
 ### Images
 
@@ -546,25 +532,15 @@ The file must have `.ico`, `.png`, `.jpg`, `.jpeg` or `.svg` extension.
 
 #### Optimization
 
-Bundler compresses `.svg` files with the `--optimize` option.
+Bundler minifies `.svg` files with the `--optimize` option using [svgo](https://github.com/svg/svgo).
 
-### Wasm
+### Other
 
-wasm files cannot be imported directly into typescript or javascript (yet), so
-they will not be transformed in any way. Instead they should be fetched with via
-`fetch API`.
-
-#### Optimization
-
-Bundler **does not** optimize or compress wasm with the `--optimize` option.
+Other files can be fetched via the `fetch API`. They will not be optimized or transformed.
 
 ## Smart Splitting
 
-Bundler automatically analyzes the dependency graph and splits dependencies into
-separate files, if the code is used in different entry points. This prevents
-code duplication and allows bundle files to share code. You can check out
-[this example](https://github.com/timreichen/Bundler/tree/master/examples/smart_splitting)
-to see smart splitting in action.
+Bundler automatically analyzes the dependency graph and splits dependencies into separate files, if the code is used in different entry points. This prevents code duplication and allows bundle files to share code. You can check out [this example](https://github.com/timreichen/Bundler/tree/master/examples/smart_splitting) to see smart splitting in action.
 
 ## Examples
 
@@ -592,5 +568,4 @@ to see smart splitting in action.
 
 ## Unstable
 
-This module requires deno to run with the `--unstable` flag. It is likely to
-change in the future.
+This module requires deno to run with the `--unstable` flag. It is likely to change in the future.

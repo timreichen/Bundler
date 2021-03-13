@@ -11,7 +11,7 @@ export function typescriptInjectDependenciesTranformer(
 ): ts.TransformerFactory<ts.SourceFile> {
   const { history, type } = chunk;
   const rootInput = history[history.length - 1];
-  
+
   const rootAsset = getAsset(
     graph,
     DependencyType.Import, /* entry type */
@@ -28,7 +28,7 @@ export function typescriptInjectDependenciesTranformer(
   const bundleDirPath = path.dirname(
     bundleOutput,
   );
-    
+
   return (context: ts.TransformationContext) => {
     function resolve(filePath: string) {
       return resolveDependency(
@@ -135,9 +135,9 @@ export function typescriptInjectDependenciesTranformer(
               rootDirPath,
               asset.output,
             );
-            
+
             const relativeFilePath = addRelativePrefix(relativeOutput);
-              
+
             return context.factory.updateCallExpression(
               node,
               node.expression,

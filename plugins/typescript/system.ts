@@ -594,6 +594,9 @@ export class SystemPlugin extends TypescriptPlugin {
         }
       } else {
         source = await bundler.getCache(bundleInput, input, context);
+        if (source === undefined) {
+          throw Error(`cache file for input not found: '${input}'`);
+        }
         bundleSources[input] = source;
       }
     }

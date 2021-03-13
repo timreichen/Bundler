@@ -805,7 +805,7 @@ Deno.test({
     assertEquals(diagnostics, []);
     assertStringIncludes(
       outputText,
-      `import * as b_1 from "src/b.ts";\r\nexport { b_1 as b };`,
+      `import * as b_1 from "src/b.ts";\nexport { b_1 as b };`,
     );
   },
 });

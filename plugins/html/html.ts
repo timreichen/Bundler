@@ -130,16 +130,23 @@ export class HtmlPlugin extends Plugin {
     chunk: Chunk,
     context: Context,
   ) {
-    const bundleInput = chunk.history[0];
-    const { bundler, graph, reload } = context;
-    const bundleAsset = getAsset(graph, chunk.type, bundleInput);
-    const { filePath } = bundleAsset;
-    const needsReload = reload === true ||
-      Array.isArray(reload) && reload.includes(bundleInput);
-    const needsUpdate = needsReload;
-    // || !await bundler.hasCache(bundleInput, bundleInput, context);
+    const { bundler, reload, graph } = context;
+    const { history, type } = chunk;
+    const bundleInput = history[0];
+    const bundleAsset = getAsset(graph, type, bundleInput);
 
-    if (!needsUpdate && await fs.exists(bundleAsset.output)) return;
+    const { filePath, output } = bundleAsset;
+
+    try {
+      const bundleNeedsUpdate = reload == true ||
+        (Array.isArray(reload) && reload.includes(bundleInput)) ||
+        Deno.statSync(output).mtime! < Deno.statSync(filePath).mtime!;
+      if (!bundleNeedsUpdate) return;
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) {
+        throw error;
+      }
+    }
 
     const source = await bundler.transformSource(
       bundleInput,

@@ -178,7 +178,7 @@ export class Bundler {
       const { history, type } = item;
       const input = history[0];
       const entry = graph[input] = graph[input] || {};
-
+      if (entry[type]) continue;
       let asset = context.graph[input]?.[type];
 
       const needsReload = context.reload === true ||

@@ -49,13 +49,13 @@ export class FilePlugin extends Plugin {
   ): Promise<Source | void> {
     const { bundler, reload, graph } = context;
     const { history, type } = chunk;
-    const input = history[0];
-    const asset = getAsset(graph, type, input);
+    const bundleInput = history[0];
+    const bundleAsset = getAsset(graph, type, bundleInput);
 
-    const { filePath, output } = asset;
+    const { filePath, output } = bundleAsset;
     try {
       const bundleNeedsUpdate = reload == true ||
-        (Array.isArray(reload) && reload.includes(input)) ||
+        (Array.isArray(reload) && reload.includes(bundleInput)) ||
         Deno.statSync(output).mtime! < Deno.statSync(filePath).mtime!;
       if (!bundleNeedsUpdate) return;
     } catch (error) {

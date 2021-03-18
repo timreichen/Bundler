@@ -186,20 +186,27 @@ export class Bundler {
 
       let needsUpdate = needsReload || !asset;
 
-      if (!context.reload && asset) {
+      if (!needsReload && asset) {
         try {
           if (
-            Deno.statSync(asset.filePath).mtime! <
+            Deno.statSync(asset.filePath).mtime! >
               Deno.statSync(asset.output).mtime!
           ) {
-            needsUpdate = false;
+            needsUpdate = true;
           }
-        } catch {}
+        } catch (error) {
+          if (error instanceof Deno.errors.NotFound) {
+            needsUpdate = true;
+          } else {
+            throw error;
+          }
+        }
       }
 
       if (needsUpdate) {
         asset = await this.createAsset(item, context);
       }
+
       entry[type] = asset;
 
       if (!asset) {

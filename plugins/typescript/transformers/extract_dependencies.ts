@@ -97,10 +97,11 @@ export function typescriptExtractDependenciesTransformer(
           exports[filePath].specifiers.push("default");
           return node;
         } else if (ts.isVariableStatement(node)) {
-          const combinedModifierFlags = ts.getCombinedModifierFlags(
-            node as any,
-          );
-          if ((combinedModifierFlags & ts.ModifierFlags.Export) !== 0) {
+          if (
+            node.modifiers?.find((modifier) =>
+              modifier.kind === ts.SyntaxKind.ExportKeyword
+            )
+          ) {
             // export const x = "x"
             exports[filePath] = exports[filePath] ||
               {
@@ -121,9 +122,11 @@ export function typescriptExtractDependenciesTransformer(
             });
           }
         } else if (ts.isFunctionDeclaration(node)) {
-          const combinedModifierFlags = ts.getCombinedModifierFlags(node);
           if (
-            node.name && (combinedModifierFlags & ts.ModifierFlags.Export) !== 0
+            node.name &&
+            node.modifiers?.find((modifier) =>
+              modifier.kind === ts.SyntaxKind.ExportKeyword
+            )
           ) {
             exports[filePath] = exports[filePath] ||
               {
@@ -131,7 +134,11 @@ export function typescriptExtractDependenciesTransformer(
                 type: DependencyType.Export,
                 format: Format.Script,
               };
-            if ((combinedModifierFlags & ts.ModifierFlags.Default) !== 0) {
+            if (
+              node.modifiers?.find((modifier) =>
+                modifier.kind === ts.SyntaxKind.DefaultKeyword
+              )
+            ) {
               // export default function x() {}
               exports[filePath].specifiers.push("default");
             } else if (ts.isIdentifier(node.name)) {
@@ -142,9 +149,11 @@ export function typescriptExtractDependenciesTransformer(
             }
           }
         } else if (ts.isClassDeclaration(node)) {
-          const combinedModifierFlags = ts.getCombinedModifierFlags(node);
           if (
-            node.name && (combinedModifierFlags & ts.ModifierFlags.Export) !== 0
+            node.name &&
+            node.modifiers?.find((modifier) =>
+              modifier.kind === ts.SyntaxKind.ExportKeyword
+            )
           ) {
             exports[filePath] = exports[filePath] ||
               {
@@ -152,7 +161,11 @@ export function typescriptExtractDependenciesTransformer(
                 type: DependencyType.Export,
                 format: Format.Script,
               };
-            if ((combinedModifierFlags & ts.ModifierFlags.Default) !== 0) {
+            if (
+              node.modifiers?.find((modifier) =>
+                modifier.kind === ts.SyntaxKind.DefaultKeyword
+              )
+            ) {
               // export default class X {}
               exports[filePath].specifiers.push("default");
             } else if (ts.isIdentifier(node.name)) {

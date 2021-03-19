@@ -29,24 +29,25 @@ export function typescriptExtractDependenciesTransformer(
               format,
             };
           if (importClause) {
-            importClause.getChildren(sourceFile).forEach((child) => {
-              if (ts.isNamespaceImport(child)) {
+            if (importClause.namedBindings) {
+              if (ts.isNamespaceImport(importClause.namedBindings)) {
                 // import * as x from "./x.ts"
                 imports[filePath].specifiers.push("*");
-              } else if (ts.isIdentifier(child)) {
-                // import x from "./x.ts"
-                imports[filePath].specifiers.push("default");
-              } else if (ts.isNamedImports(child)) {
+              }
+              if (ts.isNamedImports(importClause.namedBindings)) {
                 // import { x } from "./x.ts"
                 imports[filePath].specifiers.push(
-                  ...child.elements.map((element) =>
+                  ...importClause.namedBindings.elements.map((element) =>
                     // import { x as k } from "./x.ts"
                     (element.propertyName?.escapedText ||
                       element.name.escapedText) as string
                   ),
                 );
               }
-            });
+            } else if (importClause.name) {
+              // import x from "./x.ts"
+              imports[filePath].specifiers.push("default");
+            }
           }
           return node;
         } else if (ts.isExportDeclaration(node)) {

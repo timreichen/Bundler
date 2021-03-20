@@ -109,15 +109,11 @@ export function typescriptExtractDependenciesTransformer(
                 type: DependencyType.Export,
                 format: Format.Script,
               };
-            node.getChildren(sourceFile).forEach((child) => {
-              if (ts.isVariableDeclarationList(child)) {
-                child.declarations.forEach((declaration) => {
-                  if (ts.isIdentifier(declaration.name)) {
-                    exports[filePath].specifiers.push(
-                      declaration.name.escapedText as string,
-                    );
-                  }
-                });
+            node.declarationList.declarations.forEach((declaration) => {
+              if (ts.isIdentifier(declaration.name)) {
+                exports[filePath].specifiers.push(
+                  declaration.name.escapedText as string,
+                );
               }
             });
           }

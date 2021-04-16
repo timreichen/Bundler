@@ -1,4 +1,4 @@
-import { size, timestamp } from "./_util.ts";
+import { readTextFile, size, timestamp } from "./_util.ts";
 import { colors, ImportMap, path, Sha256 } from "./deps.ts";
 import { Asset, getAsset, Graph } from "./graph.ts";
 import {
@@ -538,6 +538,6 @@ export class Bundler {
       input,
       colors.dim(cacheFilePath),
     );
-    return await Deno.readTextFile(cacheFilePath);
+    return await readTextFile(cacheFilePath);
   }
 }

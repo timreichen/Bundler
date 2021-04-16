@@ -27,7 +27,12 @@ import { ServiceWorkerPlugin } from "./plugins/typescript/serviceworker.ts";
 import { SystemPlugin } from "./plugins/typescript/system.ts";
 import { TerserPlugin } from "./plugins/typescript/terser.ts";
 import { WebWorkerPlugin } from "./plugins/typescript/webworker.ts";
-import { isURL, removeRelativePrefix, timestamp } from "./_util.ts";
+import {
+  isURL,
+  readTextFile,
+  removeRelativePrefix,
+  timestamp,
+} from "./_util.ts";
 
 type Inputs = string[];
 type OutputMap = Record<string, string>;
@@ -303,11 +308,11 @@ async function runBundle(
   const cacheFilePath = path.join(cacheDirPath, cacheFileName);
 
   const { graph: initialGraph }: CacheData = fs.existsSync(cacheFilePath)
-    ? JSON.parse(await Deno.readTextFile(cacheFilePath))
+    ? JSON.parse(await readTextFile(cacheFilePath))
     : { graph: {} };
 
   const config = configFilePath && fs.existsSync(configFilePath)
-    ? JSON.parse(await Deno.readTextFile(configFilePath))
+    ? JSON.parse(await readTextFile(configFilePath))
     : {};
   const compilerOptions = config.compilerOptions
     ? ts.convertCompilerOptionsFromJson(
@@ -318,7 +323,7 @@ async function runBundle(
 
   const importMap: ImportMap =
     (importMapPath
-      ? JSON.parse(await Deno.readTextFile(importMapPath))
+      ? JSON.parse(await readTextFile(importMapPath))
       : { imports: {} });
 
   const options: Options = {

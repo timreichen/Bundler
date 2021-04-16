@@ -67,3 +67,21 @@ export function size(size: number) {
   const unit = units[index];
   return `${Math.ceil(number)}${unit}`;
 }
+
+export async function readTextFile(
+  ...args: Parameters<typeof Deno.readTextFile>
+) {
+  const [path] = args;
+
+  try {
+    return await Deno.readTextFile(...args);
+  } catch (error) {
+    const message: string = error.message;
+
+    if (error.name === "NotFound" && !message.includes(`${path}`)) {
+      error.message += `: ${path}`;
+    }
+
+    throw error;
+  }
+}

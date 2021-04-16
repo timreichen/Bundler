@@ -14,6 +14,7 @@ import { resolve as resolveCache } from "../../cache.ts";
 import { postcssInjectImportsPlugin } from "./postcss/inject_imports.ts";
 import { postcssInjectDependenciesPlugin } from "./postcss/inject_dependencies.ts";
 import { getAsset } from "../../graph.ts";
+import { readTextFile } from "../../_util.ts";
 
 export class CssPlugin extends Plugin {
   use: postcss.AcceptedPlugin[];
@@ -51,7 +52,7 @@ export class CssPlugin extends Plugin {
     return css;
   }
   async readSource(filePath: string) {
-    return await Deno.readTextFile(filePath);
+    return await readTextFile(filePath);
   }
   async createAsset(
     item: Item,

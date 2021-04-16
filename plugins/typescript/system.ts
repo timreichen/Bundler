@@ -1,5 +1,5 @@
 import { fs, path, Sha256, ts } from "../../deps.ts";
-import { addRelativePrefix, isURL } from "../../_util.ts";
+import { addRelativePrefix, isURL, readTextFile } from "../../_util.ts";
 import { Chunk, Context, DependencyType, Format } from "../plugin.ts";
 import { TypescriptPlugin } from "./typescript.ts";
 import { cache, resolve as resolveCache } from "../../cache.ts";
@@ -362,7 +362,7 @@ export class SystemPlugin extends TypescriptPlugin {
       await cache(filePath);
       filePath = resolveCache(filePath);
     }
-    return await Deno.readTextFile(filePath);
+    return await readTextFile(filePath);
   }
 
   async createBundle(

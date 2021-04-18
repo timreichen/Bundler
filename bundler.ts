@@ -70,19 +70,28 @@ export class Bundler {
   async readSource(item: Item, context: Context): Promise<Source> {
     const input = item.history[0];
     const source = context.sources[input];
-    if (source !== undefined) return source;
+    if (source !== undefined) {
+      return source;
+    }
     for (const plugin of this.plugins) {
       if (plugin.readSource && await plugin.test(item, context)) {
         const time = performance.now();
-        const source = await plugin.readSource(input, context);
-        context.sources[input] = source;
-        this.logger.debug(
-          colors.cyan("readSource"),
-          input,
-          colors.dim(plugin.constructor.name),
-          colors.dim(timestamp(time)),
-        );
-        return source;
+        try {
+          const source = await plugin.readSource(input, context);
+          context.sources[input] = source;
+          this.logger.debug(
+            colors.cyan("Read Source"),
+            input,
+            colors.dim(plugin.constructor.name),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
+          );
+          return source;
+        } catch (error) {
+          if (error instanceof Deno.errors.NotFound) {
+            throw new Error(`file was not found: ${input}`);
+          }
+          throw error;
+        }
       }
     }
     throw new Error(`No readSource plugin found: '${input}'`);
@@ -106,10 +115,10 @@ export class Bundler {
         if (newSource !== undefined) {
           source = newSource;
           this.logger.debug(
-            colors.cyan("transformSource"),
+            colors.cyan("Transform Source"),
             input,
             colors.dim(plugin.constructor.name),
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
           );
         }
       }
@@ -127,10 +136,10 @@ export class Bundler {
         const asset = await plugin.createAsset(item, context);
         if (asset !== undefined) {
           this.logger.debug(
-            colors.cyan("createAsset"),
+            colors.cyan("Create Asset"),
             input,
             colors.dim(plugin.constructor.name),
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
           );
           return asset;
         }
@@ -234,7 +243,7 @@ export class Bundler {
       colors.dim(
         `${assetList.length} file${assetList.length === 1 ? "" : "s"}`,
       ),
-      colors.dim(timestamp(time)),
+      colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
 
     return graph;
@@ -254,10 +263,10 @@ export class Bundler {
         );
         if (chunk !== undefined) {
           this.logger.debug(
-            colors.cyan("createChunk"),
+            colors.cyan("Create Chunk"),
             chunk.history[0],
             colors.dim(plugin.constructor.name),
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
             ...chunk.dependencies.map((dependency) =>
               colors.dim(
                 [
@@ -328,7 +337,7 @@ export class Bundler {
       colors.green("Create"),
       "Chunks",
       colors.dim(`${counter} file${counter === 1 ? "" : "s"}`),
-      colors.dim(timestamp(time)),
+      colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
     return chunks;
   }
@@ -343,13 +352,13 @@ export class Bundler {
         const input = chunk.history[0];
         if (bundle !== undefined) {
           this.logger.debug(
-            colors.cyan("createBundle"),
+            colors.cyan("Create Bundle"),
             input,
             colors.dim(plugin.constructor.name),
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
             `\n`,
             colors.dim(`➞`),
-            colors.dim((getAsset(context.graph, chunk.type, input).output)),
+            colors.dim((getAsset(context.graph, input, chunk.type).output)),
             colors.dim(`{ ${Format[chunk.format]}, ${chunk.type} }`),
           );
           const length = bundle.length;
@@ -358,10 +367,10 @@ export class Bundler {
             "Bundle",
             input,
             colors.dim(size(length)),
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
             `\n`,
             colors.dim(`➞`),
-            colors.dim((getAsset(context.graph, chunk.type, input).output)),
+            colors.dim((getAsset(context.graph, input, chunk.type).output)),
           );
           return bundle;
         } else {
@@ -370,10 +379,10 @@ export class Bundler {
             colors.green("Check"),
             "Bundle",
             input,
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
             `\n`,
             colors.dim(`➞`),
-            colors.dim((getAsset(context.graph, chunk.type, input).output)),
+            colors.dim((getAsset(context.graph, input, chunk.type).output)),
           );
           // exit
           return;
@@ -384,20 +393,20 @@ export class Bundler {
   }
   async optimizeBundle(chunk: Chunk, context: Context) {
     const time = performance.now();
-    const output = getAsset(context.graph, chunk.type, chunk.history[0]).output;
+    const output = getAsset(context.graph, chunk.history[0], chunk.type).output;
     let bundle = context.bundles[output];
     for (const plugin of this.plugins) {
       if (plugin.optimizeBundle && await plugin.test(chunk, context)) {
         const input = chunk.history[0];
-        const output = getAsset(context.graph, chunk.type, input).output;
+        const output = getAsset(context.graph, input, chunk.type).output;
         bundle = await plugin.optimizeBundle(output, context);
         this.logger.debug(
-          colors.cyan("optimizeBundle"),
+          colors.cyan("Optimize Bundle"),
           input,
           colors.dim(`➞`),
-          colors.dim((getAsset(context.graph, chunk.type, input).output)),
+          colors.dim((getAsset(context.graph, input, chunk.type).output)),
           colors.dim(plugin.constructor.name),
-          colors.dim(timestamp(time)),
+          colors.dim(colors.italic(`(${timestamp(time)})`)),
         );
       }
     }
@@ -433,7 +442,7 @@ export class Bundler {
       let bundle = await this.createBundle(chunk, context);
       if (bundle !== undefined) {
         const input = chunk.history[0];
-        const chunkAsset = getAsset(graph, chunk.type, input);
+        const chunkAsset = getAsset(graph, input, chunk.type);
         const output = chunkAsset.output;
         bundles[output] = bundle;
         if (context.optimize) {

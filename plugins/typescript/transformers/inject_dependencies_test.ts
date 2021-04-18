@@ -44,29 +44,31 @@ const compilerOptions: ts.CompilerOptions = {
   target: ts.ScriptTarget.Latest,
 };
 
+const printer: ts.Printer = ts.createPrinter({ removeComments: false });
+
 Deno.test({
   name: "[typescript inject dependencies transfomer] importMap",
   fn() {
     const importMap: ImportMap = { imports: { "src/": "custom/path/" } };
     const input = "src/a.ts";
+    const resolvedInput = "custom/path/a.ts";
     const bundleOutput = "dist/a.js";
     const dependency = "src/b.ts";
+    const resolvedDependency = "custom/path/b.ts";
+    const dependencyOutput = "dist/b.js";
     const source = `import * as A from "./b.ts";`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
-      [input]: {
+      [resolvedInput]: {
         [DependencyType.Import]: {
-          filePath: input,
+          filePath: resolvedInput,
           output: bundleOutput,
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Import,
                 format: Format.Script,
               },
@@ -76,48 +78,47 @@ Deno.test({
           format: Format.Script,
         },
       },
-      [dependency]: {
+      [resolvedDependency]: {
         [DependencyType.Import]: {
-          filePath: dependency,
-          output: bundleOutput,
+          filePath: resolvedDependency,
+          output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
           format: Format.Script,
         },
       },
     };
     const chunk: Chunk = {
-      history: [input],
+      history: [resolvedInput],
       type: DependencyType.Import,
       format: Format.Script,
       dependencies: [
         {
-          history: [dependency],
-          type: DependencyType.Fetch,
+          history: [resolvedDependency],
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
-
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
-    assertStringIncludes(outputText, `import * as A from "custom/path/b.ts";`);
+    assertStringIncludes(outputText, `import * as A from "./b.js";`);
   },
 });
 
@@ -128,13 +129,9 @@ Deno.test({
     const input = "src/a.ts";
     const bundleOutput = "dist/a.js";
     const dependency = "src/b.ts";
+    const dependencyOutput = "dist/b.js";
     const source = `import * as A from "./b.ts";`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -143,7 +140,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Import,
                 format: Format.Script,
               },
@@ -156,7 +155,7 @@ Deno.test({
       [dependency]: {
         [DependencyType.Import]: {
           filePath: dependency,
-          output: bundleOutput,
+          output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
           format: Format.Script,
         },
@@ -169,32 +168,32 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
 
     assertEquals(diagnostics, []);
-    assertStringIncludes(outputText, `import * as A from "src/b.ts";`);
+    assertStringIncludes(outputText, `import * as A from "./b.js";`);
   },
 });
 
@@ -205,13 +204,9 @@ Deno.test({
     const input = "src/a.ts";
     const bundleOutput = "dist/a.js";
     const dependency = "src/b.ts";
+    const dependencyOutput = "dist/b.js";
     const source = `import { A, B } from "./b.ts";`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -220,7 +215,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Import,
                 format: Format.Script,
               },
@@ -233,7 +230,7 @@ Deno.test({
       [dependency]: {
         [DependencyType.Import]: {
           filePath: dependency,
-          output: bundleOutput,
+          output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
           format: Format.Script,
         },
@@ -246,29 +243,29 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(outputText, ``);
   },
@@ -281,13 +278,9 @@ Deno.test({
     const input = "src/a.ts";
     const bundleOutput = "dist/a.js";
     const dependency = "src/b.ts";
+    const dependencyOutput = "dist/b.js";
     const source = `import A from "./b.ts";`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -296,7 +289,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Import,
                 format: Format.Script,
               },
@@ -309,7 +304,7 @@ Deno.test({
       [dependency]: {
         [DependencyType.Import]: {
           filePath: dependency,
-          output: bundleOutput,
+          output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
           format: Format.Script,
         },
@@ -322,29 +317,29 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(outputText, ``);
   },
@@ -357,13 +352,9 @@ Deno.test({
     const input = "src/a.ts";
     const bundleOutput = "dist/a.js";
     const dependency = "src/b.ts";
+    const dependencyOutput = "dist/b.js";
     const source = `import "./b.ts";`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -372,7 +363,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Import,
                 format: Format.Script,
               },
@@ -385,7 +378,7 @@ Deno.test({
       [dependency]: {
         [DependencyType.Import]: {
           filePath: dependency,
-          output: bundleOutput,
+          output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
           format: Format.Script,
         },
@@ -398,29 +391,29 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(outputText, ``);
   },
@@ -436,11 +429,6 @@ Deno.test({
     const dependencyOutput = "dist/b.js";
     const source = `import("./b.ts");`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -449,7 +437,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.DynamicImport,
                 format: Format.Script,
               },
@@ -475,29 +465,29 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(outputText, `import("./b.js");`);
   },
@@ -510,13 +500,9 @@ Deno.test({
     const input = "src/a.ts";
     const bundleOutput = "dist/a.js";
     const dependency = "src/b.ts";
+    const dependencyOutput = "dist/b.js";
     const source = `import("./" + "b.ts");`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -525,7 +511,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Import,
                 format: Format.Script,
               },
@@ -538,7 +526,7 @@ Deno.test({
       [dependency]: {
         [DependencyType.Import]: {
           filePath: dependency,
-          output: bundleOutput,
+          output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
           format: Format.Script,
         },
@@ -551,29 +539,29 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(outputText, `import("./" + "b.ts");`);
   },
@@ -586,13 +574,9 @@ Deno.test({
     const input = "src/a.ts";
     const bundleOutput = "dist/a.js";
     const dependency = "src/b.ts";
+    const dependencyOutput = "dist/b.js";
     const source = `export type { A } from "./b.ts";`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -601,7 +585,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: ["A"],
+                specifiers: { "A": "A" },
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Export,
                 format: Format.Script,
               },
@@ -614,7 +600,7 @@ Deno.test({
       [dependency]: {
         [DependencyType.Export]: {
           filePath: dependency,
-          output: bundleOutput,
+          output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
           format: Format.Script,
         },
@@ -627,31 +613,31 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
-    assertStringIncludes(outputText, `export {};`);
+    assertStringIncludes(outputText, `export type { A } from "./b.js";`);
   },
 });
 
@@ -662,13 +648,9 @@ Deno.test({
     const input = "src/a.ts";
     const bundleOutput = "dist/a.js";
     const dependency = "src/b.ts";
+    const dependencyOutput = "dist/b.js";
     const source = `export * from "./b.ts";`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -677,8 +659,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: ["*"],
-                type: DependencyType.Import,
+                specifiers: {},
+                defaults: [],
+                namespaces: [undefined],
+                type: DependencyType.Export,
                 format: Format.Script,
               },
             },
@@ -688,9 +672,9 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Import]: {
+        [DependencyType.Export]: {
           filePath: dependency,
-          output: bundleOutput,
+          output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
           format: Format.Script,
         },
@@ -703,31 +687,31 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
-    assertStringIncludes(outputText, `export * from "src/b.ts";`);
+    assertStringIncludes(outputText, `export * from "./b.js";`);
   },
 });
 
@@ -738,13 +722,9 @@ Deno.test({
     const input = "src/a.ts";
     const bundleOutput = "dist/a.js";
     const dependency = "src/b.ts";
+    const dependencyOutput = "dist/b.js";
     const source = `export * as b from "./b.ts";`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -753,8 +733,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Import,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Export,
                 format: Format.Script,
               },
             },
@@ -764,9 +746,9 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Import]: {
+        [DependencyType.Export]: {
           filePath: dependency,
-          output: bundleOutput,
+          output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
           format: Format.Script,
         },
@@ -779,33 +761,33 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(
       outputText,
-      `import * as b_1 from "src/b.ts";\nexport { b_1 as b };`,
+      `export * as b from "./b.js";`,
     );
   },
 });
@@ -817,13 +799,9 @@ Deno.test({
     const input = "src/a.ts";
     const bundleOutput = "dist/a.js";
     const dependency = "src/b.ts";
+    const dependencyOutput = "dist/b.js";
     const source = `export { a, b } from "./b.ts"`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -832,8 +810,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Import,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Export,
                 format: Format.Script,
               },
             },
@@ -843,9 +823,9 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Import]: {
+        [DependencyType.Export]: {
           filePath: dependency,
-          output: bundleOutput,
+          output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
           format: Format.Script,
         },
@@ -858,31 +838,31 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
-    assertStringIncludes(outputText, `export { a, b } from "src/b.ts";`);
+    assertStringIncludes(outputText, `export { a, b } from "./b.js";`);
   },
 });
 
@@ -896,11 +876,6 @@ Deno.test({
     const dependencyOutput = "dist/b.js";
     const source = `const worker = new Worker("./b.ts")`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -909,7 +884,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.WebWorker,
                 format: Format.Script,
               },
@@ -935,29 +912,29 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(outputText, `const worker = new Worker("./b.js");`);
   },
@@ -973,11 +950,6 @@ Deno.test({
     const dependencyOutput = "dist/b.js";
     const source = `fetch("./b.ts")`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -986,7 +958,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Fetch,
                 format: Format.Script,
               },
@@ -1017,24 +991,24 @@ Deno.test({
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(outputText, `fetch("./b.js")`);
   },
@@ -1050,11 +1024,6 @@ Deno.test({
     const dependencyOutput = "dist/b.js";
     const source = `fetch("./b.ts")`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -1063,7 +1032,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Fetch,
                 format: Format.Script,
               },
@@ -1094,24 +1065,24 @@ Deno.test({
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(outputText, `fetch("./dist/b.js")`);
   },
@@ -1127,11 +1098,6 @@ Deno.test({
     const dependencyOutput = "b.js";
     const source = `fetch("./b.ts")`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -1140,7 +1106,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Fetch,
                 format: Format.Script,
               },
@@ -1166,29 +1134,29 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(outputText, `fetch("../b.js")`);
   },
@@ -1204,11 +1172,6 @@ Deno.test({
     const dependencyOutput = "dist/b.js";
     const source = `navigator.serviceWorker.register("./b.ts")`;
 
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
     const graph: Graph = {
       [input]: {
         [DependencyType.Import]: {
@@ -1217,7 +1180,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.ServiceWorker,
                 format: Format.Script,
               },
@@ -1243,29 +1208,29 @@ Deno.test({
       dependencies: [
         {
           history: [dependency],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Script,
         },
       ],
     };
-    const transformers = {
-      before: [
-        typescriptInjectDependenciesTranformer(
-          sourceFile,
-          chunk,
-          { graph, importMap },
-        ),
-      ],
-    };
 
-    const { diagnostics, outputText } = ts.transpileModule(
+    const sourceFile = ts.createSourceFile(
+      input,
       source,
-      {
-        compilerOptions,
-        transformers,
-        reportDiagnostics: true,
-      },
+      ts.ScriptTarget.Latest,
     );
+    const transformers = [
+      typescriptInjectDependenciesTranformer(
+        chunk,
+        { graph, importMap },
+      ),
+    ];
+    const { diagnostics, transformed } = ts.transform(
+      sourceFile,
+      transformers,
+      compilerOptions,
+    );
+    const outputText = printer.printFile(transformed[0]);
     assertEquals(diagnostics, []);
     assertStringIncludes(
       outputText,

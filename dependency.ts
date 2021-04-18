@@ -11,6 +11,7 @@ export function resolve(
     importMap,
     filePath,
   );
+
   const isUrl = isURL(resolvedImportPath);
   const parentIsUrl = isURL(filePath);
 

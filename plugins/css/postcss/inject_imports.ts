@@ -13,7 +13,7 @@ export function postcssInjectImportsPlugin(
   const processor = postcss.default(use);
   const input = chunk.history[0];
 
-  const parentAsset = getAsset(graph, chunk.type, input);
+  const parentAsset = getAsset(graph, input, chunk.type);
   return (root: any) => {
     const promises: Promise<any>[] = [];
     let importIndex = 0;
@@ -66,7 +66,7 @@ export function postcssInjectImportsPlugin(
         ) {
           importIndex = ruleIndex + 1;
 
-          const asset = getAsset(graph, DependencyType.Import, resolvedUrl);
+          const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
 
           const resolvedOutput = addRelativePrefix(
             path.relative(path.dirname(parentAsset.output), asset.output),

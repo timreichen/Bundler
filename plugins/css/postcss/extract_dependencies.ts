@@ -27,7 +27,9 @@ export function postcssExtractDependenciesPlugin(
           if (!url || isURL(url)) return;
           const resolvedUrl = resolveDependency(input, url, importMap);
           imports[resolvedUrl] = {
-            specifiers: [],
+            specifiers: {},
+            defaults: [],
+            namespaces: [],
             type: DependencyType.Import,
             format: Format.Style,
           };
@@ -41,8 +43,10 @@ export function postcssExtractDependenciesPlugin(
           if (!url || isURL(url)) continue;
           const resolvedUrl = resolveDependency(input, url, importMap);
           imports[resolvedUrl] = {
-            specifiers: [],
-            type: DependencyType.Fetch,
+            specifiers: {},
+            defaults: [],
+            namespaces: [],
+            type: DependencyType.Import,
             format: Format.Image,
           };
         }

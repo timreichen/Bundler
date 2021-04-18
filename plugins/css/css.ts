@@ -35,7 +35,7 @@ export class CssPlugin extends Plugin {
     context: Context,
   ) {
     const { graph, bundler } = context;
-    const asset = getAsset(graph, chunk.type, bundleInput);
+    const asset = getAsset(graph, bundleInput, chunk.type);
     const bundleOutput = asset.output;
 
     const processor = postcss.default([
@@ -101,7 +101,7 @@ export class CssPlugin extends Plugin {
       const { history, type } = dependencyItem;
       const input = history[0];
 
-      const asset = getAsset(graph, type, input);
+      const asset = getAsset(graph, input, type);
       if (
         input === rootInput || asset.format === Format.Style
       ) {
@@ -179,7 +179,7 @@ export class CssPlugin extends Plugin {
         );
       }
     }
-    const bundleAsset = getAsset(graph, chunk.type, bundleInput);
+    const bundleAsset = getAsset(graph, bundleInput, chunk.type);
     if (!needsBundleUpdate && await fs.exists(bundleAsset.output)) {
       return;
     }

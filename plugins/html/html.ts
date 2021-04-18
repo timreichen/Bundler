@@ -1,4 +1,4 @@
-import { fs, path, postcss, posthtml, Sha256 } from "../../deps.ts";
+import { path, postcss, posthtml, Sha256 } from "../../deps.ts";
 import { getAsset } from "../../graph.ts";
 import {
   Chunk,
@@ -94,7 +94,7 @@ export class HtmlPlugin extends Plugin {
     const input = history[0];
     const { graph } = context;
     const dependencies: Item[] = [item];
-    const asset = getAsset(graph, type, input);
+    const asset = getAsset(graph, input, type);
     Object.entries(asset.dependencies.imports).forEach(
       ([dependency, { type, format }]) => {
         if (dependency && dependency !== input) {
@@ -133,7 +133,7 @@ export class HtmlPlugin extends Plugin {
     const { bundler, reload, graph } = context;
     const { history, type } = chunk;
     const bundleInput = history[0];
-    const bundleAsset = getAsset(graph, type, bundleInput);
+    const bundleAsset = getAsset(graph, bundleInput, type);
 
     const { filePath, output } = bundleAsset;
 

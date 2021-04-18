@@ -24,7 +24,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 
 document.body.appendChild(renderer.domElement);
 
-function loadTexture(url: string) {
+function loadTexture(url) {
   const loader = new TextureLoader();
   return new Promise((resolve) => loader.load(url, resolve));
 }

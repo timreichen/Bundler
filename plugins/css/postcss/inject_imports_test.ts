@@ -22,7 +22,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Import,
                 format: Format.Style,
               },
@@ -113,7 +115,9 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
                 type: DependencyType.Import,
                 format: Format.Style,
               },

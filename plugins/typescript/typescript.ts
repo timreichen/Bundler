@@ -87,6 +87,7 @@ export class TypescriptPlugin extends Plugin {
       [typescriptExtractDependenciesTransformer(dependencies)],
       this.compilerOptions,
     );
+
     const resolvedDependencies = resolveDependencies(
       input,
       dependencies,
@@ -111,17 +112,15 @@ export class TypescriptPlugin extends Plugin {
     chunkList: ChunkList,
   ) {
     const dependencies: Item[] = [];
-
     const dependencyList: Item[] = [item];
     const checkedItems: any = {};
     for (const dependencyItem of dependencyList) {
       const { history, type } = dependencyItem;
       const input = history[0];
       if (checkedItems[type]?.[input]) continue;
-      const asset = getAsset(context.graph, type, input);
+      const asset = getAsset(context.graph, input, type);
       checkedItems[type] = checkedItems[type] || {};
       checkedItems[type][input] = asset;
-
       switch (asset.format) {
         case Format.Script: {
           switch (type) {
@@ -154,7 +153,7 @@ export class TypescriptPlugin extends Plugin {
             case DependencyType.DynamicImport:
             case DependencyType.ServiceWorker:
             case DependencyType.WebWorker:
-            case DependencyType.Fetch:
+            case DependencyType.Import:
               chunkList.push(dependencyItem);
               break;
           }

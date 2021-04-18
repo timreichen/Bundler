@@ -2,7 +2,7 @@ import { Bundler } from "../../bundler.ts";
 import { HtmlPlugin } from "../../plugins/html/html.ts";
 import { CssPlugin } from "../../plugins/css/css.ts";
 import { DependencyType, Plugin } from "../../plugins/plugin.ts";
-import { SystemPlugin } from "../../plugins/typescript/system.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/typescript_top_level_await_module.ts";
 import { assertEquals } from "../../test_deps.ts";
 
 Deno.test({
@@ -13,7 +13,7 @@ Deno.test({
     );
     const plugins: Plugin[] = [
       new HtmlPlugin(),
-      new SystemPlugin(),
+      new TypescriptTopLevelAwaitModulePlugin(),
       new CssPlugin(),
     ];
     const bundler = new Bundler(plugins, { quiet: true });

@@ -45,7 +45,9 @@ Deno.test({
     );
     assertEquals(dependencies.imports, {
       "./b.ts": {
-        specifiers: ["*"],
+        specifiers: {},
+        defaults: [],
+        namespaces: ["A"],
         type: DependencyType.Import,
         format: Format.Script,
       },
@@ -73,7 +75,9 @@ Deno.test({
     );
     assertEquals(dependencies.imports, {
       "./b.ts": {
-        specifiers: ["A", "B"],
+        specifiers: { "A": "A", "B": "B" },
+        defaults: [],
+        namespaces: [],
         type: DependencyType.Import,
         format: Format.Script,
       },
@@ -83,10 +87,10 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[typescript extract dependencies transfomer] named as import",
+  name: "[typescript extract dependencies transfomer] named alias import",
   fn() {
     const fileName = "src/a.ts";
-    const sourceText = `import { A as X, B } from "./b.ts";`;
+    const sourceText = `import { A as X, A as Y, B } from "./b.ts";`;
 
     const dependencies: Dependencies = { imports: {}, exports: {} };
     const sourceFile = ts.createSourceFile(
@@ -101,7 +105,9 @@ Deno.test({
     );
     assertEquals(dependencies.imports, {
       "./b.ts": {
-        specifiers: ["A", "B"],
+        specifiers: { "X": "A", "Y": "A", "B": "B" },
+        defaults: [],
+        namespaces: [],
         type: DependencyType.Import,
         format: Format.Script,
       },
@@ -129,7 +135,9 @@ Deno.test({
     );
     assertEquals(dependencies.imports, {
       "./b.ts": {
-        specifiers: ["default"],
+        specifiers: {},
+        defaults: ["A"],
+        namespaces: [],
         type: DependencyType.Import,
         format: Format.Script,
       },
@@ -158,6 +166,8 @@ Deno.test({
     assertEquals(dependencies.imports, {
       "./b.ts": {
         specifiers: [],
+        defaults: [],
+        namespaces: [],
         type: DependencyType.Import,
         format: Format.Script,
       },
@@ -279,7 +289,9 @@ Deno.test({
     assertEquals(dependencies.imports, {});
     assertEquals(dependencies.exports, {
       "./b.ts": {
-        specifiers: ["*"],
+        specifiers: {},
+        defaults: [],
+        namespaces: [undefined],
         type: DependencyType.Export,
         format: Format.Script,
       },
@@ -307,7 +319,9 @@ Deno.test({
     assertEquals(dependencies.imports, {});
     assertEquals(dependencies.exports, {
       "./b.ts": {
-        specifiers: ["b"],
+        specifiers: {},
+        defaults: [],
+        namespaces: ["b"],
         type: DependencyType.Export,
         format: Format.Script,
       },
@@ -335,7 +349,9 @@ Deno.test({
     assertEquals(dependencies.imports, {});
     assertEquals(dependencies.exports, {
       "./b.ts": {
-        specifiers: ["a", "b"],
+        specifiers: { "a": "a", "b": "b" },
+        defaults: [],
+        namespaces: [],
         type: DependencyType.Export,
         format: Format.Script,
       },
@@ -364,7 +380,9 @@ Deno.test({
     assertEquals(dependencies.imports, {});
     assertEquals(dependencies.exports, {
       ".": {
-        specifiers: ["a", "b"],
+        specifiers: { "a": "a", "b": "b" },
+        defaults: [],
+        namespaces: [],
         type: DependencyType.Export,
         format: Format.Script,
       },
@@ -392,7 +410,9 @@ Deno.test({
     assertEquals(dependencies.imports, {});
     assertEquals(dependencies.exports, {
       ".": {
-        specifiers: ["a"],
+        specifiers: { "a": "a" },
+        defaults: [],
+        namespaces: [],
         type: DependencyType.Export,
         format: Format.Script,
       },
@@ -420,7 +440,9 @@ Deno.test({
     assertEquals(dependencies.imports, {});
     assertEquals(dependencies.exports, {
       ".": {
-        specifiers: ["A"],
+        specifiers: { "A": "A" },
+        defaults: [],
+        namespaces: [],
         type: DependencyType.Export,
         format: Format.Script,
       },
@@ -448,7 +470,9 @@ Deno.test({
     assertEquals(dependencies.imports, {});
     assertEquals(dependencies.exports, {
       ".": {
-        specifiers: ["a"],
+        specifiers: { "a": "a" },
+        defaults: [],
+        namespaces: [],
         type: DependencyType.Export,
         format: Format.Script,
       },
@@ -477,7 +501,9 @@ Deno.test({
     assertEquals(dependencies.imports, {});
     assertEquals(dependencies.exports, {
       ".": {
-        specifiers: ["default"],
+        specifiers: [],
+        defaults: [],
+        namespaces: [],
         type: DependencyType.Export,
         format: Format.Script,
       },
@@ -505,7 +531,9 @@ Deno.test({
     assertEquals(dependencies.imports, {});
     assertEquals(dependencies.exports, {
       ".": {
-        specifiers: ["default"],
+        specifiers: {},
+        defaults: ["x"],
+        namespaces: [],
         type: DependencyType.Export,
         format: Format.Script,
       },
@@ -533,7 +561,9 @@ Deno.test({
     assertEquals(dependencies.imports, {});
     assertEquals(dependencies.exports, {
       ".": {
-        specifiers: ["default"],
+        specifiers: {},
+        defaults: ["X"],
+        namespaces: [],
         type: DependencyType.Export,
         format: Format.Script,
       },

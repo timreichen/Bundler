@@ -24,7 +24,7 @@ import { JsonPlugin } from "./plugins/json/json.ts";
 import { WebManifestPlugin } from "./plugins/json/webmanifest.ts";
 import { Plugin } from "./plugins/plugin.ts";
 import { ServiceWorkerPlugin } from "./plugins/typescript/serviceworker.ts";
-import { SystemPlugin } from "./plugins/typescript/system.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "./plugins/typescript/typescript_top_level_await_module.ts";
 import { TerserPlugin } from "./plugins/typescript/terser.ts";
 import { WebWorkerPlugin } from "./plugins/typescript/webworker.ts";
 import { isURL, removeRelativePrefix, timestamp } from "./_util.ts";
@@ -146,7 +146,7 @@ async function main({
 
     new ServiceWorkerPlugin({ compilerOptions }),
     new WebWorkerPlugin({ compilerOptions }),
-    new SystemPlugin({ compilerOptions }),
+    new TypescriptTopLevelAwaitModulePlugin({ compilerOptions }),
 
     new CssPlugin({ use }),
 
@@ -200,7 +200,7 @@ async function main({
     logger.info(
       colors.brightBlue("Bundle"),
       length ? `${length} file${length === 1 ? "" : "s"}` : `up-to-date`,
-      colors.dim(timestamp(time)),
+      colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
 
     initialGraph = graph;

@@ -31,8 +31,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Image,
               },
             },
@@ -42,7 +44,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
@@ -83,8 +85,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Image,
               },
             },
@@ -94,7 +98,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
@@ -136,8 +140,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Image,
               },
             },
@@ -147,7 +153,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
@@ -189,8 +195,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Style,
               },
             },
@@ -200,7 +208,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
@@ -242,8 +250,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Style,
               },
             },
@@ -253,7 +263,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
@@ -295,8 +305,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Style,
               },
             },
@@ -306,7 +318,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
@@ -348,8 +360,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Json,
               },
             },
@@ -359,7 +373,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
@@ -401,8 +415,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Script,
               },
             },
@@ -453,8 +469,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Style,
               },
             },
@@ -464,7 +482,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
@@ -538,8 +556,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Image,
               },
             },
@@ -549,7 +569,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
@@ -562,7 +582,7 @@ Deno.test({
       dependencies: [
         {
           history: [dependency, input],
-          type: DependencyType.Fetch,
+          type: DependencyType.Import,
           format: Format.Image,
         },
       ],

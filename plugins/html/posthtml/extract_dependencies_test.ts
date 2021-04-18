@@ -31,8 +31,10 @@ Deno.test({
     assertEquals(dependencies, {
       imports: {
         "custom/path/b.png": {
-          specifiers: [],
-          type: DependencyType.Fetch,
+          specifiers: {},
+          defaults: [],
+          namespaces: [],
+          type: DependencyType.Import,
           format: Format.Image,
         },
       },
@@ -65,8 +67,10 @@ Deno.test({
     assertEquals(dependencies, {
       imports: {
         "custom/path/b.png": {
-          specifiers: [],
-          type: DependencyType.Fetch,
+          specifiers: {},
+          defaults: [],
+          namespaces: [],
+          type: DependencyType.Import,
           format: Format.Image,
         },
       },
@@ -99,8 +103,10 @@ Deno.test({
     assertEquals(dependencies, {
       imports: {
         "custom/path/b.png": {
-          specifiers: [],
-          type: DependencyType.Fetch,
+          specifiers: {},
+          defaults: [],
+          namespaces: [],
+          type: DependencyType.Import,
           format: Format.Image,
         },
       },
@@ -128,8 +134,10 @@ Deno.test({
     assertEquals(dependencies, {
       imports: {
         "b.css": {
-          specifiers: [],
-          type: DependencyType.Fetch,
+          specifiers: {},
+          defaults: [],
+          namespaces: [],
+          type: DependencyType.Import,
           format: Format.Style,
         },
       },
@@ -157,8 +165,10 @@ Deno.test({
     assertEquals(dependencies, {
       imports: {
         "webmanifest.json": {
-          specifiers: [],
-          type: DependencyType.Fetch,
+          specifiers: {},
+          defaults: [],
+          namespaces: [],
+          type: DependencyType.Import,
           format: Format.WebManifest,
         },
       },
@@ -185,7 +195,9 @@ Deno.test({
     assertEquals(dependencies, {
       imports: {
         "b.js": {
-          specifiers: [],
+          specifiers: {},
+          defaults: [],
+          namespaces: [],
           type: DependencyType.Import,
           format: Format.Script,
         },
@@ -214,7 +226,9 @@ Deno.test({
     assertEquals(dependencies, {
       imports: {
         "b.css": {
-          specifiers: [],
+          specifiers: {},
+          defaults: [],
+          namespaces: [],
           type: DependencyType.Import,
           format: Format.Style,
         },
@@ -244,8 +258,10 @@ Deno.test({
     assertEquals(dependencies, {
       imports: {
         "b.png": {
-          specifiers: [],
-          type: DependencyType.Fetch,
+          specifiers: {},
+          defaults: [],
+          namespaces: [],
+          type: DependencyType.Import,
           format: Format.Image,
         },
       },

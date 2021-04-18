@@ -2,15 +2,15 @@ import { Bundler } from "../../bundler.ts";
 import { HtmlPlugin } from "../../plugins/html/html.ts";
 import { JsonPlugin } from "../../plugins/json/json.ts";
 import { DependencyType, Plugin } from "../../plugins/plugin.ts";
-import { SystemPlugin } from "../../plugins/typescript/system.ts";
-import { assertEquals } from "../../test_deps.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/typescript_top_level_await_module.ts";
+import { assertEquals, assertStringIncludes } from "../../test_deps.ts";
 
 Deno.test({
   name: "[example] json",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),
-      new SystemPlugin(),
+      new TypescriptTopLevelAwaitModulePlugin(),
       new JsonPlugin(),
     ];
     const bundler = new Bundler(plugins, { quiet: true });
@@ -37,5 +37,24 @@ Deno.test({
       "dist/deps/09d8e952e45bcc70a3ecee25cafa7ffdef5b7ef6b3280adab0143b048b420c7c.html",
       "dist/deps/db86e1fd887f6089efeeabc89602a3e33578f97f3a853b0cd9cf95c8fedc996a.js",
     ]);
+
+    assertStringIncludes(
+      bundles[
+        "dist/deps/db86e1fd887f6089efeeabc89602a3e33578f97f3a853b0cd9cf95c8fedc996a.js"
+      ] as string,
+      `const mod = (async () => {`,
+    );
+    assertStringIncludes(
+      bundles[
+        "dist/deps/db86e1fd887f6089efeeabc89602a3e33578f97f3a853b0cd9cf95c8fedc996a.js"
+      ] as string,
+      `return { default:`,
+    );
+    assertStringIncludes(
+      bundles[
+        "dist/deps/db86e1fd887f6089efeeabc89602a3e33578f97f3a853b0cd9cf95c8fedc996a.js"
+      ] as string,
+      `export default (async () => {`,
+    );
   },
 });

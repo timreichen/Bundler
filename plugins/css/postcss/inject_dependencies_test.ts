@@ -8,6 +8,7 @@ import { postcssInjectDependenciesPlugin } from "./inject_dependencies.ts";
 //   name: "[postcss inject dependencies plugin] @import",
 //   async fn() {
 //     const input = "src/a.css";
+//     const inputOutput = "dist/a.css";
 //     const dependency = "src/b.css";
 //     const graph: Graph = {
 //       [input]: {
@@ -17,8 +18,10 @@ import { postcssInjectDependenciesPlugin } from "./inject_dependencies.ts";
 //           dependencies: {
 //             imports: {
 //               [dependency]: {
-//                 specifiers: [],
-//                 type: DependencyType.Fetch,
+//                 specifiers: {},
+//                 defaults: [],
+//                 namespaces: [],
+//                 type: DependencyType.Import,
 //                 format: Format.Style,
 //               },
 //             },
@@ -28,20 +31,22 @@ import { postcssInjectDependenciesPlugin } from "./inject_dependencies.ts";
 //         },
 //       },
 //       [dependency]: {
-//         [DependencyType.Fetch]: {
+//         [DependencyType.Import]: {
 //           filePath: dependency,
-//           output: "dist/b.css",
+//           output: "dist/out.css",
 //           dependencies: { imports: {}, exports: {} },
 //           format: Format.Style,
 //         },
 //       },
 //     };
-//     const plugin = postcssInjectDependenciesPlugin(input, inputOutput,{ graph});
+//     const plugin = postcssInjectDependenciesPlugin(input, inputOutput, {
+//       graph,
+//     });
 //     const processor = postcss.default([plugin]);
 
 //     const source = `@import "./b.css";`;
 //     const { css } = await processor.process(source);
-//     assertStringIncludes(css, `div { background-image: url("./image.png"); }`)
+//     assertStringIncludes(css, `@import "./out.css";`);
 //   },
 // });
 
@@ -49,6 +54,7 @@ import { postcssInjectDependenciesPlugin } from "./inject_dependencies.ts";
 //   name: "[postcss inject dependencies plugin] @import url()",
 //   async fn() {
 //     const input = "src/a.css";
+//     const inputOutput = "dist/a.css";
 //     const dependency = "src/b.css";
 //     const graph: Graph = {
 //       [input]: {
@@ -58,8 +64,10 @@ import { postcssInjectDependenciesPlugin } from "./inject_dependencies.ts";
 //           dependencies: {
 //             imports: {
 //               [dependency]: {
-//                 specifiers: [],
-//                 type: DependencyType.Fetch,
+//                 specifiers: {},
+//                 defaults: [],
+//                 namespaces: [],
+//                 type: DependencyType.Import,
 //                 format: Format.Style,
 //               },
 //             },
@@ -69,20 +77,22 @@ import { postcssInjectDependenciesPlugin } from "./inject_dependencies.ts";
 //         },
 //       },
 //       [dependency]: {
-//         [DependencyType.Fetch]: {
+//         [DependencyType.Import]: {
 //           filePath: dependency,
-//           output: "dist/b.css",
+//           output: "dist/out.css",
 //           dependencies: { imports: {}, exports: {} },
 //           format: Format.Style,
 //         },
 //       },
 //     };
-//     const plugin = postcssInjectDependenciesPlugin(input, inputOutput,{ graph});
+//     const plugin = postcssInjectDependenciesPlugin(input, inputOutput, {
+//       graph,
+//     });
 //     const processor = postcss.default([plugin]);
 
 //     const source = `@import url("./b.css");`;
 //     const { css } = await processor.process(source);
-//     assertStringIncludes(css, `div { background-image: url("./image.png"); }`)
+//     assertStringIncludes(css, `@import url("./out.css");`);
 //   },
 // });
 
@@ -100,8 +110,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Style,
               },
             },
@@ -111,7 +123,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: "dist/image.png",
           dependencies: { imports: {}, exports: {} },
@@ -147,8 +159,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Style,
               },
             },
@@ -158,7 +172,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },
@@ -194,8 +208,10 @@ Deno.test({
           dependencies: {
             imports: {
               [dependency]: {
-                specifiers: [],
-                type: DependencyType.Fetch,
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Import,
                 format: Format.Style,
               },
             },
@@ -205,7 +221,7 @@ Deno.test({
         },
       },
       [dependency]: {
-        [DependencyType.Fetch]: {
+        [DependencyType.Import]: {
           filePath: dependency,
           output: dependencyOutput,
           dependencies: { imports: {}, exports: {} },

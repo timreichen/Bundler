@@ -68,6 +68,7 @@ export class Bundler {
     this.logger = new Logger({ logLevel, quiet });
   }
   async readSource(item: Item, context: Context): Promise<Source> {
+    this.logger.trace("readSource");
     const input = item.history[0];
     const source = context.sources[input];
     if (source !== undefined) {
@@ -101,7 +102,9 @@ export class Bundler {
     item: Item,
     context: Context,
   ) {
+    this.logger.trace("transformSource");
     const input = item.history[0];
+
     let source = await this.readSource(item, context);
 
     for (const plugin of this.plugins) {
@@ -129,6 +132,7 @@ export class Bundler {
     item: Item,
     context: Context,
   ): Promise<Asset> {
+    this.logger.trace("createAsset");
     const time = performance.now();
     const input = item.history[0];
     for (const plugin of this.plugins) {
@@ -148,6 +152,7 @@ export class Bundler {
     throw new Error(`No createAsset plugin found: '${input}'`);
   }
   async createGraph(inputs: Inputs, options: CreateGraphOptions = {}) {
+    this.logger.trace("createGraph");
     const time = performance.now();
     const outDirPath = "dist";
     const context: Context = {
@@ -253,6 +258,7 @@ export class Bundler {
     context: Context,
     chunkList: ChunkList,
   ) {
+    this.logger.trace("createChunk");
     const time = performance.now();
     for (const plugin of this.plugins) {
       if (plugin.createChunk && await plugin.test(item, context)) {
@@ -291,6 +297,7 @@ export class Bundler {
     graph: Graph,
     options: CreateChunkOptions = {},
   ) {
+    this.logger.trace("createChunks");
     const time = performance.now();
     const chunkList: Item[] = inputs.map((input) => ({
       history: [input],
@@ -345,6 +352,7 @@ export class Bundler {
     chunk: Chunk,
     context: Context,
   ) {
+    this.logger.trace("createBundle");
     const time = performance.now();
     for (const plugin of this.plugins) {
       if (plugin.createBundle && await plugin.test(chunk, context)) {
@@ -392,6 +400,7 @@ export class Bundler {
     throw new Error(`No createBundle plugin found: '${chunk.history[0]}'`);
   }
   async optimizeBundle(chunk: Chunk, context: Context) {
+    this.logger.trace("optimizeBundle");
     const time = performance.now();
     const output = getAsset(context.graph, chunk.history[0], chunk.type).output;
     let bundle = context.bundles[output];
@@ -417,6 +426,7 @@ export class Bundler {
     graph: Graph,
     options: CreateBundleOptions = {},
   ) {
+    this.logger.trace("createBundles");
     const context: Context = {
       importMap: { imports: {} },
       outputMap: {},
@@ -454,6 +464,7 @@ export class Bundler {
   }
 
   async bundle(inputs: string[], options: BundleOptions = {}) {
+    this.logger.trace("bundle");
     const cache: Cache = {};
     const graph = await this.createGraph(
       inputs,
@@ -477,6 +488,7 @@ export class Bundler {
     input: string,
     cacheDirPath: string,
   ) {
+    this.logger.trace("createCacheFilePath");
     const bundleCacheDirPath = new Sha256().update(bundleInput).hex();
     const filePath = resolveCache(input);
     const cacheFilePath = new Sha256().update(filePath).hex();
@@ -490,6 +502,7 @@ export class Bundler {
    * returns true if an entry exists in `context.cache` or cacheFile `mtime` is bigger than sourceFile `mtime`
    */
   async hasCache(bundleInput: string, input: string, context: Context) {
+    this.logger.trace("hasCache");
     const { cacheDirPath, cache } = context;
     const filePath = resolveCache(input);
 
@@ -515,6 +528,7 @@ export class Bundler {
     source: string,
     context: Context,
   ) {
+    this.logger.trace("setCache");
     const { cacheDirPath, cache } = context;
     const cacheFilePath = this.createCacheFilePath(
       bundleInput,
@@ -533,6 +547,7 @@ export class Bundler {
     cache[cacheFilePath] = source;
   }
   async getCache(bundleInput: string, input: string, context: Context) {
+    this.logger.trace("getCache");
     const { cacheDirPath, cache } = context;
     const cacheFilePath = this.createCacheFilePath(
       bundleInput,

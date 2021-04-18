@@ -230,11 +230,13 @@ async function main({
     await watchFn(data, logger);
   }
 }
-
+const logLevelNames = ["trace", "debug", "info"];
 function getLogLevel(logLevelName: string): LogLevel {
-  if (!["debug", "info"].includes(logLevelName)) {
+  if (!logLevelNames.includes(logLevelName)) {
     throw Error(
-      `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: debug, info]`,
+      `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: ${
+        logLevelNames.join(", ")
+      }]`,
     );
   }
   return logLevels[logLevelName as keyof typeof logLevels];
@@ -384,16 +386,8 @@ Examples: https://github.com/WICG/import-maps#the-import-map`,
   .option({
     name: "log-level",
     alias: "L",
-    description: "Set log level [possible values: debug, info]",
+    description: `Set log level [possible values: ${logLevelNames.join(", ")}]`,
     args: [{ name: "log-level" }],
-    // test: () => {
-    //   const logLevelNames = ["debug", "info"]
-    //   if (!logLevelNames.includes(logLevelName)) {
-    //     throw Error(
-    //       `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: debug, info]`,
-    //     );
-    //   }
-    // }
   })
   .option({
     name: "optimize",

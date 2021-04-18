@@ -7,7 +7,7 @@ import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/ty
 import { assertEquals } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] wasm",
+  name: "example → wasm",
   async fn() {
     const plugins: Plugin[] = [
       new FetchPlugin(),

@@ -6,7 +6,7 @@ import { WebWorkerPlugin } from "../../plugins/typescript/webworker.ts";
 import { assertEquals } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] webworker",
+  name: "example → webworker",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),

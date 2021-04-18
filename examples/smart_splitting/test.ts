@@ -5,7 +5,7 @@ import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/ty
 import { assertEquals, assertStringIncludes } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] smart_splitting",
+  name: "example → smart_splitting",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),

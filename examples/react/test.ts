@@ -5,7 +5,7 @@ import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/ty
 import { assertEquals } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] react",
+  name: "example → react",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),

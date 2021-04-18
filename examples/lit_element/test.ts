@@ -6,7 +6,7 @@ import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/ty
 import { assertEquals } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] lit_element",
+  name: "example → lit_element",
   async fn() {
     const importMap = JSON.parse(
       Deno.readTextFileSync("examples/lit_element/importmap.json"),

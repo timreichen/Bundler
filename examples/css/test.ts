@@ -17,7 +17,7 @@ const use: postcss.AcceptedPlugin[] = [
 ];
 
 Deno.test({
-  name: "[example] css",
+  name: "example → css",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),

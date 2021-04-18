@@ -1,4 +1,4 @@
-import { size, timestamp } from "./_util.ts";
+import { readTextFile, size, timestamp } from "./_util.ts";
 import { colors, ImportMap, path, Sha256 } from "./deps.ts";
 import { Asset, getAsset, Graph } from "./graph.ts";
 import {
@@ -68,21 +68,33 @@ export class Bundler {
     this.logger = new Logger({ logLevel, quiet });
   }
   async readSource(item: Item, context: Context): Promise<Source> {
+    this.logger.trace("readSource");
     const input = item.history[0];
     const source = context.sources[input];
-    if (source !== undefined) return source;
+    if (source !== undefined) {
+      return source;
+    }
+
     for (const plugin of this.plugins) {
       if (plugin.readSource && await plugin.test(item, context)) {
         const time = performance.now();
-        const source = await plugin.readSource(input, context);
-        context.sources[input] = source;
-        this.logger.debug(
-          colors.cyan("readSource"),
-          input,
-          colors.dim(plugin.constructor.name),
-          colors.dim(timestamp(time)),
-        );
-        return source;
+        try {
+          const source = await plugin.readSource(input, context);
+          context.sources[input] = source;
+
+          this.logger.debug(
+            colors.cyan("Read Source"),
+            input,
+            colors.dim(plugin.constructor.name),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
+          );
+          return source;
+        } catch (error) {
+          if (error instanceof Deno.errors.NotFound) {
+            throw new Error(`file was not found: ${input}`);
+          }
+          throw error;
+        }
       }
     }
     throw new Error(`No readSource plugin found: '${input}'`);
@@ -92,7 +104,9 @@ export class Bundler {
     item: Item,
     context: Context,
   ) {
+    this.logger.trace("transformSource");
     const input = item.history[0];
+
     let source = await this.readSource(item, context);
 
     for (const plugin of this.plugins) {
@@ -106,10 +120,10 @@ export class Bundler {
         if (newSource !== undefined) {
           source = newSource;
           this.logger.debug(
-            colors.cyan("transformSource"),
+            colors.cyan("Transform Source"),
             input,
             colors.dim(plugin.constructor.name),
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
           );
         }
       }
@@ -120,6 +134,7 @@ export class Bundler {
     item: Item,
     context: Context,
   ): Promise<Asset> {
+    this.logger.trace("createAsset");
     const time = performance.now();
     const input = item.history[0];
     for (const plugin of this.plugins) {
@@ -127,10 +142,10 @@ export class Bundler {
         const asset = await plugin.createAsset(item, context);
         if (asset !== undefined) {
           this.logger.debug(
-            colors.cyan("createAsset"),
+            colors.cyan("Create Asset"),
             input,
             colors.dim(plugin.constructor.name),
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
           );
           return asset;
         }
@@ -139,6 +154,7 @@ export class Bundler {
     throw new Error(`No createAsset plugin found: '${input}'`);
   }
   async createGraph(inputs: Inputs, options: CreateGraphOptions = {}) {
+    this.logger.trace("createGraph");
     const time = performance.now();
     const outDirPath = "dist";
     const context: Context = {
@@ -234,7 +250,7 @@ export class Bundler {
       colors.dim(
         `${assetList.length} file${assetList.length === 1 ? "" : "s"}`,
       ),
-      colors.dim(timestamp(time)),
+      colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
 
     return graph;
@@ -244,6 +260,7 @@ export class Bundler {
     context: Context,
     chunkList: ChunkList,
   ) {
+    this.logger.trace("createChunk");
     const time = performance.now();
     for (const plugin of this.plugins) {
       if (plugin.createChunk && await plugin.test(item, context)) {
@@ -254,10 +271,10 @@ export class Bundler {
         );
         if (chunk !== undefined) {
           this.logger.debug(
-            colors.cyan("createChunk"),
+            colors.cyan("Create Chunk"),
             chunk.history[0],
             colors.dim(plugin.constructor.name),
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
             ...chunk.dependencies.map((dependency) =>
               colors.dim(
                 [
@@ -282,6 +299,7 @@ export class Bundler {
     graph: Graph,
     options: CreateChunkOptions = {},
   ) {
+    this.logger.trace("createChunks");
     const time = performance.now();
     const chunkList: Item[] = inputs.map((input) => ({
       history: [input],
@@ -328,7 +346,7 @@ export class Bundler {
       colors.green("Create"),
       "Chunks",
       colors.dim(`${counter} file${counter === 1 ? "" : "s"}`),
-      colors.dim(timestamp(time)),
+      colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
     return chunks;
   }
@@ -336,6 +354,7 @@ export class Bundler {
     chunk: Chunk,
     context: Context,
   ) {
+    this.logger.trace("createBundle");
     const time = performance.now();
     for (const plugin of this.plugins) {
       if (plugin.createBundle && await plugin.test(chunk, context)) {
@@ -343,13 +362,13 @@ export class Bundler {
         const input = chunk.history[0];
         if (bundle !== undefined) {
           this.logger.debug(
-            colors.cyan("createBundle"),
+            colors.cyan("Create Bundle"),
             input,
             colors.dim(plugin.constructor.name),
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
             `\n`,
             colors.dim(`➞`),
-            colors.dim((getAsset(context.graph, chunk.type, input).output)),
+            colors.dim((getAsset(context.graph, input, chunk.type).output)),
             colors.dim(`{ ${Format[chunk.format]}, ${chunk.type} }`),
           );
           const length = bundle.length;
@@ -358,10 +377,10 @@ export class Bundler {
             "Bundle",
             input,
             colors.dim(size(length)),
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
             `\n`,
             colors.dim(`➞`),
-            colors.dim((getAsset(context.graph, chunk.type, input).output)),
+            colors.dim((getAsset(context.graph, input, chunk.type).output)),
           );
           return bundle;
         } else {
@@ -370,10 +389,10 @@ export class Bundler {
             colors.green("Check"),
             "Bundle",
             input,
-            colors.dim(timestamp(time)),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
             `\n`,
             colors.dim(`➞`),
-            colors.dim((getAsset(context.graph, chunk.type, input).output)),
+            colors.dim((getAsset(context.graph, input, chunk.type).output)),
           );
           // exit
           return;
@@ -383,21 +402,22 @@ export class Bundler {
     throw new Error(`No createBundle plugin found: '${chunk.history[0]}'`);
   }
   async optimizeBundle(chunk: Chunk, context: Context) {
+    this.logger.trace("optimizeBundle");
     const time = performance.now();
-    const output = getAsset(context.graph, chunk.type, chunk.history[0]).output;
+    const output = getAsset(context.graph, chunk.history[0], chunk.type).output;
     let bundle = context.bundles[output];
     for (const plugin of this.plugins) {
       if (plugin.optimizeBundle && await plugin.test(chunk, context)) {
         const input = chunk.history[0];
-        const output = getAsset(context.graph, chunk.type, input).output;
+        const output = getAsset(context.graph, input, chunk.type).output;
         bundle = await plugin.optimizeBundle(output, context);
         this.logger.debug(
-          colors.cyan("optimizeBundle"),
+          colors.cyan("Optimize Bundle"),
           input,
           colors.dim(`➞`),
-          colors.dim((getAsset(context.graph, chunk.type, input).output)),
+          colors.dim((getAsset(context.graph, input, chunk.type).output)),
           colors.dim(plugin.constructor.name),
-          colors.dim(timestamp(time)),
+          colors.dim(colors.italic(`(${timestamp(time)})`)),
         );
       }
     }
@@ -408,6 +428,7 @@ export class Bundler {
     graph: Graph,
     options: CreateBundleOptions = {},
   ) {
+    this.logger.trace("createBundles");
     const context: Context = {
       importMap: { imports: {} },
       outputMap: {},
@@ -433,7 +454,7 @@ export class Bundler {
       let bundle = await this.createBundle(chunk, context);
       if (bundle !== undefined) {
         const input = chunk.history[0];
-        const chunkAsset = getAsset(graph, chunk.type, input);
+        const chunkAsset = getAsset(graph, input, chunk.type);
         const output = chunkAsset.output;
         bundles[output] = bundle;
         if (context.optimize) {
@@ -445,7 +466,13 @@ export class Bundler {
   }
 
   async bundle(inputs: string[], options: BundleOptions = {}) {
+    this.logger.trace("bundle");
     const cache: Cache = {};
+    options = {
+      sources: {}, // will be shared between createGraph, createChunks and createBundles
+      cache: {}, // will be shared between createGraph, createChunks and createBundles
+      ...options,
+    };
     const graph = await this.createGraph(
       inputs,
       { ...options },
@@ -468,6 +495,7 @@ export class Bundler {
     input: string,
     cacheDirPath: string,
   ) {
+    this.logger.trace("createCacheFilePath");
     const bundleCacheDirPath = new Sha256().update(bundleInput).hex();
     const filePath = resolveCache(input);
     const cacheFilePath = new Sha256().update(filePath).hex();
@@ -481,6 +509,7 @@ export class Bundler {
    * returns true if an entry exists in `context.cache` or cacheFile `mtime` is bigger than sourceFile `mtime`
    */
   async hasCache(bundleInput: string, input: string, context: Context) {
+    this.logger.trace("hasCache");
     const { cacheDirPath, cache } = context;
     const filePath = resolveCache(input);
 
@@ -506,6 +535,7 @@ export class Bundler {
     source: string,
     context: Context,
   ) {
+    this.logger.trace("setCache");
     const { cacheDirPath, cache } = context;
     const cacheFilePath = this.createCacheFilePath(
       bundleInput,
@@ -524,6 +554,7 @@ export class Bundler {
     cache[cacheFilePath] = source;
   }
   async getCache(bundleInput: string, input: string, context: Context) {
+    this.logger.trace("getCache");
     const { cacheDirPath, cache } = context;
     const cacheFilePath = this.createCacheFilePath(
       bundleInput,
@@ -538,6 +569,6 @@ export class Bundler {
       input,
       colors.dim(cacheFilePath),
     );
-    return await Deno.readTextFile(cacheFilePath);
+    return await readTextFile(cacheFilePath);
   }
 }

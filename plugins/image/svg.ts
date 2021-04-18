@@ -1,4 +1,5 @@
 import { Asset } from "../../graph.ts";
+import { readTextFile } from "../../_util.ts";
 import { FilePlugin } from "../file.ts";
 import { Context, Format, Item } from "../plugin.ts";
 
@@ -8,7 +9,7 @@ export class SvgPlugin extends FilePlugin {
     return input.endsWith(".svg");
   }
   async readSource(filePath: string, context: Context) {
-    return await Deno.readTextFile(filePath);
+    return await readTextFile(filePath);
   }
   async createAsset(
     item: Item,

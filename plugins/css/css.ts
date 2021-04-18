@@ -14,6 +14,7 @@ import { resolve as resolveCache } from "../../cache.ts";
 import { postcssInjectImportsPlugin } from "./postcss/inject_imports.ts";
 import { postcssInjectDependenciesPlugin } from "./postcss/inject_dependencies.ts";
 import { getAsset } from "../../graph.ts";
+import { readTextFile } from "../../_util.ts";
 
 export class CssPlugin extends Plugin {
   use: postcss.AcceptedPlugin[];
@@ -35,7 +36,7 @@ export class CssPlugin extends Plugin {
     context: Context,
   ) {
     const { graph, bundler } = context;
-    const asset = getAsset(graph, chunk.type, bundleInput);
+    const asset = getAsset(graph, bundleInput, chunk.type);
     const bundleOutput = asset.output;
 
     const processor = postcss.default([
@@ -51,7 +52,7 @@ export class CssPlugin extends Plugin {
     return css;
   }
   async readSource(filePath: string) {
-    return await Deno.readTextFile(filePath);
+    return await readTextFile(filePath);
   }
   async createAsset(
     item: Item,
@@ -101,7 +102,7 @@ export class CssPlugin extends Plugin {
       const { history, type } = dependencyItem;
       const input = history[0];
 
-      const asset = getAsset(graph, type, input);
+      const asset = getAsset(graph, input, type);
       if (
         input === rootInput || asset.format === Format.Style
       ) {
@@ -161,7 +162,7 @@ export class CssPlugin extends Plugin {
         const source = await bundler
           .transformSource(
             bundleInput,
-            chunk,
+            dependencyItem,
             context,
           ) as string;
 
@@ -179,7 +180,7 @@ export class CssPlugin extends Plugin {
         );
       }
     }
-    const bundleAsset = getAsset(graph, chunk.type, bundleInput);
+    const bundleAsset = getAsset(graph, bundleInput, chunk.type);
     if (!needsBundleUpdate && await fs.exists(bundleAsset.output)) {
       return;
     }

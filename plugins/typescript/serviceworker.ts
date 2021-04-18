@@ -1,8 +1,8 @@
 import { path, Sha256, ts } from "../../deps.ts";
 import { Context, DependencyType, Item } from "../plugin.ts";
-import { SystemPlugin } from "./system.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "./typescript_top_level_await_module.ts";
 
-export class ServiceWorkerPlugin extends SystemPlugin {
+export class ServiceWorkerPlugin extends TypescriptTopLevelAwaitModulePlugin {
   constructor(
     {
       compilerOptions = {},

@@ -13,7 +13,7 @@ export type GraphEntry = {
 
 export type Graph = Record<string, GraphEntry>;
 
-export function getAsset(graph: Graph, type: DependencyType, input: string) {
+export function getAsset(graph: Graph, input: string, type: DependencyType) {
   const asset = graph[input]?.[type];
   if (!asset) {
     throw new Error(

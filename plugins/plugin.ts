@@ -72,14 +72,25 @@ export interface Chunk extends Item {
 export type Chunks = Chunk[];
 export type Cache = Record<string, string>;
 
-export type Dependency = Record<
-  string,
-  { specifiers: string[]; type: DependencyType; format: Format }
->;
+export type Dependency = {
+  specifiers: Record<string, string>; /*
+   key is identifier, value is specifier -> `import { x as y } from ".x/ts"` should be set as { y: "x" }
+   */
+  defaults: string[];
+  namespaces: (string | undefined)[];
+  type: DependencyType;
+  format: Format;
+};
 
 export type Dependencies = {
-  imports: Dependency;
-  exports: Dependency;
+  imports: Record<
+    string,
+    Dependency
+  >;
+  exports: Record<
+    string,
+    Dependency
+  >;
 };
 
 export type Context = {

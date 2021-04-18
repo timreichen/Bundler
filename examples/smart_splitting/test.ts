@@ -1,15 +1,15 @@
 import { Bundler } from "../../bundler.ts";
 import { HtmlPlugin } from "../../plugins/html/html.ts";
 import { DependencyType, Plugin } from "../../plugins/plugin.ts";
-import { SystemPlugin } from "../../plugins/typescript/system.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/typescript_top_level_await_module.ts";
 import { assertEquals, assertStringIncludes } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] smart_splitting",
+  name: "example → smart_splitting",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),
-      new SystemPlugin(),
+      new TypescriptTopLevelAwaitModulePlugin(),
     ];
     const bundler = new Bundler(plugins, { quiet: true });
     const input = "examples/smart_splitting/src/index.html";
@@ -36,6 +36,9 @@ Deno.test({
     assertEquals(Object.keys(graph["examples/smart_splitting/src/c.ts"]), [
       DependencyType.Import,
     ]);
+    assertEquals(Object.keys(graph["examples/smart_splitting/src/d.ts"]), [
+      DependencyType.Import,
+    ]);
 
     const chunks = await bundler.createChunks(inputs, graph);
 
@@ -54,25 +57,20 @@ Deno.test({
       "dist/a.js",
       "dist/b.js",
       "dist/deps/cc48d69a5071eab490d13fa66ddad7c5d07f4474cde05a347df22a49b4639228.js",
+      "dist/deps/072d6f2302ead5d3f5ff90d0d8feb8235db6ae4f64a5400b93ee81c0edf8cd4f.js",
     ]);
-    assertStringIncludes(
-      bundles[
-        "dist/a.js"
-      ] as string,
-      `import * as _1f7070b15509a1556547135f61bf29d4d26754ada1bf0b66be8b2ba301677d24 from "./b.js"`,
-    );
-    assertStringIncludes(
-      bundles[
-        "dist/a.js"
-      ] as string,
-      `import * as _cc48d69a5071eab490d13fa66ddad7c5d07f4474cde05a347df22a49b4639228 from "./deps/cc48d69a5071eab490d13fa66ddad7c5d07f4474cde05a347df22a49b4639228.js"`,
-    );
 
     assertStringIncludes(
       bundles[
         "dist/b.js"
       ] as string,
-      `import * as _cc48d69a5071eab490d13fa66ddad7c5d07f4474cde05a347df22a49b4639228 from "./deps/cc48d69a5071eab490d13fa66ddad7c5d07f4474cde05a347df22a49b4639228.js"`,
+      `export default (async () => {`,
+    );
+    assertStringIncludes(
+      bundles[
+        "dist/b.js"
+      ] as string,
+      `return {}`,
     );
   },
 });

@@ -3,15 +3,15 @@ import { HtmlPlugin } from "../../plugins/html/html.ts";
 import { ImagePlugin } from "../../plugins/image/image.ts";
 import { WebManifestPlugin } from "../../plugins/json/webmanifest.ts";
 import { DependencyType, Plugin } from "../../plugins/plugin.ts";
-import { SystemPlugin } from "../../plugins/typescript/system.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/typescript_top_level_await_module.ts";
 import { assertEquals } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] webmanifest",
+  name: "example → webmanifest",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),
-      new SystemPlugin(),
+      new TypescriptTopLevelAwaitModulePlugin(),
       new ImagePlugin(),
       new WebManifestPlugin(),
     ];
@@ -26,18 +26,18 @@ Deno.test({
       DependencyType.Import,
     ]);
     assertEquals(Object.keys(graph["examples/webmanifest/src/manifest.json"]), [
-      DependencyType.Fetch,
+      DependencyType.Import,
     ]);
     assertEquals(
       Object.keys(graph["examples/webmanifest/src/images/icon-128x128.png"]),
       [
-        DependencyType.Fetch,
+        DependencyType.Import,
       ],
     );
     assertEquals(
       Object.keys(graph["examples/webmanifest/src/images/icon-192x192.png"]),
       [
-        DependencyType.Fetch,
+        DependencyType.Import,
       ],
     );
 

@@ -4,7 +4,7 @@ import { CssPlugin } from "../../plugins/css/css.ts";
 import { HtmlPlugin } from "../../plugins/html/html.ts";
 import { ImagePlugin } from "../../plugins/image/image.ts";
 import { DependencyType, Plugin } from "../../plugins/plugin.ts";
-import { SystemPlugin } from "../../plugins/typescript/system.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/typescript_top_level_await_module.ts";
 import { assertEquals } from "../../test_deps.ts";
 
 const use: postcss.AcceptedPlugin[] = [
@@ -17,11 +17,11 @@ const use: postcss.AcceptedPlugin[] = [
 ];
 
 Deno.test({
-  name: "[example] css",
+  name: "example → css",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),
-      new SystemPlugin(),
+      new TypescriptTopLevelAwaitModulePlugin(),
       new CssPlugin({ use }),
       new ImagePlugin(),
     ];
@@ -49,10 +49,10 @@ Deno.test({
     ]);
 
     assertEquals(Object.keys(graph["examples/css/src/styles.css"]), [
-      DependencyType.Fetch,
+      DependencyType.Import,
     ]);
     assertEquals(Object.keys(graph["examples/css/src/image.png"]), [
-      DependencyType.Fetch,
+      DependencyType.Import,
     ]);
     assertEquals(Object.keys(graph["examples/css/src/script.css"]), [
       DependencyType.Import,

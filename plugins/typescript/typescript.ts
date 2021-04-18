@@ -12,7 +12,7 @@ import { resolve as resolveDependency } from "../../dependency.ts";
 import { typescriptExtractDependenciesTransformer } from "./transformers/extract_dependencies.ts";
 import { resolve as resolveCache } from "../../cache.ts";
 import { getAsset } from "../../graph.ts";
-import { isURL } from "../../_util.ts";
+import { isURL, readTextFile } from "../../_util.ts";
 
 function resolveDependencies(
   filePath: string,
@@ -66,7 +66,7 @@ export class TypescriptPlugin extends Plugin {
   }
   async readSource(input: string, context: Context) {
     const filePath = resolveCache(input);
-    return await Deno.readTextFile(filePath);
+    return await readTextFile(filePath);
   }
   async createAsset(
     item: Item,
@@ -87,6 +87,7 @@ export class TypescriptPlugin extends Plugin {
       [typescriptExtractDependenciesTransformer(dependencies)],
       this.compilerOptions,
     );
+
     const resolvedDependencies = resolveDependencies(
       input,
       dependencies,
@@ -111,17 +112,15 @@ export class TypescriptPlugin extends Plugin {
     chunkList: ChunkList,
   ) {
     const dependencies: Item[] = [];
-
     const dependencyList: Item[] = [item];
     const checkedItems: any = {};
     for (const dependencyItem of dependencyList) {
       const { history, type } = dependencyItem;
       const input = history[0];
       if (checkedItems[type]?.[input]) continue;
-      const asset = getAsset(context.graph, type, input);
+      const asset = getAsset(context.graph, input, type);
       checkedItems[type] = checkedItems[type] || {};
       checkedItems[type][input] = asset;
-
       switch (asset.format) {
         case Format.Script: {
           switch (type) {
@@ -154,7 +153,7 @@ export class TypescriptPlugin extends Plugin {
             case DependencyType.DynamicImport:
             case DependencyType.ServiceWorker:
             case DependencyType.WebWorker:
-            case DependencyType.Fetch:
+            case DependencyType.Import:
               chunkList.push(dependencyItem);
               break;
           }

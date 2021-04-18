@@ -28,8 +28,10 @@ export function posthtmlExtractImageDependencies(
               importMap,
             );
             imports[resolvedUrl] = {
-              specifiers: [],
-              type: DependencyType.Fetch,
+              specifiers: {},
+              defaults: [],
+              namespaces: [],
+              type: DependencyType.Import,
               format: Format.Image,
             };
           }
@@ -81,8 +83,10 @@ export function posthtmlExtractLinkDependencies(
               }
             }
             imports[resolvedUrl] = {
-              specifiers: [],
-              type: DependencyType.Fetch,
+              specifiers: {},
+              defaults: [],
+              namespaces: [],
+              type: DependencyType.Import,
               format,
             };
           }
@@ -115,7 +119,9 @@ export function posthtmlExtractScriptDependencies(
               importMap,
             );
             imports[resolvedUrl] = {
-              specifiers: [],
+              specifiers: {},
+              defaults: [],
+              namespaces: [],
               type: DependencyType.Import,
               format: Format.Script,
             };

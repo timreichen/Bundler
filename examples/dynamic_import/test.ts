@@ -1,15 +1,15 @@
 import { Bundler } from "../../bundler.ts";
 import { HtmlPlugin } from "../../plugins/html/html.ts";
 import { DependencyType, Plugin } from "../../plugins/plugin.ts";
-import { SystemPlugin } from "../../plugins/typescript/system.ts";
-import { assertEquals } from "../../test_deps.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/typescript_top_level_await_module.ts";
+import { assertEquals, assertStringIncludes } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] dynamic_import",
+  name: "example → dynamic_import",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),
-      new SystemPlugin(),
+      new TypescriptTopLevelAwaitModulePlugin(),
     ];
     const bundler = new Bundler(plugins, { quiet: true });
     const input = "examples/dynamic_import/src/index.html";
@@ -45,5 +45,30 @@ Deno.test({
       "dist/deps/d3c93bde518cbbd27392ec0a96822aa4fe177fc20b4a2c10319a746cad771beb.js",
       "dist/deps/e447e137aeff698a0e83a3673ce8e12a50a55d7e0f1888b83396be6950ef07bd.js",
     ]);
+
+    const indexSource = bundles[
+      "dist/deps/d3c93bde518cbbd27392ec0a96822aa4fe177fc20b4a2c10319a746cad771beb.js"
+    ] as string;
+
+    assertStringIncludes(
+      indexSource,
+      `await import("./e447e137aeff698a0e83a3673ce8e12a50a55d7e0f1888b83396be6950ef07bd.js").then(async (data) => await data.default)`,
+    );
+    assertStringIncludes(
+      indexSource,
+      `export default (async () => {`,
+    );
+    const messageSource = bundles[
+      "dist/deps/e447e137aeff698a0e83a3673ce8e12a50a55d7e0f1888b83396be6950ef07bd.js"
+    ] as string;
+
+    assertStringIncludes(
+      messageSource,
+      `export default (async () => {`,
+    );
+    assertStringIncludes(
+      messageSource,
+      `return { message }`,
+    );
   },
 });

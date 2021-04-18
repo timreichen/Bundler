@@ -1,7 +1,7 @@
-/* @import "h1.css"; */
 @import "import.css";
 
 #images {
   display: flex;
   flex-wrap: wrap;
+  user-select: none;
 }

@@ -1,17 +1,17 @@
 import { Bundler } from "../../bundler.ts";
 import { HtmlPlugin } from "../../plugins/html/html.ts";
 import { DependencyType, Plugin } from "../../plugins/plugin.ts";
-import { SystemPlugin } from "../../plugins/typescript/system.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/typescript_top_level_await_module.ts";
 import { WebWorkerPlugin } from "../../plugins/typescript/webworker.ts";
 import { assertEquals } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] webworker",
+  name: "example → webworker",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),
       new WebWorkerPlugin(),
-      new SystemPlugin(),
+      new TypescriptTopLevelAwaitModulePlugin(),
     ];
     const bundler = new Bundler(plugins, { quiet: true });
     const input = "examples/webworker/src/index.html";

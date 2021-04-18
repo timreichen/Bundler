@@ -1,17 +1,18 @@
 import { Bundler } from "../../bundler.ts";
+import { logLevels } from "../../logger.ts";
 import { FetchPlugin } from "../../plugins/fetch.ts";
 import { HtmlPlugin } from "../../plugins/html/html.ts";
 import { DependencyType, Plugin } from "../../plugins/plugin.ts";
-import { SystemPlugin } from "../../plugins/typescript/system.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/typescript_top_level_await_module.ts";
 import { assertEquals } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] wasm",
+  name: "example → wasm",
   async fn() {
     const plugins: Plugin[] = [
       new FetchPlugin(),
       new HtmlPlugin(),
-      new SystemPlugin(),
+      new TypescriptTopLevelAwaitModulePlugin(),
     ];
     const bundler = new Bundler(plugins, { quiet: true });
     const input = "examples/wasm/src/index.html";

@@ -19,7 +19,7 @@ export const postcssInjectDependenciesPlugin = (
         if (!url || isURL(url)) continue;
         const resolvedUrl = resolveDependency(bundleInput, url);
 
-        const asset = getAsset(graph, DependencyType.Fetch, resolvedUrl);
+        const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
         const relativeOutput = addRelativePrefix(
           path.relative(bundleDirPath, asset.output),
         );

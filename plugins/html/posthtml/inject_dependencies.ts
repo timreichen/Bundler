@@ -30,7 +30,7 @@ export function posthtmlInjectScriptDependencies(
             src,
             importMap,
           );
-          const asset = getAsset(graph, DependencyType.Import, resolvedUrl);
+          const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
           node.attrs.src = addRelativePrefix(
             path.relative(bundleDirPath, asset.output),
           );
@@ -90,7 +90,7 @@ export function posthtmlInjectLinkDependencies(
             href,
             importMap,
           );
-          const asset = getAsset(graph, DependencyType.Fetch, resolvedUrl);
+          const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
           node.attrs.href = addRelativePrefix(
             path.relative(bundleDirPath, asset.output),
           );
@@ -121,7 +121,7 @@ export function posthtmlInjectImageDependencies(
             src,
             importMap,
           );
-          const asset = getAsset(graph, DependencyType.Fetch, resolvedUrl);
+          const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
 
           node.attrs.src = addRelativePrefix(
             path.relative(bundleDirPath, asset.output),
@@ -140,7 +140,7 @@ export function posthtmlInjectStyleDependencies(
 ) {
   const bundleInput = chunk.history[0];
   const { graph } = context;
-  const asset = getAsset(graph, chunk.type, bundleInput);
+  const asset = getAsset(graph, bundleInput, chunk.type);
   const processor = postcss.default([
     ...use,
     postcssInjectImportsPlugin(chunk, context, use),
@@ -171,7 +171,8 @@ export function posthtmlInjectInlineStyleDependencies(
 ) {
   const bundleInput = chunk.history[0];
   const { graph } = context;
-  const asset = getAsset(graph, chunk.type, bundleInput);
+
+  const asset = getAsset(graph, bundleInput, chunk.type);
 
   const processor = postcss.default([
     ...use,

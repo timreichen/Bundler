@@ -24,10 +24,15 @@ import { JsonPlugin } from "./plugins/json/json.ts";
 import { WebManifestPlugin } from "./plugins/json/webmanifest.ts";
 import { Plugin } from "./plugins/plugin.ts";
 import { ServiceWorkerPlugin } from "./plugins/typescript/serviceworker.ts";
-import { SystemPlugin } from "./plugins/typescript/system.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "./plugins/typescript/typescript_top_level_await_module.ts";
 import { TerserPlugin } from "./plugins/typescript/terser.ts";
 import { WebWorkerPlugin } from "./plugins/typescript/webworker.ts";
-import { isURL, removeRelativePrefix, timestamp } from "./_util.ts";
+import {
+  isURL,
+  readTextFile,
+  removeRelativePrefix,
+  timestamp,
+} from "./_util.ts";
 
 type Inputs = string[];
 type OutputMap = Record<string, string>;
@@ -146,7 +151,7 @@ async function main({
 
     new ServiceWorkerPlugin({ compilerOptions }),
     new WebWorkerPlugin({ compilerOptions }),
-    new SystemPlugin({ compilerOptions }),
+    new TypescriptTopLevelAwaitModulePlugin({ compilerOptions }),
 
     new CssPlugin({ use }),
 
@@ -200,7 +205,7 @@ async function main({
     logger.info(
       colors.brightBlue("Bundle"),
       length ? `${length} file${length === 1 ? "" : "s"}` : `up-to-date`,
-      colors.dim(timestamp(time)),
+      colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
 
     initialGraph = graph;
@@ -230,11 +235,13 @@ async function main({
     await watchFn(data, logger);
   }
 }
-
+const logLevelNames = ["trace", "debug", "info"];
 function getLogLevel(logLevelName: string): LogLevel {
-  if (!["debug", "info"].includes(logLevelName)) {
+  if (!logLevelNames.includes(logLevelName)) {
     throw Error(
-      `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: debug, info]`,
+      `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: ${
+        logLevelNames.join(", ")
+      }]`,
     );
   }
   return logLevels[logLevelName as keyof typeof logLevels];
@@ -303,11 +310,11 @@ async function runBundle(
   const cacheFilePath = path.join(cacheDirPath, cacheFileName);
 
   const { graph: initialGraph }: CacheData = fs.existsSync(cacheFilePath)
-    ? JSON.parse(await Deno.readTextFile(cacheFilePath))
+    ? JSON.parse(await readTextFile(cacheFilePath))
     : { graph: {} };
 
   const config = configFilePath && fs.existsSync(configFilePath)
-    ? JSON.parse(await Deno.readTextFile(configFilePath))
+    ? JSON.parse(await readTextFile(configFilePath))
     : {};
   const compilerOptions = config.compilerOptions
     ? ts.convertCompilerOptionsFromJson(
@@ -318,7 +325,7 @@ async function runBundle(
 
   const importMap: ImportMap =
     (importMapPath
-      ? JSON.parse(await Deno.readTextFile(importMapPath))
+      ? JSON.parse(await readTextFile(importMapPath))
       : { imports: {} });
 
   const options: Options = {
@@ -384,16 +391,8 @@ Examples: https://github.com/WICG/import-maps#the-import-map`,
   .option({
     name: "log-level",
     alias: "L",
-    description: "Set log level [possible values: debug, info]",
+    description: `Set log level [possible values: ${logLevelNames.join(", ")}]`,
     args: [{ name: "log-level" }],
-    // test: () => {
-    //   const logLevelNames = ["debug", "info"]
-    //   if (!logLevelNames.includes(logLevelName)) {
-    //     throw Error(
-    //       `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: debug, info]`,
-    //     );
-    //   }
-    // }
   })
   .option({
     name: "optimize",

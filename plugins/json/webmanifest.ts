@@ -37,8 +37,10 @@ export class WebManifestPlugin extends JsonPlugin {
     json.icons?.forEach(({ src }: { src: string }) => {
       const resolvedPath = path.join(path.dirname(input), src);
       dependencies.imports[resolvedPath] = {
-        specifiers: [],
-        type: DependencyType.Fetch,
+        specifiers: {},
+        defaults: [],
+        namespaces: [],
+        type: DependencyType.Import,
         format: Format.Image,
       };
     });
@@ -63,7 +65,7 @@ export class WebManifestPlugin extends JsonPlugin {
     const { history, type } = item;
     const { graph } = context;
     const input = history[0];
-    const asset = getAsset(graph, type, input);
+    const asset = getAsset(graph, input, type);
     const { imports, exports } = asset.dependencies;
     const dependencies: Item[] = [item];
 
@@ -95,7 +97,7 @@ export class WebManifestPlugin extends JsonPlugin {
 
     const { graph, bundler, reload } = context;
 
-    const asset = getAsset(graph, chunk.type, input);
+    const asset = getAsset(graph, input, chunk.type);
     const exists = await fs.exists(asset.output);
     const needsUpdate = reload || !exists ||
       Deno.statSync(asset.output).mtime! <
@@ -113,7 +115,11 @@ export class WebManifestPlugin extends JsonPlugin {
 
     json.icons?.forEach((item: any) => {
       const resolvedFilePath = path.join(path.dirname(input), item.src);
-      const iconAsset = getAsset(graph, DependencyType.Fetch, resolvedFilePath);
+      const iconAsset = getAsset(
+        graph,
+        resolvedFilePath,
+        DependencyType.Import,
+      );
 
       const relativeOutputFilePath = addRelativePrefix(
         path.relative(bundleOutput, iconAsset.output),

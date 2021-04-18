@@ -50,7 +50,7 @@ export class FilePlugin extends Plugin {
     const { bundler, reload, graph } = context;
     const { history, type } = chunk;
     const bundleInput = history[0];
-    const bundleAsset = getAsset(graph, type, bundleInput);
+    const bundleAsset = getAsset(graph, bundleInput, type);
 
     const { filePath, output } = bundleAsset;
     try {

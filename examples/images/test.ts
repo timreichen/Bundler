@@ -4,16 +4,16 @@ import { HtmlPlugin } from "../../plugins/html/html.ts";
 import { ImagePlugin } from "../../plugins/image/image.ts";
 import { SvgPlugin } from "../../plugins/image/svg.ts";
 import { DependencyType, Plugin } from "../../plugins/plugin.ts";
-import { SystemPlugin } from "../../plugins/typescript/system.ts";
+import { TypescriptTopLevelAwaitModulePlugin } from "../../plugins/typescript/typescript_top_level_await_module.ts";
 import { assertEquals } from "../../test_deps.ts";
 
 Deno.test({
-  name: "[example] images",
+  name: "example → images",
   async fn() {
     const plugins: Plugin[] = [
       new HtmlPlugin(),
       new CssPlugin(),
-      new SystemPlugin(),
+      new TypescriptTopLevelAwaitModulePlugin(),
       new ImagePlugin(),
       new SvgPlugin(),
     ];
@@ -25,22 +25,22 @@ Deno.test({
     const graph = await bundler.createGraph(inputs);
 
     assertEquals(Object.keys(graph["examples/images/src/styles.css"]), [
-      DependencyType.Fetch,
+      DependencyType.Import,
     ]);
     assertEquals(Object.keys(graph["examples/images/src/image.ico"]), [
-      DependencyType.Fetch,
+      DependencyType.Import,
     ]);
     assertEquals(Object.keys(graph["examples/images/src/image.png"]), [
-      DependencyType.Fetch,
+      DependencyType.Import,
     ]);
     assertEquals(Object.keys(graph["examples/images/src/image.jpeg"]), [
-      DependencyType.Fetch,
+      DependencyType.Import,
     ]);
     assertEquals(Object.keys(graph["examples/images/src/image.svg"]), [
       DependencyType.Fetch,
     ]);
     assertEquals(Object.keys(graph["examples/images/src/image.gif"]), [
-      DependencyType.Fetch,
+      DependencyType.Import,
     ]);
     assertEquals(Object.keys(graph["examples/images/src/index.html"]), [
       DependencyType.Import,

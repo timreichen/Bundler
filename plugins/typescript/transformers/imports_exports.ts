@@ -23,7 +23,7 @@ export function typescriptTransformImportsExportsTransformer(
       return (node: ts.Node) => {
         if (ts.isImportDeclaration(node)) {
           const importClause = node.importClause;
-          if (importClause?.isTypeOnly) return node;
+          if (importClause?.isTypeOnly) return undefined;
           if (ts.isStringLiteral(node.moduleSpecifier)) {
             const resolvedSpecifier = resolve(node.moduleSpecifier.text);
 
@@ -129,7 +129,7 @@ export function typescriptTransformImportsExportsTransformer(
           }
           return node;
         } else if (ts.isExportDeclaration(node)) {
-          if (node.isTypeOnly) return node;
+          if (node.isTypeOnly) return undefined;
           if (
             node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)
           ) {

@@ -519,5 +519,27 @@ tests({
         );
       },
     },
+    {
+      name: "enum declaration",
+      fn: () => {
+        const sourceText = `export enum a { }`;
+        const sourceFile = ts.createSourceFile(
+          fileName,
+          sourceText,
+          ts.ScriptTarget.Latest,
+        );
+
+        const source = injectIdentifiers(
+          sourceFile,
+          identifierMap,
+          blacklistIdentifiers,
+        );
+
+        assertStringIncludes(
+          source,
+          `export enum a1 {`,
+        );
+      },
+    },
   ],
 });

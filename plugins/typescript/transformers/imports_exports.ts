@@ -23,7 +23,7 @@ export function typescriptTransformImportsExportsTransformer(
       return (node: ts.Node) => {
         if (ts.isImportDeclaration(node)) {
           const importClause = node.importClause;
-          // if (importClause?.isTypeOnly) return node;
+          if (importClause?.isTypeOnly) return node;
           if (ts.isStringLiteral(node.moduleSpecifier)) {
             const resolvedSpecifier = resolve(node.moduleSpecifier.text);
 

@@ -312,6 +312,20 @@ export function typescriptInjectIdentifiersTransformer(
               node.typeArguments,
               node.arguments,
             );
+          } else if (ts.isEnumDeclaration(node)) {
+            let name = node.name;
+            if (ts.isIdentifier(name)) {
+              const text = name.text;
+              const identifier = identifierMap.get(text) || text;
+              name = ts.factory.createIdentifier(identifier);
+            }
+            node = ts.factory.updateEnumDeclaration(
+              node,
+              node.decorators,
+              node.modifiers,
+              name,
+              node.members,
+            );
           }
 
           return ts.visitEachChild(

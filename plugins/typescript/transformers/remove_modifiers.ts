@@ -80,6 +80,19 @@ export function typescriptRemoveModifiersTransformer(): ts.TransformerFactory<
             node.members,
           );
         }
+      } else if (
+        ts.isEnumDeclaration(node) && node.modifiers &&
+        hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
+      ) {
+        node = ts.factory.updateEnumDeclaration(
+          node,
+          node.decorators,
+          removeModifiers(node.modifiers, [
+            ts.SyntaxKind.ExportKeyword,
+          ]),
+          node.name,
+          node.members,
+        );
       }
       return ts.visitEachChild(node, visitor, context);
     };

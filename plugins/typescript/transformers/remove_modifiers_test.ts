@@ -110,5 +110,24 @@ tests({
         assertStringIncludes(outputText, `class X {\r\n}`);
       },
     },
+    {
+      name: "enum export",
+      fn() {
+        const fileName = "src/a.ts";
+        const sourceText = `console.log("OK"); export enum X {}`;
+        const sourceFile = ts.createSourceFile(
+          fileName,
+          sourceText,
+          ts.ScriptTarget.Latest,
+        );
+        const { transformed, diagnostics } = ts.transform(
+          sourceFile,
+          [typescriptRemoveModifiersTransformer()],
+        );
+        const outputText = printer.printFile(transformed[0]);
+        assertEquals(diagnostics, []);
+        assertStringIncludes(outputText, `console.log("OK");\r\nenum X {`);
+      },
+    },
   ],
 });

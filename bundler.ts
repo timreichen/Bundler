@@ -1,4 +1,4 @@
-import { size, timestamp } from "./_util.ts";
+import { readTextFile, size, timestamp } from "./_util.ts";
 import { colors, ImportMap, path, Sha256 } from "./deps.ts";
 import { Asset, getAsset, Graph } from "./graph.ts";
 import {
@@ -74,12 +74,14 @@ export class Bundler {
     if (source !== undefined) {
       return source;
     }
+
     for (const plugin of this.plugins) {
       if (plugin.readSource && await plugin.test(item, context)) {
         const time = performance.now();
         try {
           const source = await plugin.readSource(input, context);
           context.sources[input] = source;
+
           this.logger.debug(
             colors.cyan("Read Source"),
             input,
@@ -466,6 +468,11 @@ export class Bundler {
   async bundle(inputs: string[], options: BundleOptions = {}) {
     this.logger.trace("bundle");
     const cache: Cache = {};
+    options = {
+      sources: {}, // will be shared between createGraph, createChunks and createBundles
+      cache: {}, // will be shared between createGraph, createChunks and createBundles
+      ...options,
+    };
     const graph = await this.createGraph(
       inputs,
       { ...options },
@@ -562,6 +569,6 @@ export class Bundler {
       input,
       colors.dim(cacheFilePath),
     );
-    return await Deno.readTextFile(cacheFilePath);
+    return await readTextFile(cacheFilePath);
   }
 }

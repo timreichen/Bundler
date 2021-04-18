@@ -12,7 +12,7 @@ import { resolve as resolveDependency } from "../../dependency.ts";
 import { typescriptExtractDependenciesTransformer } from "./transformers/extract_dependencies.ts";
 import { resolve as resolveCache } from "../../cache.ts";
 import { getAsset } from "../../graph.ts";
-import { isURL } from "../../_util.ts";
+import { isURL, readTextFile } from "../../_util.ts";
 
 function resolveDependencies(
   filePath: string,
@@ -66,7 +66,7 @@ export class TypescriptPlugin extends Plugin {
   }
   async readSource(input: string, context: Context) {
     const filePath = resolveCache(input);
-    return await Deno.readTextFile(filePath);
+    return await readTextFile(filePath);
   }
   async createAsset(
     item: Item,

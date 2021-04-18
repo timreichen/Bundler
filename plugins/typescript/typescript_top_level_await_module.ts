@@ -1,5 +1,5 @@
 import { fs, ImportMap, path, ts } from "../../deps.ts";
-import { addRelativePrefix, isURL } from "../../_util.ts";
+import { addRelativePrefix, isURL, readTextFile } from "../../_util.ts";
 import { Chunk, Context, DependencyType, Format, Item } from "../plugin.ts";
 import { TypescriptPlugin } from "./typescript.ts";
 import { cache, resolve as resolveCache } from "../../cache.ts";
@@ -295,7 +295,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       await cache(filePath);
       filePath = resolveCache(filePath);
     }
-    return await Deno.readTextFile(filePath);
+    return await readTextFile(filePath);
   }
 
   async createBundle(
@@ -369,6 +369,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
     for (const dependencyItem of inlineItems) {
       const { history, type } = dependencyItem;
       const input = history[0];
+      const asset = getAsset(graph, input, type);
 
       const needsReload = reload === true ||
         Array.isArray(reload) && reload.includes(input);
@@ -379,8 +380,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       if (needsUpdate) {
         const { bundler } = context;
         bundleNeedsUpdate = true;
-
-        const asset = getAsset(graph, input, type);
 
         let newSourceFile: any;
         switch (asset.format) {
@@ -474,7 +473,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
               dependencyItem,
               context,
             ) as string;
-
             const sourceNode = ts.factory
               .createNoSubstitutionTemplateLiteral(
                 source,

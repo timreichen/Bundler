@@ -1,5 +1,6 @@
 import { path, postcss, posthtml, Sha256 } from "../../deps.ts";
 import { getAsset } from "../../graph.ts";
+import { readTextFile } from "../../_util.ts";
 import {
   Chunk,
   ChunkList,
@@ -39,7 +40,7 @@ export class HtmlPlugin extends Plugin {
     return input.endsWith(".html");
   }
   async readSource(filePath: string) {
-    return Deno.readTextFile(filePath);
+    return readTextFile(filePath);
   }
   async createAsset(
     item: Item,

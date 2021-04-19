@@ -169,13 +169,13 @@ export function typescriptInjectIdentifiersTransformer(
             //x += 1
             let left = node.left;
             let right = node.right;
-            if (ts.isIdentifier(node.left)) {
-              const text = node.left.text;
+            if (ts.isIdentifier(left)) {
+              const text = left.text;
               const identifier = identifierMap.get(text) || text;
               left = ts.factory.createIdentifier(identifier);
             }
-            if (ts.isIdentifier(node.right)) {
-              const text = node.right.text;
+            if (ts.isIdentifier(right)) {
+              const text = right.text;
               const identifier = identifierMap.get(text) || text;
               right = ts.factory.createIdentifier(identifier);
             }

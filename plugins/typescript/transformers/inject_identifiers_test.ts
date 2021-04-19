@@ -1,16 +1,15 @@
 import { ts } from "../../../deps.ts";
 import { assertStringIncludes, tests } from "../../../test_deps.ts";
-import { createIdentifierMap } from "../typescript_top_level_await_module.ts";
 import { typescriptInjectIdentifiersTransformer } from "./inject_identifiers.ts";
 
 const fileName = "a.ts";
 
 const printer: ts.Printer = ts.createPrinter({ removeComments: false });
 
-const identifierMap = createIdentifierMap(
-  new Set(["a"]),
-  new Set(["a"]),
-);
+const identifierMap = new Map([
+  ["a", "a1"],
+]);
+
 const blacklistIdentifiers: Set<string> = new Set();
 
 export function injectIdentifiers(
@@ -36,10 +35,10 @@ tests({
           sourceText,
           ts.ScriptTarget.Latest,
         );
-        const identifierMap = createIdentifierMap(
-          new Set(["a", "b"]),
-          new Set(["a", "b"]),
-        );
+        const identifierMap = new Map([
+          ["a", "a1"],
+          ["b", "b1"],
+        ]);
 
         const source = injectIdentifiers(
           sourceFile,

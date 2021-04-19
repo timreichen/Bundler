@@ -135,7 +135,7 @@ function createIdentifier(
   }
   return newIdentifier;
 }
-export function createIdentifierMap(
+function createIdentifierMap(
   identifiers: Set<string>,
   blacklistIdentifiers: Set<string>,
 ) {
@@ -234,7 +234,7 @@ function createTopLevelAwaitModuleNode(
 
 /**
   * check whether dependency is shared between chunks. If so, make sure that dependency creates its own chunk.
-  * This prevents code duplicate code across multiple bundle files
+  * This prevents duplicate code across multiple bundle files
   */
 function isSharedChunk(
   chunks: Chunk[],

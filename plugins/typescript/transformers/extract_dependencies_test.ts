@@ -263,6 +263,35 @@ tests({
       },
     },
     {
+      name: "export enum",
+      fn() {
+        const fileName = "src/a.ts";
+        const sourceText = `export enum A { };`;
+
+        const dependencies: Dependencies = { imports: {}, exports: {} };
+        const sourceFile = ts.createSourceFile(
+          fileName,
+          sourceText,
+          ts.ScriptTarget.Latest,
+        );
+        ts.transform(
+          sourceFile,
+          [typescriptExtractDependenciesTransformer(dependencies)],
+          compilerOptions,
+        );
+        assertEquals(dependencies.imports, {});
+        assertEquals(dependencies.exports, {
+          ".": {
+            specifiers: { "A": "A" },
+            defaults: [],
+            namespaces: [],
+            type: DependencyType.Export,
+            format: Format.Script,
+          },
+        });
+      },
+    },
+    {
       name: "namespace export",
       fn() {
         const fileName = "src/a.ts";

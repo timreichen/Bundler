@@ -252,6 +252,24 @@ export function typescriptExtractDependenciesTransformer(
             imports[filePath] = imports[filePath] ||
               { type: DependencyType.ServiceWorker, format: Format.Script };
           }
+        } else if (ts.isEnumDeclaration(node)) {
+          if (
+            node.modifiers &&
+            hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
+          ) {
+            exports[filePath] = exports[filePath] ||
+              {
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+                type: DependencyType.Export,
+                format: Format.Script,
+              };
+            // export enum x {}
+            const identifier = node.name.text;
+            const name = node.name.text;
+            exports[filePath].specifiers[name] = identifier;
+          }
         }
         return ts.visitEachChild(node, visit, context);
       };

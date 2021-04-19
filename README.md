@@ -543,6 +543,58 @@ Therefore bundler focuses on making css usage really easy instead of supporting
 preprocessors like sass, scss, less or stylus. Most features a preprocessor does
 should be covered with todays css and postcss.
 
+#### Support
+
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Example</th>
+<th>Support</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+  <td>@import</td>
+  <td>
+
+```css
+@import "x.css";
+```
+
+</td>
+
+<td style="text-align:center">✅</td>
+</tr>
+
+<tr>
+  <td>@import url</td>
+  <td>
+
+```css
+@import url("x.css");
+```
+
+</td>
+  <td style="text-align:center">✅</td>
+</tr>
+
+<tr>
+  <td>url</td>
+  <td>
+
+```css
+div { background: url('image.png'); }
+```
+
+</td>
+  <td style="text-align:center">✅</td>
+</tr>
+
+</tbody>
+</table>
+
 ### Images
 
 #### Test

@@ -298,6 +298,74 @@ export function typescriptInjectIdentifiersTransformer(
               node.statement,
               expression,
             );
+          } else if (ts.isForStatement(node)) {
+            // for (let x = 0; x > 0; i++) { }
+            let initializer = node.initializer;
+            let condition = node.condition;
+            let incrementor = node.incrementor;
+            if (initializer && ts.isIdentifier(initializer)) {
+              const text = initializer.text;
+              const identifier = identifierMap.get(text) || text;
+              initializer = ts.factory.createIdentifier(identifier);
+            }
+            if (condition && ts.isIdentifier(condition)) {
+              const text = condition.text;
+              const identifier = identifierMap.get(text) || text;
+              condition = ts.factory.createIdentifier(identifier);
+            }
+            if (incrementor && ts.isIdentifier(incrementor)) {
+              const text = incrementor.text;
+              const identifier = identifierMap.get(text) || text;
+              incrementor = ts.factory.createIdentifier(identifier);
+            }
+            node = ts.factory.updateForStatement(
+              node,
+              initializer,
+              condition,
+              incrementor,
+              node.statement,
+            );
+          } else if (ts.isForOfStatement(node)) {
+            // for (x of x) { }
+            let initializer = node.initializer;
+            let expression = node.expression;
+            if (ts.isIdentifier(initializer)) {
+              const text = initializer.text;
+              const identifier = identifierMap.get(text) || text;
+              initializer = ts.factory.createIdentifier(identifier);
+            }
+            if (ts.isIdentifier(expression)) {
+              const text = expression.text;
+              const identifier = identifierMap.get(text) || text;
+              expression = ts.factory.createIdentifier(identifier);
+            }
+            node = ts.factory.updateForOfStatement(
+              node,
+              node.awaitModifier,
+              initializer,
+              expression,
+              node.statement,
+            );
+          } else if (ts.isForInStatement(node)) {
+            // for (x in x) { }
+            let initializer = node.initializer;
+            let expression = node.expression;
+            if (ts.isIdentifier(initializer)) {
+              const text = initializer.text;
+              const identifier = identifierMap.get(text) || text;
+              initializer = ts.factory.createIdentifier(identifier);
+            }
+            if (ts.isIdentifier(expression)) {
+              const text = expression.text;
+              const identifier = identifierMap.get(text) || text;
+              expression = ts.factory.createIdentifier(identifier);
+            }
+            node = ts.factory.updateForInStatement(
+              node,
+              initializer,
+              expression,
+              node.statement,
+            );
           } else if (ts.isNewExpression(node)) {
             // new x()
             let expression = node.expression;

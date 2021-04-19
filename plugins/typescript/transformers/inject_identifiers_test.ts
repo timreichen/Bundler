@@ -497,6 +497,75 @@ tests({
     },
 
     {
+      name: "for statement",
+      fn: () => {
+        const sourceText = `for (let a = 0; a < a; a++) { }`;
+        const sourceFile = ts.createSourceFile(
+          fileName,
+          sourceText,
+          ts.ScriptTarget.Latest,
+        );
+
+        const source = injectIdentifiers(
+          sourceFile,
+          identifierMap,
+          blacklistIdentifiers,
+        );
+
+        assertStringIncludes(
+          source,
+          `for (let a1 = 0; a1 < a1; a1++) { }`,
+        );
+      },
+    },
+
+    {
+      name: "for of statement",
+      fn: () => {
+        const sourceText = `for (a of a) { }`;
+        const sourceFile = ts.createSourceFile(
+          fileName,
+          sourceText,
+          ts.ScriptTarget.Latest,
+        );
+
+        const source = injectIdentifiers(
+          sourceFile,
+          identifierMap,
+          blacklistIdentifiers,
+        );
+
+        assertStringIncludes(
+          source,
+          `for (a1 of a1) { }`,
+        );
+      },
+    },
+
+    {
+      name: "for in statement",
+      fn: () => {
+        const sourceText = `for (a in a) { }`;
+        const sourceFile = ts.createSourceFile(
+          fileName,
+          sourceText,
+          ts.ScriptTarget.Latest,
+        );
+
+        const source = injectIdentifiers(
+          sourceFile,
+          identifierMap,
+          blacklistIdentifiers,
+        );
+
+        assertStringIncludes(
+          source,
+          `for (a1 in a1) { }`,
+        );
+      },
+    },
+
+    {
       name: "new expression",
       fn: () => {
         const sourceText = `new a()`;

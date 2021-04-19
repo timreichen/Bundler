@@ -57,12 +57,10 @@ export function typescriptTransformImportsExportsTransformer(
 
                   const elements: ts.BindingElement[] = [];
                   importClause.namedBindings.elements.forEach((element) => {
-                    const text = element.name.text;
-                    let name = text;
+                    let name = element.name.text;
                     let propertyName = element.propertyName?.text;
-                    if (identifierMap.has(text)) {
-                      name = identifierMap.get(text)!;
-                      propertyName = text;
+                    if (identifierMap.has(name)) {
+                      name = identifierMap.get(name)!;
                     }
 
                     const usedImportSpecifiers = usedImports[identifier] =

@@ -4,7 +4,7 @@ import { Dependencies, DependencyType, Format } from "../../plugin.ts";
 import { postcssExtractDependenciesPlugin } from "./extract_dependencies.ts";
 
 tests({
-  name: "postcss extract dependencies plugin",
+  name: "postcss plugin → extract dependencies",
   tests: () => [
     {
       name: "importMap",

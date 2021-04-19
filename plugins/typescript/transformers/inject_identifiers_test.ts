@@ -24,7 +24,7 @@ export function injectIdentifiers(
 }
 
 tests({
-  name: "typescript inject identifiers transfomer",
+  name: "typescript transfomer → inject identifiers",
   tests: () => [
     {
       name: "variable declaration",

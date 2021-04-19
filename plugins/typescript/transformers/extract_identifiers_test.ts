@@ -13,7 +13,7 @@ export function extractIdentifiers(sourceFile: ts.SourceFile) {
 }
 
 tests({
-  name: "typescript extract identifiers transfomer",
+  name: "typescript transfomer → extract identifiers",
   tests: () => [
     {
       name: "variable declaration",

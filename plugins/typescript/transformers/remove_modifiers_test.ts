@@ -9,7 +9,7 @@ import { typescriptRemoveModifiersTransformer } from "./remove_modifiers.ts";
 const printer: ts.Printer = ts.createPrinter({ removeComments: false });
 
 tests({
-  name: "typescript remove modifiers transfomer",
+  name: "typescript transfomer → remove modifiers",
   tests: () => [
     {
       name: "const export",

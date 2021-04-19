@@ -11,7 +11,7 @@ import {
   posthtmlInjectStyleDependencies,
 } from "./inject_dependencies.ts";
 tests({
-  name: "posthtml inject dependencies plugin",
+  name: "posthtml plugin → inject dependencies",
   tests: () => [
     {
       name: "importMap",

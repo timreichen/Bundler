@@ -9,7 +9,7 @@ import { typescriptTransformDynamicImportTransformer } from "./dynamic_imports.t
 const printer: ts.Printer = ts.createPrinter({ removeComments: false });
 
 tests({
-  name: "typescript dynamic imports transfomer",
+  name: "typescript transfomer → dynamic imports",
   tests: () => [
     {
       name: "dynamic import",

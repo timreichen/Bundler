@@ -6,7 +6,7 @@ import { typescriptExtractDependenciesTransformer } from "./extract_dependencies
 const compilerOptions: ts.CompilerOptions = {};
 
 tests({
-  name: "typescript extract dependencies transfomer",
+  name: "typescript transfomer → extract dependencies",
   tests: () => [
     {
       name: "type import",

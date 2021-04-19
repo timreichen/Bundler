@@ -2,7 +2,7 @@ import { resolve } from "./dependency.ts";
 import { assertEquals, tests } from "./test_deps.ts";
 
 tests({
-  name: "typescript extract dependencies transfomer",
+  name: "typescript transfomer → extract dependencies",
   tests: () => [
     {
       name: "resolve path",

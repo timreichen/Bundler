@@ -5,7 +5,7 @@ import { DependencyType, Format } from "../../plugin.ts";
 import { postcssInjectDependenciesPlugin } from "./inject_dependencies.ts";
 
 tests({
-  name: "postcss inject dependencies plugin",
+  name: "postcss plugin → inject dependencies",
   tests: () => [
     {
       name: "url()",

@@ -6,7 +6,7 @@ import { Chunk, Context, DependencyType, Format } from "../../plugin.ts";
 import { postcssInjectImportsPlugin } from "./inject_imports.ts";
 
 tests({
-  name: "postcss inject imports plugin",
+  name: "postcss plugin → inject imports",
   tests: () => [
     {
       name: "inline import",

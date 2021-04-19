@@ -51,7 +51,7 @@ const compilerOptions: ts.CompilerOptions = {
 const printer: ts.Printer = ts.createPrinter({ removeComments: false });
 
 tests({
-  name: "typescript inject dependencies transfomer",
+  name: "typescript transfomer → inject dependencies",
   tests: () => [
     {
       name: "importMap",

@@ -10,7 +10,7 @@ import {
 } from "./extract_dependencies.ts";
 
 tests({
-  name: "posthtml extract dependencies plugin",
+  name: "posthtml plugin → extract dependencies",
   tests: () => [
     {
       name: "importMap",

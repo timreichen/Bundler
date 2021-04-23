@@ -56,8 +56,8 @@ export function ensureExtension(path: string, extension: string) {
 
 export function timestamp(time: number) {
   const delta = performance.now() - time;
-  const unit = delta < 1000 ? "ms" : "s";
-  return `${Math.ceil(delta)}${unit}`;
+  const unit = "ms";
+  return `${delta}${unit}`;
 }
 
 export function size(size: number) {

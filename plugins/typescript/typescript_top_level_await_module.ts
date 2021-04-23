@@ -413,6 +413,11 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
               },
             );
 
+            const isModule = [
+              ...Object.keys(asset.dependencies.imports),
+              ...Object.keys(asset.dependencies.exports),
+            ].length > 0;
+
             const functionNode = createTopLevelAwaitModuleNode(
               chunk,
               asset,
@@ -422,46 +427,49 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
               { graph, importMap },
             );
 
-            const defaultDeclaration = createDefaultExportNode(functionNode);
-            ts.addSyntheticLeadingComment(
-              defaultDeclaration,
-              ts.SyntaxKind.MultiLineCommentTrivia,
-              ` ${asset.filePath} `,
-              true,
-            );
+            newSourceFile = sourceFile;
 
-            if (input === bundleInput) {
-              newSourceFile = ts.factory.createSourceFile(
-                [defaultDeclaration],
-                ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-                ts.NodeFlags.None,
-              );
-            } else {
-              const identifier = getIdentifier(importIdentifierMap, input);
-              const variableDeclaration = ts.factory.createVariableStatement(
-                undefined,
-                ts.factory.createVariableDeclarationList(
-                  [ts.factory.createVariableDeclaration(
-                    ts.factory.createIdentifier(identifier),
-                    undefined,
-                    undefined,
-                    functionNode,
-                  )],
-                  ts.NodeFlags.Const,
-                ),
-              );
+            if (isModule) {
+              const defaultDeclaration = createDefaultExportNode(functionNode);
               ts.addSyntheticLeadingComment(
-                variableDeclaration,
+                defaultDeclaration,
                 ts.SyntaxKind.MultiLineCommentTrivia,
                 ` ${asset.filePath} `,
                 true,
               );
 
-              newSourceFile = ts.factory.createSourceFile(
-                [variableDeclaration],
-                ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-                ts.NodeFlags.None,
-              );
+              if (input === bundleInput) {
+                newSourceFile = ts.factory.createSourceFile(
+                  [defaultDeclaration],
+                  ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
+                  ts.NodeFlags.None,
+                );
+              } else {
+                const identifier = getIdentifier(importIdentifierMap, input);
+                const variableDeclaration = ts.factory.createVariableStatement(
+                  undefined,
+                  ts.factory.createVariableDeclarationList(
+                    [ts.factory.createVariableDeclaration(
+                      ts.factory.createIdentifier(identifier),
+                      undefined,
+                      undefined,
+                      functionNode,
+                    )],
+                    ts.NodeFlags.Const,
+                  ),
+                );
+                ts.addSyntheticLeadingComment(
+                  variableDeclaration,
+                  ts.SyntaxKind.MultiLineCommentTrivia,
+                  ` ${asset.filePath} `,
+                  true,
+                );
+                newSourceFile = ts.factory.createSourceFile(
+                  [variableDeclaration],
+                  ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
+                  ts.NodeFlags.None,
+                );
+              }
             }
             break;
           }

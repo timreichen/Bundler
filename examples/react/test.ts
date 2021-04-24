@@ -32,10 +32,10 @@ Deno.test({
       "examples/react/src/index.tsx",
       "https://esm.sh/react@17.0.1",
       "https://esm.sh/react-dom@17.0.1",
-      "https://cdn.esm.sh/v40/react@17.0.1/deno/react.js",
-      "https://cdn.esm.sh/v40/react-dom@17.0.1/deno/react-dom.js",
-      "https://cdn.esm.sh/v40/object-assign@4.1.1/deno/object-assign.js",
-      "https://cdn.esm.sh/v40/scheduler@0.20.2/deno/scheduler.js",
+      "https://cdn.esm.sh/v41/react@17.0.1/deno/react.js",
+      "https://cdn.esm.sh/v41/react-dom@17.0.1/deno/react-dom.js",
+      "https://cdn.esm.sh/v41/object-assign@4.1.1/deno/object-assign.js",
+      "https://cdn.esm.sh/v41/scheduler@0.20.2/deno/scheduler.js",
     ]);
 
     const chunks = await bundler.createChunks(inputs, graph);

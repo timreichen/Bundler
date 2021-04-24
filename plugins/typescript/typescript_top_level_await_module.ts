@@ -39,7 +39,7 @@ const defaultCompilerOptions: ts.CompilerOptions = {
   // noUnusedParameters: false,
   // preserveConstEnums: false,
   // removeComments: false,
-  // // resolveJsonModule: true,
+  // resolveJsonModule: true,
   // strict: true,
   // strictBindCallApply: true,
   // strictFunctionTypes: true,
@@ -364,7 +364,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       }
     }
 
-    const bundleSources: Record<string, string> = {};
+    const bundleSourceFiles: Record<string, ts.SourceFile> = {};
 
     for (const dependencyItem of inlineItems) {
       const { history, type } = dependencyItem;
@@ -430,9 +430,9 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
             newSourceFile = sourceFile;
 
             if (isModule) {
-              const defaultDeclaration = createDefaultExportNode(functionNode);
+              const defaultExportNode = createDefaultExportNode(functionNode);
               ts.addSyntheticLeadingComment(
-                defaultDeclaration,
+                defaultExportNode,
                 ts.SyntaxKind.MultiLineCommentTrivia,
                 ` ${asset.filePath} `,
                 true,
@@ -440,7 +440,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
 
               if (input === bundleInput) {
                 newSourceFile = ts.factory.createSourceFile(
-                  [defaultDeclaration],
+                  [defaultExportNode],
                   ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
                   ts.NodeFlags.None,
                 );
@@ -602,32 +602,36 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
             `newSourceFile is invalid: ${input} in ${bundleInput}`,
           );
         }
-
-        const source = ts.transpile(printer.printFile(newSourceFile), {
+        const source = printer.printFile(newSourceFile);
+        const transpiledSource = ts.transpile(source, {
           ...defaultCompilerOptions,
           ...this.compilerOptions,
         });
 
-        if (source === undefined) {
+        if (transpiledSource === undefined) {
           throw new Error(
-            `source must be a string: ${input} in ${bundleInput}`,
+            `transpiledSource must be a string: ${input} in ${bundleInput}`,
           );
         }
 
         await bundler.setCache(
           bundleInput,
           input,
-          source,
+          transpiledSource,
           context,
         );
-
-        bundleSources[input] = source;
+        bundleSourceFiles[input] = newSourceFile;
       } else {
         const source = await bundler.getCache(bundleInput, input, context);
         if (source === undefined) {
           throw Error(`cache file for input not found: '${input}'`);
         }
-        bundleSources[input] = source;
+        const sourceFile = ts.createSourceFile(
+          input,
+          source,
+          ts.ScriptTarget.Latest,
+        );
+        bundleSourceFiles[input] = sourceFile;
       }
     }
 
@@ -658,13 +662,17 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       },
     );
 
+    const statements = Object.values(bundleSourceFiles)
+      .flatMap((sourceFile) => sourceFile.statements);
+
     const sourceFile = ts.factory.createSourceFile(
-      [...importNodes],
+      [
+        ...importNodes,
+        ...statements,
+      ],
       ts.createToken(ts.SyntaxKind.EndOfFileToken),
       ts.NodeFlags.None,
     );
-
-    const defaultSource = printer.printFile(sourceFile);
-    return [...Object.values(bundleSources), defaultSource].join("\n");
+    return printer.printFile(sourceFile);
   }
 }

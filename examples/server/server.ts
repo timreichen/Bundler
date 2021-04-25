@@ -3,6 +3,7 @@ import { Bundler } from "../../bundler.ts";
 import { createDefaultPlugins } from "../../defaults.ts";
 import { Watcher } from "../../watcher.ts";
 import { path } from "../../deps.ts";
+import { lookup } from "https://deno.land/x/media_types/mod.ts";
 
 const plugins = createDefaultPlugins();
 const bundler = new Bundler(plugins);
@@ -29,16 +30,11 @@ async function bundle() {
 }
 await bundle();
 
-const contentTypes: Record<string, string> = {
-  ".js": "application/javascript",
-  ".html": "text/html",
-  ".css": "text/css",
-};
-
 const app = new Application();
 
 app.use((context: Context) => {
-  let pathname = context.request.url.pathname;
+  const { request, response } = context;
+  let pathname: string = request.url.pathname;
   if (pathname === "/") {
     pathname = root;
   } else if (path.isAbsolute(pathname)) {
@@ -47,16 +43,17 @@ app.use((context: Context) => {
       pathname,
     );
   }
-  const extname = path.extname(pathname);
-  const contentType = contentTypes[extname];
-  context.response.headers.set("Content-Type", contentType);
-  context.response.body = bundles[pathname];
+  const type = lookup(pathname);
+  if (!type) return context.throw(500);
+
+  context.response.headers.set("Content-Type", type);
+  response.body = bundles[pathname];
 });
 
 app.addEventListener("listen", ({ hostname, port, secure }) => {
   console.log(
-    `Listening on: ${secure ? "https://" : "http://"}${hostname ??
-      "localhost"}:${port}`,
+    `${secure ? "https://" : "http://"}${hostname ?? "localhost"}:${port}`,
   );
 });
+
 await app.listen({ port: 8000 });

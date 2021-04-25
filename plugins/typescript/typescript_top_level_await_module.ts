@@ -364,7 +364,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       }
     }
 
-    const bundleSourceFiles: Record<string, ts.SourceFile> = {};
+    const bundleSources: Record<string, string> = {};
 
     for (const dependencyItem of inlineItems) {
       const { history, type } = dependencyItem;
@@ -602,7 +602,11 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
             `newSourceFile is invalid: ${input} in ${bundleInput}`,
           );
         }
-        const source = printer.printFile(newSourceFile);
+        const source = printer.printList(
+          ts.ListFormat.SourceFileStatements,
+          newSourceFile.statements,
+          newSourceFile,
+        );
         const transpiledSource = ts.transpile(source, {
           ...defaultCompilerOptions,
           ...this.compilerOptions,
@@ -620,18 +624,13 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
           transpiledSource,
           context,
         );
-        bundleSourceFiles[input] = newSourceFile;
+        bundleSources[input] = transpiledSource;
       } else {
         const source = await bundler.getCache(bundleInput, input, context);
         if (source === undefined) {
           throw Error(`cache file for input not found: '${input}'`);
         }
-        const sourceFile = ts.createSourceFile(
-          input,
-          source,
-          ts.ScriptTarget.Latest,
-        );
-        bundleSourceFiles[input] = sourceFile;
+        bundleSources[input] = source;
       }
     }
 
@@ -662,8 +661,16 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       },
     );
 
-    const statements = Object.values(bundleSourceFiles)
-      .flatMap((sourceFile) => sourceFile.statements);
+    const statements = Object.entries(bundleSources)
+      .flatMap(([input, source]) =>
+        ts.createSourceFile(
+          input,
+          source,
+          ts.ScriptTarget.Latest,
+          undefined,
+          ts.ScriptKind.JS,
+        ).statements
+      );
 
     const sourceFile = ts.factory.createSourceFile(
       [

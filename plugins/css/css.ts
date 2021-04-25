@@ -1,4 +1,4 @@
-import { fs, path, postcss, Sha256 } from "../../deps.ts";
+import { fs, path, postcss, postcssPresetEnv, Sha256 } from "../../deps.ts";
 
 import {
   Chunk,
@@ -15,7 +15,6 @@ import { postcssInjectImportsPlugin } from "./postcss/inject_imports.ts";
 import { postcssInjectDependenciesPlugin } from "./postcss/inject_dependencies.ts";
 import { getAsset } from "../../graph.ts";
 import { readTextFile } from "../../_util.ts";
-
 export class CssPlugin extends Plugin {
   use: postcss.AcceptedPlugin[];
   constructor(

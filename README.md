@@ -630,6 +630,10 @@ to see smart splitting in action.
 - [lit-element](https://github.com/timreichen/Bundler/tree/master/examples/lit_element)
 - [react](https://github.com/timreichen/Bundler/tree/master/examples/react)
 
+### Bundler API
+
+- [server](https://github.com/timreichen/Bundler/tree/master/examples/server)
+
 ### Others
 
 - [css](https://github.com/timreichen/Bundler/tree/master/examples/css)

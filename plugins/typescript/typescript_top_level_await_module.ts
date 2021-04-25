@@ -12,42 +12,10 @@ import { typescriptInjectIdentifiersTransformer } from "./transformers/inject_id
 import { typescriptExtractIdentifiersTransformer } from "./transformers/extract_identifiers.ts";
 import { getIdentifier } from "./transformers/_util.ts";
 
-const defaultCompilerOptions: ts.CompilerOptions = {
-  jsx: ts.JsxEmit.React,
-  jsxFactory: "React.createElement",
-  jsxFragmentFactory: "React.Fragment",
-
+export const defaultCompilerOptions: ts.CompilerOptions = {
+  // needed for plugin to work correctly
   target: ts.ScriptTarget.Latest,
   module: ts.ModuleKind.ESNext,
-  // allowJs: false,
-  // allowUmdGlobalAccess: false,
-  // allowUnreachableCode: false,
-  // allowUnusedLabels: false,
-  // alwaysStrict: true,
-  // assumeChangesOnlyAffectDirectDependencies: false,
-  // checkJs: false,
-  // disableSizeLimit: false,
-  // generateCpuProfile: "profile.cpuprofile",
-  // lib: [],
-  // noFallthroughCasesInSwitch: false,
-  // noImplicitAny: true,
-  // noImplicitReturns: true,
-  // noImplicitThis: true,
-  // noImplicitUseStrict: false,
-  // noStrictGenericChecks: false,
-  // noUnusedLocals: false,
-  // noUnusedParameters: false,
-  // preserveConstEnums: false,
-  // removeComments: false,
-  // resolveJsonModule: true,
-  // strict: true,
-  // strictBindCallApply: true,
-  // strictFunctionTypes: true,
-  // strictNullChecks: true,
-  // strictPropertyInitialization: true,
-  // suppressExcessPropertyErrors: false,
-  // suppressImplicitAnyIndexErrors: false,
-  // useDefineForClassFields: false,
 };
 
 const printer: ts.Printer = ts.createPrinter({ removeComments: false });

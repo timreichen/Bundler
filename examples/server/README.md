@@ -10,4 +10,4 @@ deno run --unstable --allow-net --allow-read server.ts
 
 ## 2. Serve
 
-Serve `index.html` with `dist` as root
+files are served to `http://localhost:8000`

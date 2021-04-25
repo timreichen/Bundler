@@ -34,7 +34,7 @@ export function posthtmlInjectScriptDependencies(
           node.attrs.src = addRelativePrefix(
             path.relative(bundleDirPath, asset.output),
           );
-        } else if (node.content[0]) {
+        } else if (node.content?.[0]) {
           const promise = new Promise(async (resolve) => {
             const source = node.content[0];
             const identifier = `_${scriptIndex++}.ts`;

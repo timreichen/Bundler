@@ -399,12 +399,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
 
             if (isModule) {
               const defaultExportNode = createDefaultExportNode(functionNode);
-              ts.addSyntheticLeadingComment(
-                defaultExportNode,
-                ts.SyntaxKind.MultiLineCommentTrivia,
-                ` ${asset.filePath} `,
-                true,
-              );
 
               if (input === bundleInput) {
                 newSourceFile = ts.factory.createSourceFile(
@@ -425,12 +419,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
                     )],
                     ts.NodeFlags.Const,
                   ),
-                );
-                ts.addSyntheticLeadingComment(
-                  variableDeclaration,
-                  ts.SyntaxKind.MultiLineCommentTrivia,
-                  ` ${asset.filePath} `,
-                  true,
                 );
                 newSourceFile = ts.factory.createSourceFile(
                   [variableDeclaration],
@@ -491,13 +479,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
                 ts.NodeFlags.Const,
               ),
             );
-            ts.addSyntheticLeadingComment(
-              variableDeclaration,
-              ts.SyntaxKind.MultiLineCommentTrivia,
-              asset.filePath,
-              true,
-            );
-
             newSourceFile = ts.factory.createSourceFile(
               [variableDeclaration],
               ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
@@ -550,12 +531,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
                 ts.NodeFlags.Const,
               ),
             );
-            ts.addSyntheticLeadingComment(
-              variableDeclaration,
-              ts.SyntaxKind.MultiLineCommentTrivia,
-              asset.filePath,
-              true,
-            );
+
             newSourceFile = ts.factory.createSourceFile(
               [variableDeclaration],
               ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
@@ -630,15 +606,23 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
     );
 
     const statements = Object.entries(bundleSources)
-      .flatMap(([input, source]) =>
-        ts.createSourceFile(
+      .flatMap(([input, source]) => {
+        const sourceFile = ts.createSourceFile(
           input,
           source,
           ts.ScriptTarget.Latest,
           undefined,
           ts.ScriptKind.JS,
-        ).statements
-      );
+        );
+
+        ts.addSyntheticLeadingComment(
+          sourceFile,
+          ts.SyntaxKind.MultiLineCommentTrivia,
+          ` ${input} `,
+          true,
+        );
+        return sourceFile.statements;
+      });
 
     const sourceFile = ts.factory.createSourceFile(
       [
@@ -648,6 +632,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       ts.createToken(ts.SyntaxKind.EndOfFileToken),
       ts.NodeFlags.None,
     );
+
     return printer.printFile(sourceFile);
   }
 }

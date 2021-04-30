@@ -1,5 +1,6 @@
 import { path, Sha256 } from "../deps.ts";
 import { Asset, getAsset } from "../graph.ts";
+import { readFile } from "../_util.ts";
 import {
   Chunk,
   ChunkList,
@@ -12,7 +13,7 @@ import {
 
 export class FilePlugin extends Plugin {
   async readSource(filePath: string, context: Context): Promise<Source> {
-    return await Deno.readFile(filePath);
+    return await readFile(filePath);
   }
   async createAsset(
     item: Item,

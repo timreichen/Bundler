@@ -1,6 +1,6 @@
 import { colors, fs, Sha256 } from "./deps.ts";
 import { Logger } from "./logger.ts";
-import { isURL } from "./_util.ts";
+import { isURL, readFile } from "./_util.ts";
 
 export class Watcher {
   logger: Logger;
@@ -18,7 +18,7 @@ export class Watcher {
 
     for (const path of paths) {
       if (!this.hashes[path]) {
-        this.hashes[path] = new Sha256().update(await Deno.readFile(path))
+        this.hashes[path] = new Sha256().update(await readFile(path))
           .hex();
       }
     }
@@ -35,7 +35,7 @@ export class Watcher {
       // checks if actual file content changed
       if (kind === "modify") {
         for (const filePath of paths) {
-          const hash = new Sha256().update(await Deno.readFile(filePath))
+          const hash = new Sha256().update(await readFile(filePath))
             .hex();
           if (this.hashes[filePath] !== hash) {
             this.hashes[filePath] = hash;

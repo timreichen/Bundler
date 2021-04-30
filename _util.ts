@@ -68,6 +68,16 @@ export function size(size: number) {
   return `${Math.ceil(number)}${unit}`;
 }
 
+export async function readFile(path: string | URL) {
+  try {
+    return await Deno.readFile(path);
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      error.message += `: ${path}`;
+    }
+    throw error;
+  }
+}
 export async function readTextFile(path: string | URL) {
   try {
     return await Deno.readTextFile(path);

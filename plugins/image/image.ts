@@ -1,4 +1,5 @@
 import { Asset } from "../../graph.ts";
+import { readFile } from "../../_util.ts";
 import { FilePlugin } from "../file.ts";
 import { Context, Format, Item } from "../plugin.ts";
 
@@ -8,7 +9,7 @@ export class ImagePlugin extends FilePlugin {
     return /\.(png|jpe?g|ico|gif)$/.test(input);
   }
   async readSource(filePath: string, context: Context) {
-    return await Deno.readFile(filePath);
+    return await readFile(filePath);
   }
   async createAsset(
     item: Item,

@@ -181,7 +181,7 @@ export class Bundler {
     // if reload is true, have graph be an empty onject
     const graph: Graph = {};
 
-    const assetList: Item[] = inputs.map((
+    const itemList: Item[] = inputs.map((
       input,
     ) => ({
       history: [input],
@@ -190,7 +190,7 @@ export class Bundler {
         Format.Unknown, /* format based on extension */
     }));
 
-    for (const item of assetList) {
+    for (const item of itemList) {
       const { history, type } = item;
       const input = history[0];
       const entry = graph[input] = graph[input] || {};
@@ -234,7 +234,21 @@ export class Bundler {
           const [dependency, { type, format }] of Object.entries(dependencies)
         ) {
           if (input !== dependency) {
-            assetList.push({
+            const index = history.indexOf(dependency);
+            if (index !== -1) {
+              this.logger.error(
+                [
+                  colors.red(`Circular Dependency`),
+                  colors.dim(
+                    [...history.slice(0, index + 1).reverse(), dependency].join(
+                      ` → \n`,
+                    ),
+                  ),
+                ].join(`\n`),
+              );
+              return Deno.exit(0);
+            }
+            itemList.push({
               history: [dependency, ...history],
               type,
               format,
@@ -248,7 +262,7 @@ export class Bundler {
       colors.green("Create"),
       "Graph",
       colors.dim(
-        `${assetList.length} file${assetList.length === 1 ? "" : "s"}`,
+        `${itemList.length} file${itemList.length === 1 ? "" : "s"}`,
       ),
       colors.dim(colors.italic(`(${timestamp(time)})`)),
     );

@@ -1,8 +1,7 @@
 import { ts } from "../../../deps.ts";
 
 /**
- * inject ```.then(async (data) => await data.default)` to load module async iife
- * @returns 
+ * inject `.then(async (data) => await data.default)` to load module async iife
  */
 export function typescriptTransformDynamicImportTransformer(): ts.TransformerFactory<
   ts.SourceFile

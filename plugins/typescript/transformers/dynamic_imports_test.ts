@@ -33,5 +33,27 @@ tests({
         );
       },
     },
+    {
+      name: "dynamic import",
+      fn() {
+        const fileName = "src/a.ts";
+        const sourceText = `const extension = ".ts"; import("./x" + extension)`;
+        const sourceFile = ts.createSourceFile(
+          fileName,
+          sourceText,
+          ts.ScriptTarget.Latest,
+        );
+        const { transformed, diagnostics } = ts.transform(
+          sourceFile,
+          [typescriptTransformDynamicImportTransformer()],
+        );
+        const outputText = printer.printFile(transformed[0]);
+        assertEquals(diagnostics, []);
+        assertEquals(
+          outputText,
+          `const extension = ".ts";\r\nimport("./x" + extension);\r\n`,
+        );
+      },
+    },
   ],
 });

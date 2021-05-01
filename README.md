@@ -5,51 +5,51 @@ A Bundler with the web in mind.
 ![Donate](https://img.shields.io/badge/Deno-≥%201.8-blue.svg?style=for-the-badge&logo=deno)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg?style=for-the-badge)](https://www.paypal.com/donate?hosted_button_id=ACDW2YV2RTP8A)
 
-## Table of Contents
+## Table of Contents <!-- omit in toc -->
 
-- [Bundler](#bundler)
-  - [Table of Contents](#table-of-contents)
-  - [What is Bundler?](#what-is-bundler)
-  - [Why use Bundler?](#why-use-bundler)
-    - [But there is `deno bundle` and `Deno.emit`,
-      right?](#but-there-is-deno-bundle-and-denoemit-right)
-  - [Getting Started](#getting-started)
-    - [Installation](#installation)
-  - [Usage](#usage)
-    - [CLI](#cli)
-      - [Options](#options)
-  - [Supported File Types](#supported-file-types)
-    - [Typescript and Javascript](#typescript-and-javascript)
-      - [Test](#test)
-      - [Transformation](#transformation)
-      - [Bundle](#bundle)
-      - [Optimization](#optimization)
-      - [Support](#support)
-    - [Json](#json)
-      - [Test](#test-1)
-      - [Transformation](#transformation-1)
-      - [Optimization](#optimization-1)
-    - [Webmanifest](#webmanifest)
-      - [Test](#test-2)
-    - [Html](#html)
-      - [Optimization](#optimization-2)
-      - [Support](#support-1)
-    - [Css](#css)
-      - [Test](#test-3)
-      - [Transformation](#transformation-2)
-      - [Optimization](#optimization-3)
-      - [Postcss](#postcss)
-      - [A word on preprocessors](#a-word-on-preprocessors)
-    - [Images](#images)
-      - [Test](#test-4)
-      - [Optimization](#optimization-4)
-    - [Other](#other)
-  - [Smart Splitting](#smart-splitting)
-  - [Examples](#examples)
-    - [Hello world](#hello-world)
-    - [Components](#components)
-    - [Others](#others)
-  - [Unstable](#unstable)
+- [What is Bundler?](#what-is-bundler)
+- [Why use Bundler?](#why-use-bundler)
+  - [But there is _deno bundle_ and _Deno.emit_,
+    right?](#but-there-is-deno-bundle-and-denoemit-right)
+- [Getting Started](#getting-started)
+  - [Installation](#installation)
+- [Usage](#usage)
+  - [CLI](#cli)
+    - [Options](#options)
+- [Supported File Types](#supported-file-types)
+  - [Typescript and Javascript](#typescript-and-javascript)
+    - [Test](#test)
+    - [Transformation](#transformation)
+    - [Bundle](#bundle)
+    - [Optimization](#optimization)
+    - [Support](#support)
+  - [Json](#json)
+    - [Test](#test-1)
+    - [Transformation](#transformation-1)
+    - [Optimization](#optimization-1)
+  - [Webmanifest](#webmanifest)
+    - [Test](#test-2)
+  - [Html](#html)
+    - [Optimization](#optimization-2)
+    - [Support](#support-1)
+  - [Css](#css)
+    - [Test](#test-3)
+    - [Transformation](#transformation-2)
+    - [Optimization](#optimization-3)
+    - [Postcss](#postcss)
+    - [A word on preprocessors](#a-word-on-preprocessors)
+    - [Support](#support-2)
+  - [Images](#images)
+    - [Test](#test-4)
+    - [Optimization](#optimization-4)
+  - [Other](#other)
+- [Smart Splitting](#smart-splitting)
+- [Examples](#examples)
+  - [Hello world](#hello-world)
+  - [Components](#components)
+  - [Bundler API](#bundler-api)
+  - [Others](#others)
+- [Unstable](#unstable)
 
 ## What is Bundler?
 
@@ -60,20 +60,28 @@ are used to with deno.
 
 - handles relative and absolute imports as well as
   [url imports](https://deno.land/manual/linking_to_external_code)
-- handles dynamic `import()` and `fetch()` statements
-- handles `css` `@import` statements and supports
-  [postcss-preset-env](https://preset-env.cssdb.org) **stage 2** and
-  **nesting-rules** by default
 - [smart splits](#smart-splitting) dependencies
-- handles `html` `<link>`, `<script>`, `<img>` and `<style>` tags,
-  `<div style="">` attributes as well as `webmanifest` files
-- handles `WebWorker` and `ServiceWorker` imports
+- handles `top level await`
 - handles `ts`, `tsx`, `js`, `jsx` `html`, `css`, `json`, `png`, `jpg`, `jpeg`,
   `ico`, `svg`, and other file types
 - built in code optimazation and minification with `--optimize` option
 - built in file watcher with `--watch` option
 
-### But there is `deno bundle` and `Deno.emit`, right?
+- typescript and javascript
+  - handles dynamic `import()` statements
+  - handles `fetch()` statements
+  - handles `WebWorker` imports
+  - handles `ServiceWorker` imports
+- html
+  - handles `<link>`, `<script>`, `<style>` and `<img>` tags
+  - handles `style` attributes
+  - handles `webmanifest` files
+- css
+  - handles `css` `@import` statements
+  - supports [postcss-preset-env](https://preset-env.cssdb.org) **stage 2** and
+    **nesting-rules** by default
+
+### But there is _deno bundle_ and _Deno.emit_, right?
 
 `deno bundle` CLI command and `Deno.emit` can transpile and bundle a file to a
 standalone module. This might work for some occations but is limited to script
@@ -99,17 +107,17 @@ bundler bundle index.ts=index.js
 
 #### Options
 
-|               Option | Description                                  | Default |
-| -------------------: | -------------------------------------------- | ------- |
-| -c, --config \<FILE> | Load tsconfig.json configuration file        | {}      |
-|     --out-dir \<DIR> | Name of out_dir                              | "dist"  |
-|           -h, --help | Prints help information                      |         |
-| --import-map \<FILE> | UNSTABLE: Load import map file               | {}      |
-|           --optimize | Optimize source code                         | false   |
-|      -L, --log-level | Set log level [possible values: debug, info] | debug   |
-|          -q, --quiet | Suppress diagnostic output                   | false   |
-|         -r, --reload | Reload source code                           | false   |
-|              --watch | Watch files and re-bundle on change          | false   |
+|               Option | Description                                                                                                                                                      | Default |
+| -------------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| -c, --config \<FILE> | Load tsconfig.json configuration file                                                                                                                            | {}      |
+|     --out-dir \<DIR> | Name of out_dir                                                                                                                                                  | "dist"  |
+|           -h, --help | Prints help information                                                                                                                                          |         |
+| --import-map \<FILE> | UNSTABLE: Load import map file                                                                                                                                   | {}      |
+|           --optimize | Optimize source code                                                                                                                                             | false   |
+|      -L, --log-level | Set log level [possible values: debug, info]                                                                                                                     | debug   |
+|          -q, --quiet | Suppress diagnostic output                                                                                                                                       | false   |
+|         -r, --reload | Reload source code<br>--reload&emsp;Reload everything<br>--reload=index.ts&emsp;Reload only standard modules<br>--reload=a.ts,b.ts&emsp;Reloads specific modules | false   |
+|              --watch | Watch files and re-bundle on change                                                                                                                              | false   |
 
 ## Supported File Types
 
@@ -401,7 +409,7 @@ The file path can have any extension but must be imported with
 
 #### Optimization
 
-Bundler **does not yet** minify code with the `--optimize` option.
+Bundler **does not yet** minify html code with the `--optimize` option.
 
 #### Support
 
@@ -510,7 +518,7 @@ The file must have `.css` extension.
 #### Transformation
 
 A css file will be transformed into a esm module with a default string export if
-it is imported into typescript or javascript.
+the css file is it is imported into typescript or javascript.
 
 ```css
 /* src/style.json */
@@ -608,8 +616,8 @@ Bundler minifies `.svg` files with the `--optimize` option using
 
 ### Other
 
-Other files can be fetched via the `fetch API`. They will not be optimized or
-transformed.
+Other files can be fetched via the `fetch API`. They will not be transformed or
+optimized.
 
 ## Smart Splitting
 

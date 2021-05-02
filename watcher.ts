@@ -1,11 +1,14 @@
 import { colors, fs, Sha256 } from "./deps.ts";
-import { Logger } from "./logger.ts";
+import { Logger, logLevels } from "./logger.ts";
 import { isURL, readFile } from "./_util.ts";
 
 export class Watcher {
   logger: Logger;
   hashes: Record<string, string>;
-  constructor({ logger }: { logger: Logger }) {
+  constructor(
+    { logger = new Logger({ logLevel: logLevels.info }) }: { logger?: Logger } =
+      {},
+  ) {
     this.logger = logger;
     this.hashes = {};
   }

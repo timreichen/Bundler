@@ -171,8 +171,6 @@ async function bundleCommand(
     quiet,
   } = options;
 
-  const logger = new Logger({ logLevel, quiet });
-
   const plugins: Plugin[] = createDefaultPlugins({
     typescriptCompilerOptions: {
       // default compiler options
@@ -182,9 +180,9 @@ async function bundleCommand(
     },
   });
 
-  const bundler = new Bundler(plugins, { logLevel, quiet });
-
-  const watcher = new Watcher({ logger });
+  const logger = new Logger({ logLevel, quiet });
+  const bundler = new Bundler(plugins, { logger });
+  const watcher = new Watcher({ logger: bundler.logger });
 
   async function bundleFunction() {
     const time = performance.now();

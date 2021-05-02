@@ -25,7 +25,8 @@ Deno.test({
       new CssPlugin({ use }),
       new ImagePlugin(),
     ];
-    const bundler = new Bundler(plugins, { quiet: true });
+    const bundler = new Bundler(plugins);
+    bundler.logger.quiet = true;
     const input = "examples/css/src/index.html";
     const inputs = [
       input,

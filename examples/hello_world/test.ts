@@ -11,7 +11,8 @@ Deno.test({
       new HtmlPlugin(),
       new TypescriptTopLevelAwaitModulePlugin(),
     ];
-    const bundler = new Bundler(plugins, { quiet: true });
+    const bundler = new Bundler(plugins);
+    bundler.logger.quiet = true;
     const input = "examples/hello_world/src/index.html";
     const inputs = [
       input,

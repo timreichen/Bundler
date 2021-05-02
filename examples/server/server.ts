@@ -6,6 +6,7 @@ import { path } from "../../deps.ts";
 import { lookup } from "https://deno.land/x/media_types/mod.ts";
 
 const plugins = createDefaultPlugins();
+
 const bundler = new Bundler(plugins);
 
 const root = "/index.html";

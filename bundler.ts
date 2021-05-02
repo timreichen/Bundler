@@ -17,7 +17,7 @@ import {
   Sources,
 } from "./plugins/plugin.ts";
 import { resolve as resolveCache } from "./cache.ts";
-import { Logger, LogLevel, logLevels } from "./logger.ts";
+import { Logger, logLevels } from "./logger.ts";
 
 type Inputs = string[];
 
@@ -59,13 +59,12 @@ export class Bundler {
   logger: Logger;
   constructor(
     plugins: Plugin[],
-    { logLevel = logLevels.info, quiet = false }: {
-      logLevel?: LogLevel;
-      quiet?: boolean;
+    { logger = new Logger({ logLevel: logLevels.info }) }: {
+      logger?: Logger;
     } = {},
   ) {
     this.plugins = plugins;
-    this.logger = new Logger({ logLevel, quiet });
+    this.logger = logger;
   }
   async readSource(item: Item, context: Context): Promise<Source> {
     this.logger.trace("readSource");

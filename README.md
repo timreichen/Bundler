@@ -9,8 +9,7 @@ A Bundler with the web in mind.
 
 - [What is Bundler?](#what-is-bundler)
 - [Why use Bundler?](#why-use-bundler)
-  - [But there is _deno bundle_ and _Deno.emit_,
-    right?](#but-there-is-deno-bundle-and-denoemit-right)
+  - [But there is _deno bundle_ and _Deno.emit_, right?](#but-there-is-deno-bundle-and-denoemit-right)
 - [Getting Started](#getting-started)
   - [Installation](#installation)
 - [Usage](#usage)

@@ -46,7 +46,7 @@ export class CssPlugin extends Plugin {
 
     const source = await bundler.readSource(chunk, context);
 
-    const { css } = await processor.process(source);
+    const { css } = await processor.process(source as string);
 
     return css;
   }

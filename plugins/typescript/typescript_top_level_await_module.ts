@@ -1,8 +1,7 @@
-import { fs, ImportMap, path, ts } from "../../deps.ts";
-import { addRelativePrefix, isURL, readTextFile } from "../../_util.ts";
+import { colors, fs, ImportMap, path, ts } from "../../deps.ts";
+import { addRelativePrefix, timestamp } from "../../_util.ts";
 import { Chunk, Context, DependencyType, Format, Item } from "../plugin.ts";
 import { TypescriptPlugin } from "./typescript.ts";
-import { cache, resolve as resolveCache } from "../../cache.ts";
 import { Asset, getAsset, Graph } from "../../graph.ts";
 import { typescriptInjectDependenciesTranformer } from "./transformers/inject_dependencies.ts";
 import { typescriptTransformDynamicImportTransformer } from "./transformers/dynamic_imports.ts";
@@ -258,13 +257,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
   ) {
     super({ compilerOptions });
   }
-  async readSource(filePath: string, context: Context) {
-    if (isURL(filePath)) {
-      await cache(filePath);
-      filePath = resolveCache(filePath);
-    }
-    return await readTextFile(filePath);
-  }
 
   async createBundle(
     chunk: Chunk,
@@ -335,6 +327,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
     const bundleSources: Record<string, string> = {};
 
     for (const dependencyItem of inlineItems) {
+      const time = performance.now();
       const { history, type } = dependencyItem;
       const input = history[0];
       const asset = getAsset(graph, input, type);
@@ -346,22 +339,19 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
         !await bundler.hasCache(bundleInput, input, context);
 
       if (needsUpdate) {
+        const t1 = performance.now();
+
         const { bundler } = context;
         bundleNeedsUpdate = true;
 
         let newSourceFile: any;
         switch (asset.format) {
           case Format.Script: {
-            const source = await bundler.transformSource(
+            const sourceFile = await bundler.transformSource(
               bundleInput,
               dependencyItem,
               context,
-            ) as string;
-            const sourceFile = ts.createSourceFile(
-              input,
-              source,
-              ts.ScriptTarget.Latest,
-            );
+            ) as ts.SourceFile;
 
             const exportIdentifierMap: Record<string, string> = {};
 
@@ -540,28 +530,51 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
             break;
           }
         }
-
         if (!newSourceFile) {
           throw new Error(
             `newSourceFile is invalid: ${input} in ${bundleInput}`,
           );
         }
+        context.bundler.logger.trace(
+          "Transform",
+          input,
+          colors.dim(colors.italic(`(${timestamp(t1)})`)),
+        );
+        const t2 = performance.now();
         const source = printer.printList(
           ts.ListFormat.SourceFileStatements,
           newSourceFile.statements,
           newSourceFile,
         );
+        context.bundler.logger.trace(
+          "Print",
+          input,
+          colors.dim(colors.italic(`(${timestamp(t2)})`)),
+        );
+
+        const t3 = performance.now();          
         const transpiledSource = ts.transpile(source, {
           ...defaultCompilerOptions,
           ...this.compilerOptions,
+          skipDefaultLibCheck: true,
+          skipLibCheck: true,
         });
+        context.bundler.logger.trace(
+          "Transpile",
+          input,
+          colors.dim(colors.italic(`(${timestamp(t3)})`)),
+        );
 
         if (transpiledSource === undefined) {
           throw new Error(
             `transpiledSource must be a string: ${input} in ${bundleInput}`,
           );
         }
-
+        context.bundler.logger.debug(
+          colors.yellow(`Update`),
+          input,
+          colors.dim(colors.italic(`(${timestamp(time)})`)),
+        );
         await bundler.setCache(
           bundleInput,
           input,
@@ -570,6 +583,11 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
         );
         bundleSources[input] = transpiledSource;
       } else {
+        context.bundler.logger.debug(
+          colors.green(`up-to-date`),
+          input,
+          colors.dim(colors.italic(`(${timestamp(time)})`)),
+        );
         const source = await bundler.getCache(bundleInput, input, context);
         if (source === undefined) {
           throw Error(`cache file for input not found: '${input}'`);

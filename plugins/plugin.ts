@@ -56,7 +56,7 @@ export function getFormat(input: string) {
 
 export type History = string[];
 
-export type Source = string | Uint8Array;
+export type Source = unknown;
 export type Sources = Record<string, Source>;
 
 export type Bundles = Record<string, Source>;

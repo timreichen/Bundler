@@ -26,7 +26,7 @@ export class Logger {
   }
   trace(...data: any[]) {
     if (this.quiet || this.logLevel.level > logLevels.trace.level) return;
-    console.trace(...data);
+    console.log(...data);
   }
   debug(...data: any[]) {
     if (this.quiet || this.logLevel.level > logLevels.debug.level) return;

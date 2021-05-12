@@ -1,4 +1,4 @@
-import { ImportMap, path, Sha256, ts } from "../../deps.ts";
+import { colors, ImportMap, path, Sha256, ts } from "../../deps.ts";
 import {
   ChunkList,
   Context,
@@ -10,9 +10,9 @@ import {
 } from "../plugin.ts";
 import { resolve as resolveDependency } from "../../dependency.ts";
 import { typescriptExtractDependenciesTransformer } from "./transformers/extract_dependencies.ts";
-import { resolve as resolveCache } from "../../cache.ts";
+import { cache, resolve as resolveCache } from "../../cache.ts";
 import { getAsset } from "../../graph.ts";
-import { isURL, readTextFile } from "../../_util.ts";
+import { isURL, readTextFile, timestamp } from "../../_util.ts";
 
 function resolveDependencies(
   filePath: string,
@@ -65,8 +65,18 @@ export class TypescriptPlugin extends Plugin {
         )); /* is handle url without extension as script */
   }
   async readSource(input: string, context: Context) {
-    const filePath = resolveCache(input);
-    return await readTextFile(filePath);
+    let filePath = input;
+    if (isURL(filePath)) {
+      await cache(filePath);
+      filePath = resolveCache(filePath);
+    }
+    const source = await readTextFile(filePath);
+    const sourceFile = ts.createSourceFile(
+      input,
+      source,
+      ts.ScriptTarget.Latest,
+    );
+    return sourceFile;
   }
   async createAsset(
     item: Item,
@@ -74,24 +84,30 @@ export class TypescriptPlugin extends Plugin {
   ) {
     const input = item.history[0];
 
-    const { bundler, outputMap, depsDirPath, outDirPath, importMap } = context;
-    const source = await bundler.readSource(item, context) as string;
-    const sourceFile = ts.createSourceFile(
-      input,
-      source,
-      ts.ScriptTarget.Latest,
-    );
+    const { bundler, outputMap, depsDirPath, importMap } = context;
+    const sourceFile = await bundler.readSource(item, context) as ts.SourceFile;
     const dependencies: Dependencies = { imports: {}, exports: {} };
+    const t2 = performance.now();
     ts.transform(
       sourceFile,
       [typescriptExtractDependenciesTransformer(dependencies)],
       this.compilerOptions,
     );
-
+    context.bundler.logger.trace(
+      "Extract Dependencies",
+      input,
+      colors.dim(colors.italic(`(${timestamp(t2)})`)),
+    );
+    const t3 = performance.now();
     const resolvedDependencies = resolveDependencies(
       input,
       dependencies,
       { importMap },
+    );
+    context.bundler.logger.trace(
+      "Resolve Dependencies",
+      input,
+      colors.dim(colors.italic(`(${timestamp(t3)})`)),
     );
 
     const extension = ".js";
@@ -105,7 +121,6 @@ export class TypescriptPlugin extends Plugin {
       format: Format.Script,
     };
   }
-
   async createChunk(
     item: Item,
     context: Context,

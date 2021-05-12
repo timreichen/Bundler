@@ -88,7 +88,7 @@ export function postcssInjectImportsPlugin(
             );
 
             let { root } = await processor.process(
-              source,
+              source as string,
               { from: resolvedUrl },
             );
 

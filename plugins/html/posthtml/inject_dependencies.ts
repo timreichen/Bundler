@@ -1,5 +1,9 @@
 import { ImportMap, path, postcss } from "../../../deps.ts";
-import { addRelativePrefix, isURL } from "../../../_util.ts";
+import {
+  addRelativePrefix,
+  isURL,
+  removeRelativePrefix,
+} from "../../../_util.ts";
 import { resolve as resolveDependency } from "../../../dependency.ts";
 import { getBase, resolveBase } from "../_util.ts";
 import { postcssInjectDependenciesPlugin } from "../../css/postcss/inject_dependencies.ts";
@@ -10,7 +14,7 @@ import { postcssInjectImportsPlugin } from "../../css/postcss/inject_imports.ts"
 export function posthtmlInjectScriptDependencies(
   bundleInput: string,
   bundleOutput: string,
-  { importMap, graph }: { graph: Graph; importMap: ImportMap },
+  { importMap, graph, outDirPath }: Context,
 ) {
   const bundleDirPath = path.dirname(bundleOutput);
 
@@ -31,8 +35,8 @@ export function posthtmlInjectScriptDependencies(
             importMap,
           );
           const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
-          node.attrs.src = addRelativePrefix(
-            path.relative(bundleDirPath, asset.output),
+          node.attrs.src = removeRelativePrefix(
+            "/" + path.relative(outDirPath, asset.output),
           );
         } else if (node.content?.[0]) {
           const promise = new Promise(async (resolve) => {

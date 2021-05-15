@@ -143,7 +143,7 @@ export function cachedir(): string {
 
 /**
  * creates path to cache file of a path
- * @param url 
+ * @param url
  */
 function createCacheModulePathForURL(url: string) {
   const fileUrl = new URL(url);
@@ -159,7 +159,7 @@ function createCacheModulePathForURL(url: string) {
 
 /**
  * resolves path to cache file of a url. Returns original url if path is not cached
- * @param url 
+ * @param url
  */
 export function resolve(url: string): string {
   if (!isURL(url)) return url;

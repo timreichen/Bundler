@@ -29,7 +29,7 @@ export function resolve(
       resolvedPath = resolvedImportPath;
     }
   } else {
-    if (dependencyPath === ".") {
+    if (dependencyPath === filePath) {
       resolvedPath = resolveWithImportMap(filePath, importMap);
     } else if (parentIsUrl) {
       const fileUrl = new URL(filePath);

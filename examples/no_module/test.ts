@@ -46,7 +46,7 @@ Deno.test({
       bundles[
         "dist/deps/8dafca19494ff1a037710578d62b13f75af730106eee5d98f714fec3427fd457.js"
       ] as string,
-      `const world = "world";\r\ndocument.addEventListener("DOMContentLoaded", () => {\r\n    const h1 = document.createElement("h1");\r\n    h1.innerHTML = \`Hello, \${world}!\`;\r\n    document.body.appendChild(h1);\r\n});\r\n`,
+      `\n/* examples/no_module/src/index.ts */\nconst world = "world";\r\ndocument.addEventListener("DOMContentLoaded", () => {\r\n    const h1 = document.createElement("h1");\r\n    h1.innerHTML = \`Hello, \${world}!\`;\r\n    document.body.appendChild(h1);\r\n});\r\n`,
     );
   },
 });

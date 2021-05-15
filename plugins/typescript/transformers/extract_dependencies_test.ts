@@ -24,7 +24,18 @@ tests({
           [typescriptExtractDependenciesTransformer(dependencies)],
           compilerOptions,
         );
-        assertEquals(dependencies.imports, {});
+        assertEquals(dependencies.imports, {
+          "./b.ts": {
+            defaults: [],
+            format: 8,
+            namespaces: [],
+            specifiers: {},
+            type: "import",
+            types: {
+              A: "A",
+            },
+          },
+        });
         assertEquals(dependencies.exports, {});
       },
     },
@@ -50,6 +61,7 @@ tests({
             specifiers: {},
             defaults: [],
             namespaces: ["A"],
+            types: {},
             type: DependencyType.Import,
             format: Format.Script,
           },
@@ -79,6 +91,7 @@ tests({
             specifiers: { "A": "A", "B": "B" },
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Import,
             format: Format.Script,
           },
@@ -108,6 +121,7 @@ tests({
             specifiers: { "X": "A", "Y": "A", "B": "B" },
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Import,
             format: Format.Script,
           },
@@ -137,6 +151,7 @@ tests({
             specifiers: {},
             defaults: ["A"],
             namespaces: [],
+            types: {},
             type: DependencyType.Import,
             format: Format.Script,
           },
@@ -166,6 +181,7 @@ tests({
             specifiers: [],
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Import,
             format: Format.Script,
           },
@@ -238,7 +254,18 @@ tests({
           compilerOptions,
         );
         assertEquals(dependencies.imports, {});
-        assertEquals(dependencies.exports, {});
+        assertEquals(dependencies.exports, {
+          "./b.ts": {
+            defaults: [],
+            format: 8,
+            namespaces: [],
+            specifiers: {},
+            type: "export",
+            types: {
+              A: "A",
+            },
+          },
+        });
       },
     },
     {
@@ -259,7 +286,18 @@ tests({
           compilerOptions,
         );
         assertEquals(dependencies.imports, {});
-        assertEquals(dependencies.exports, {});
+        assertEquals(dependencies.exports, {
+          "src/a.ts": {
+            defaults: [],
+            format: 8,
+            namespaces: [],
+            specifiers: {},
+            type: "export",
+            types: {
+              A: "A",
+            },
+          },
+        });
       },
     },
     {
@@ -281,10 +319,11 @@ tests({
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
-          ".": {
+          "src/a.ts": {
             specifiers: { "A": "A" },
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },
@@ -314,6 +353,7 @@ tests({
             specifiers: {},
             defaults: [],
             namespaces: [undefined],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },
@@ -343,6 +383,7 @@ tests({
             specifiers: {},
             defaults: [],
             namespaces: ["b"],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },
@@ -372,6 +413,7 @@ tests({
             specifiers: { "a": "a", "b": "b" },
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },
@@ -398,10 +440,11 @@ tests({
 
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
-          ".": {
+          "src/a.ts": {
             specifiers: { "a": "a", "b": "b" },
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },
@@ -427,10 +470,11 @@ tests({
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
-          ".": {
+          "src/a.ts": {
             specifiers: { "a": "a" },
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },
@@ -456,10 +500,11 @@ tests({
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
-          ".": {
+          "src/a.ts": {
             specifiers: { "A": "A" },
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },
@@ -485,10 +530,11 @@ tests({
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
-          ".": {
+          "src/a.ts": {
             specifiers: { "a": "a" },
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },
@@ -514,10 +560,11 @@ tests({
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
-          ".": {
+          "src/a.ts": {
             specifiers: [],
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },
@@ -543,10 +590,11 @@ tests({
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
-          ".": {
+          "src/a.ts": {
             specifiers: {},
             defaults: ["x"],
             namespaces: [],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },
@@ -572,10 +620,11 @@ tests({
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
-          ".": {
+          "src/a.ts": {
             specifiers: {},
             defaults: ["X"],
             namespaces: [],
+            types: {},
             type: DependencyType.Export,
             format: Format.Script,
           },

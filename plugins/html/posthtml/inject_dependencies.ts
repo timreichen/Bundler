@@ -14,9 +14,13 @@ import { postcssInjectImportsPlugin } from "../../css/postcss/inject_imports.ts"
 export function posthtmlInjectScriptDependencies(
   bundleInput: string,
   bundleOutput: string,
-  { importMap, graph, outDirPath }: Context,
+  { importMap, graph, outDirPath }: {
+    importMap: ImportMap;
+    graph: Graph;
+    outDirPath: string;
+  },
 ) {
-  const bundleDirPath = path.dirname(bundleOutput);
+  // const bundleDirPath = path.dirname(bundleOutput);
 
   return async (tree: any) => {
     const base = getBase(tree);

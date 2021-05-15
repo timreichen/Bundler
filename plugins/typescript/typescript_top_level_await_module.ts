@@ -247,6 +247,62 @@ function createSharedChunk(
   return dependencyChunk;
 }
 
+function createDependencyGraph(dependencyList: Item[], graph: Graph) {
+  const inputs = dependencyList.map(({ history }) => history[0]);
+  const dependencyGraph: Record<string, string[]> = {};
+  const checkedItems = new Set();
+  for (const dependencyItem of dependencyList) {
+    const input = dependencyItem.history[0];
+    if (checkedItems.has(input)) continue;
+    checkedItems.add(input);
+    const asset = getAsset(
+      graph,
+      input,
+      dependencyItem.type,
+    );
+    const dependencies = [
+      ...new Set([
+        ...Object.keys(asset.dependencies.imports),
+        ...Object.keys(asset.dependencies.exports),
+      ]),
+    ].filter((dependency) =>
+      dependency !== input && inputs.includes(dependency)
+    );
+
+    dependencyGraph[input] = dependencies;
+  }
+  return dependencyGraph;
+}
+
+function topologicalSort(graph: Record<string, string[]>) {
+  const result: string[] = [];
+  const visited: Record<string, boolean> = {};
+
+  function sort(
+    input: string,
+    visited: Record<string, boolean>,
+    graph: Record<string, string[]>,
+    result: string[],
+  ) {
+    const dependencies = graph[input];
+
+    for (let dependency of dependencies) {
+      if (!visited[dependency]) {
+        sort(dependency, visited, graph, result);
+      }
+    }
+    visited[input] = true;
+    result.push(input);
+  }
+
+  for (const input of Object.keys(graph)) {
+    if (!visited[input]) {
+      sort(input, visited, graph, result);
+    }
+  }
+  return result;
+}
+
 export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
   constructor(
     {
@@ -269,6 +325,11 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
 
     let bundleNeedsUpdate = false;
 
+    const importIdentifierMap: Map<string, string> = new Map();
+
+    const importItems: Item[] = [];
+    const inlineItems: Item[] = [];
+
     const bundleDependency = {
       history: chunk.history,
       type: chunk.type,
@@ -276,44 +337,25 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
     };
 
     const dependencyList = [bundleDependency, ...chunk.dependencies];
+    const dependencyGraph = createDependencyGraph(dependencyList, graph);
 
-    const importItems: Item[] = [];
-    const inlineItems: Item[] = [];
+    const sorted = topologicalSort(dependencyGraph);
 
-    const checkedInputs: Set<string> = new Set();
-
-    const importIdentifierMap: Map<string, string> = new Map();
-
-    for (const dependencyItem of dependencyList) {
+    for (const s of sorted) {
+      const dependencyItem = dependencyList.find((dependencyItem) =>
+        dependencyItem.history[0] === s
+      )!;
       const { history, type } = dependencyItem;
       const input = history[0];
-      if (checkedInputs.has(input)) continue;
-
-      checkedInputs.add(input);
 
       const asset = getAsset(graph, input, type);
       const shared = isSharedChunk(chunks, bundleInput, input);
+      addIdentifiers(importIdentifierMap, [input]);
 
       if (
         input === bundleInput || !shared
       ) {
-        const importKeys = Object.keys(asset.dependencies.imports);
-        // get index after last dependency
-        const index = inlineItems.reduce(
-          (lastIndex, inlineItem, index) =>
-            importKeys.includes(inlineItem.history[0]) ? index + 1 : lastIndex,
-          0,
-        );
-
-        inlineItems.splice(index, 0, dependencyItem);
-
-        addIdentifiers(
-          importIdentifierMap,
-          [
-            ...Object.keys(asset.dependencies.imports),
-            ...Object.keys(asset.dependencies.exports),
-          ],
-        );
+        inlineItems.push(dependencyItem);
       } else if (
         Object.keys(bundleAsset.dependencies.imports).some((dependency) =>
           dependency === input
@@ -330,6 +372,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       const time = performance.now();
       const { history, type } = dependencyItem;
       const input = history[0];
+
       const asset = getAsset(graph, input, type);
 
       const needsReload = reload === true ||
@@ -417,6 +460,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
                 );
               }
             }
+
             break;
           }
           case Format.Style: {
@@ -552,12 +596,10 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
           colors.dim(colors.italic(`(${timestamp(t2)})`)),
         );
 
-        const t3 = performance.now();          
+        const t3 = performance.now();
         const transpiledSource = ts.transpile(source, {
           ...defaultCompilerOptions,
           ...this.compilerOptions,
-          skipDefaultLibCheck: true,
-          skipLibCheck: true,
         });
         context.bundler.logger.trace(
           "Transpile",
@@ -575,13 +617,14 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
           input,
           colors.dim(colors.italic(`(${timestamp(time)})`)),
         );
+        const commentedTranspiledSource = `/* ${input} */\n${transpiledSource}`;
         await bundler.setCache(
           bundleInput,
           input,
-          transpiledSource,
+          commentedTranspiledSource,
           context,
         );
-        bundleSources[input] = transpiledSource;
+        bundleSources[input] = commentedTranspiledSource;
       } else {
         context.bundler.logger.debug(
           colors.green(`up-to-date`),
@@ -623,34 +666,36 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       },
     );
 
-    const statements = Object.entries(bundleSources)
-      .flatMap(([input, source]) => {
-        const sourceFile = ts.createSourceFile(
-          input,
-          source,
-          ts.ScriptTarget.Latest,
-          undefined,
-          ts.ScriptKind.JS,
-        );
+    // const statements = Object.entries(bundleSources)
+    //   .flatMap(([input, source]) => {
+    //     const sourceFile = ts.createSourceFile(
+    //       input,
+    //       source,
+    //       ts.ScriptTarget.Latest,
+    //       undefined,
+    //       ts.ScriptKind.JS,
+    //     );
 
-        ts.addSyntheticLeadingComment(
-          sourceFile,
-          ts.SyntaxKind.MultiLineCommentTrivia,
-          ` ${input} `,
-          true,
-        );
-        return sourceFile.statements;
-      });
+    //     ts.addSyntheticLeadingComment(
+    //       sourceFile.getChildAt(0),
+    //       ts.SyntaxKind.MultiLineCommentTrivia,
+    //       ` ${input} `,
+    //       true,
+    //     );
+    //     return sourceFile.getChildren(sourceFile) as ts.Statement[];
+    //   });
 
     const sourceFile = ts.factory.createSourceFile(
       [
         ...importNodes,
-        ...statements,
+        // ...statements,
       ],
       ts.createToken(ts.SyntaxKind.EndOfFileToken),
       ts.NodeFlags.None,
     );
 
-    return printer.printFile(sourceFile);
+    return `${printer.printFile(sourceFile)}\n${
+      Object.values(bundleSources).join("\n")
+    }`;
   }
 }

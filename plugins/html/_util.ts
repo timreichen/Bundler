@@ -3,7 +3,7 @@ import { isURL } from "../../_util.ts";
 
 /**
  * returns base href if <base> tag exists in html header.
- * @param tree 
+ * @param tree
  */
 export function getBase(tree: any) {
   const html = tree.find((item: any) =>

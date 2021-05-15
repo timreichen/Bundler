@@ -40,6 +40,7 @@ export class WebManifestPlugin extends JsonPlugin {
         specifiers: {},
         defaults: [],
         namespaces: [],
+        types: {},
         type: DependencyType.Import,
         format: Format.Image,
       };

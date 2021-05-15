@@ -36,6 +36,7 @@ tests({
                     specifiers: {},
                     defaults: [],
                     namespaces: [],
+                    types: {},
                     type: DependencyType.Import,
                     format: Format.Image,
                   },
@@ -90,6 +91,7 @@ tests({
                     specifiers: {},
                     defaults: [],
                     namespaces: [],
+                    types: {},
                     type: DependencyType.Import,
                     format: Format.Image,
                   },
@@ -145,6 +147,7 @@ tests({
                     specifiers: {},
                     defaults: [],
                     namespaces: [],
+                    types: {},
                     type: DependencyType.Import,
                     format: Format.Image,
                   },
@@ -200,6 +203,7 @@ tests({
                     specifiers: {},
                     defaults: [],
                     namespaces: [],
+                    types: {},
                     type: DependencyType.Import,
                     format: Format.Style,
                   },
@@ -255,6 +259,7 @@ tests({
                     specifiers: {},
                     defaults: [],
                     namespaces: [],
+                    types: {},
                     type: DependencyType.Import,
                     format: Format.Style,
                   },
@@ -310,6 +315,7 @@ tests({
                     specifiers: {},
                     defaults: [],
                     namespaces: [],
+                    types: {},
                     type: DependencyType.Import,
                     format: Format.Style,
                   },
@@ -365,6 +371,7 @@ tests({
                     specifiers: {},
                     defaults: [],
                     namespaces: [],
+                    types: {},
                     type: DependencyType.Import,
                     format: Format.Json,
                   },
@@ -420,6 +427,7 @@ tests({
                     specifiers: {},
                     defaults: [],
                     namespaces: [],
+                    types: {},
                     type: DependencyType.Import,
                     format: Format.Script,
                   },
@@ -438,10 +446,11 @@ tests({
             },
           },
         };
+        const outDirPath = "dist";
         const plugin = posthtmlInjectScriptDependencies(
           input,
           inputOutput,
-          { importMap, graph },
+          { importMap, graph, outDirPath },
         );
         const processor = posthtml([plugin]);
 
@@ -450,7 +459,7 @@ tests({
 
         assertStringIncludes(
           html,
-          `<html><body><script src="./b.js"></script></body></html>`,
+          `<html><body><script src="/b.js"></script></body></html>`,
         );
       },
     },
@@ -474,6 +483,7 @@ tests({
                     specifiers: {},
                     defaults: [],
                     namespaces: [],
+                    types: {},
                     type: DependencyType.Import,
                     format: Format.Style,
                   },
@@ -562,6 +572,7 @@ tests({
                     specifiers: {},
                     defaults: [],
                     namespaces: [],
+                    types: {},
                     type: DependencyType.Import,
                     format: Format.Image,
                   },

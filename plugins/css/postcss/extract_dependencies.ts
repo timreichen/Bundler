@@ -30,6 +30,7 @@ export function postcssExtractDependenciesPlugin(
             specifiers: {},
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Import,
             format: Format.Style,
           };
@@ -46,6 +47,7 @@ export function postcssExtractDependenciesPlugin(
             specifiers: {},
             defaults: [],
             namespaces: [],
+            types: {},
             type: DependencyType.Import,
             format: Format.Image,
           };

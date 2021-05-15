@@ -31,6 +31,7 @@ export function posthtmlExtractImageDependencies(
               specifiers: {},
               defaults: [],
               namespaces: [],
+              types: {},
               type: DependencyType.Import,
               format: Format.Image,
             };
@@ -86,6 +87,7 @@ export function posthtmlExtractLinkDependencies(
               specifiers: {},
               defaults: [],
               namespaces: [],
+              types: {},
               type: DependencyType.Import,
               format,
             };
@@ -122,6 +124,7 @@ export function posthtmlExtractScriptDependencies(
               specifiers: {},
               defaults: [],
               namespaces: [],
+              types: {},
               type: DependencyType.Import,
               format: Format.Script,
             };

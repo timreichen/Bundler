@@ -26,11 +26,12 @@ export function typescriptExtractDependenciesTransformer(
   return (context: ts.TransformationContext) => {
     const visitor = (sourceFile: ts.SourceFile): ts.Visitor => {
       const visit: ts.Visitor = (node: ts.Node) => {
-        let filePath = ".";
+        let filePath = sourceFile.fileName;
         if (ts.isImportDeclaration(node)) {
           const importClause = node.importClause;
-          if (importClause?.isTypeOnly) return node;
           const moduleSpecifier = node.moduleSpecifier;
+          const isTypeOnly = importClause?.isTypeOnly;
+
           if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
             filePath = moduleSpecifier.text;
           }
@@ -39,6 +40,7 @@ export function typescriptExtractDependenciesTransformer(
             {
               specifiers: {},
               namespaces: [],
+              types: {},
               defaults: [],
               type: DependencyType.Import,
               format,
@@ -48,9 +50,14 @@ export function typescriptExtractDependenciesTransformer(
             if (importClause.namedBindings) {
               if (ts.isNamespaceImport(importClause.namedBindings)) {
                 // import * as x from "./x.ts"
-                imports[filePath].namespaces.push(
-                  importClause.namedBindings.name.text,
-                );
+                if (isTypeOnly) {
+                  imports[filePath].types["*"] =
+                    importClause.namedBindings.name.text;
+                } else {
+                  imports[filePath].namespaces.push(
+                    importClause.namedBindings.name.text,
+                  );
+                }
               }
               if (ts.isNamedImports(importClause.namedBindings)) {
                 // import { x } from "./x.ts"
@@ -59,19 +66,29 @@ export function typescriptExtractDependenciesTransformer(
                   const identifier = (element.propertyName?.text ||
                     element.name.text) as string;
                   const name = element.name.text;
-                  imports[filePath].specifiers[name] = identifier;
+                  if (isTypeOnly) {
+                    imports[filePath].types[name] = identifier;
+                  } else {
+                    imports[filePath].specifiers[name] = identifier;
+                  }
                 });
               }
             } else if (importClause.name) {
               // import x from "./x.ts"
-              imports[filePath].defaults.push(
-                importClause.name.text,
-              );
+              const name = importClause.name.text;
+              if (isTypeOnly) {
+                imports[filePath].types[name] = name;
+              } else {
+                imports[filePath].defaults.push(
+                  name,
+                );
+              }
             }
           }
           return node;
         } else if (ts.isExportDeclaration(node)) {
-          if (node.isTypeOnly) return node;
+          // if (node.isTypeOnly) return node;
+          const isTypeOnly = node.isTypeOnly;
 
           const moduleSpecifier = node.moduleSpecifier;
           if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
@@ -83,6 +100,7 @@ export function typescriptExtractDependenciesTransformer(
             {
               specifiers: {},
               namespaces: [],
+              types: {},
               defaults: [],
               type: DependencyType.Export,
               format,
@@ -92,9 +110,14 @@ export function typescriptExtractDependenciesTransformer(
           if (exportClause) {
             if (ts.isNamespaceExport(exportClause)) {
               // export * as x from "./x.ts"
-              exports[filePath].namespaces.push(
-                exportClause.name.text,
-              );
+              const name = exportClause.name.text;
+              if (isTypeOnly) {
+                exports[filePath].types["*"] = name;
+              } else {
+                exports[filePath].namespaces.push(
+                  name,
+                );
+              }
             } else if (ts.isNamedExports(exportClause)) {
               // export { x } from "./x.ts"
               exportClause.elements.forEach((element) => {
@@ -102,12 +125,19 @@ export function typescriptExtractDependenciesTransformer(
                 const propertyName = (element.propertyName?.text ||
                   element.name.text) as string;
                 const name = element.name.text;
-                exports[filePath].specifiers[name] = propertyName;
+                if (isTypeOnly) {
+                  exports[filePath].types[name] = propertyName;
+                } else {
+                  exports[filePath].specifiers[name] = propertyName;
+                }
               });
             }
           } else {
             // export * from "./x.ts"
-            exports[filePath].namespaces.push(undefined); // has no alias for namespace, therefore undefined as value
+            if (isTypeOnly) {
+            } else {
+              exports[filePath].namespaces.push(undefined); // has no alias for namespace, therefore undefined as value
+            }
           }
           return node;
         } else if (ts.isExportAssignment(node)) {
@@ -117,6 +147,7 @@ export function typescriptExtractDependenciesTransformer(
               specifiers: {},
               defaults: [],
               namespaces: [],
+              types: {},
               type: DependencyType.Export,
               format: Format.Script,
             };
@@ -132,6 +163,8 @@ export function typescriptExtractDependenciesTransformer(
                 specifiers: {},
                 defaults: [],
                 namespaces: [],
+
+                types: {},
                 type: DependencyType.Export,
                 format: Format.Script,
               };
@@ -154,6 +187,8 @@ export function typescriptExtractDependenciesTransformer(
                 specifiers: {},
                 defaults: [],
                 namespaces: [],
+
+                types: {},
                 type: DependencyType.Export,
                 format: Format.Script,
               };
@@ -180,6 +215,8 @@ export function typescriptExtractDependenciesTransformer(
                 specifiers: {},
                 defaults: [],
                 namespaces: [],
+
+                types: {},
                 type: DependencyType.Export,
                 format: Format.Script,
               };
@@ -194,6 +231,45 @@ export function typescriptExtractDependenciesTransformer(
               const name = node.name.text;
               exports[filePath].specifiers[name] = propertyName;
             }
+          }
+        } else if (ts.isInterfaceDeclaration(node)) {
+          if (
+            node.modifiers &&
+            hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
+          ) {
+            exports[filePath] = exports[filePath] ||
+              {
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+
+                types: {},
+                type: DependencyType.Export,
+                format: Format.Script,
+              };
+            // export interface x {}
+            const name = node.name.text;
+
+            exports[filePath].types[name] = name;
+          }
+        } else if (ts.isTypeAliasDeclaration(node)) {
+          if (
+            node.modifiers &&
+            hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
+          ) {
+            exports[filePath] = exports[filePath] ||
+              {
+                specifiers: {},
+                defaults: [],
+                namespaces: [],
+
+                types: {},
+                type: DependencyType.Export,
+                format: Format.Script,
+              };
+            // export interface x {}
+            const name = node.name.text;
+            exports[filePath].types[name] = name;
           }
         } else if (
           ts.isCallExpression(node) &&
@@ -262,6 +338,7 @@ export function typescriptExtractDependenciesTransformer(
                 specifiers: {},
                 defaults: [],
                 namespaces: [],
+                types: {},
                 type: DependencyType.Export,
                 format: Format.Script,
               };

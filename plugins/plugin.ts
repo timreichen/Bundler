@@ -78,6 +78,7 @@ export type Dependency = {
    */
   defaults: string[];
   namespaces: (string | undefined)[];
+  types: Record<string, string>;
   type: DependencyType;
   format: Format;
 };

@@ -430,35 +430,40 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
 
             newSourceFile = sourceFile;
 
-            if (isModule) {
-              const defaultExportNode = createDefaultExportNode(functionNode);
-
-              if (input === bundleInput) {
+            if (input === bundleInput) {
+              if (isModule) {
+                const defaultExportNode = createDefaultExportNode(functionNode);
                 newSourceFile = ts.factory.createSourceFile(
                   [defaultExportNode],
                   ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
                   ts.NodeFlags.None,
                 );
               } else {
-                const identifier = getIdentifier(importIdentifierMap, input);
-                const variableDeclaration = ts.factory.createVariableStatement(
-                  undefined,
-                  ts.factory.createVariableDeclarationList(
-                    [ts.factory.createVariableDeclaration(
-                      ts.factory.createIdentifier(identifier),
-                      undefined,
-                      undefined,
-                      functionNode,
-                    )],
-                    ts.NodeFlags.Const,
-                  ),
-                );
                 newSourceFile = ts.factory.createSourceFile(
-                  [variableDeclaration],
+                  [ts.factory.createExpressionStatement(functionNode)],
                   ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
                   ts.NodeFlags.None,
                 );
               }
+            } else {
+              const identifier = getIdentifier(importIdentifierMap, input);
+              const variableDeclaration = ts.factory.createVariableStatement(
+                undefined,
+                ts.factory.createVariableDeclarationList(
+                  [ts.factory.createVariableDeclaration(
+                    ts.factory.createIdentifier(identifier),
+                    undefined,
+                    undefined,
+                    functionNode,
+                  )],
+                  ts.NodeFlags.Const,
+                ),
+              );
+              newSourceFile = ts.factory.createSourceFile(
+                [variableDeclaration],
+                ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
+                ts.NodeFlags.None,
+              );
             }
 
             break;

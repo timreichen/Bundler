@@ -1,3 +1,4 @@
+<!-- deno-fmt-ignore-file -->
 # Bundler
 
 A Bundler with the web in mind.
@@ -9,8 +10,7 @@ A Bundler with the web in mind.
 
 - [What is Bundler?](#what-is-bundler)
 - [Why use Bundler?](#why-use-bundler)
-  - [But there is _deno bundle_ and _Deno.emit_,
-    right?](#but-there-is-deno-bundle-and-denoemit-right)
+  - [But there is _deno bundle_ and _Deno.emit_, right?](#but-there-is-deno-bundle-and-denoemit-right)
 - [Getting Started](#getting-started)
   - [Installation](#installation)
 - [Usage](#usage)
@@ -53,20 +53,17 @@ A Bundler with the web in mind.
 
 ## What is Bundler?
 
-Bundler is a web bundler for deno. It allows to write code for the web like we
-are used to with deno.
+Bundler is a web bundler for deno. It allows to write code for the web like we are used to with deno.
 
 ## Why use Bundler?
 
-- handles relative and absolute imports as well as
-  [url imports](https://deno.land/manual/linking_to_external_code)
+- handles relative and absolute imports as well as [url imports](https://deno.land/manual/linking_to_external_code)
 - [smart splits](#smart-splitting) dependencies
 - handles `top level await`
-- handles `ts`, `tsx`, `js`, `jsx` `html`, `css`, `json`, `png`, `jpg`, `jpeg`,
-  `ico`, `svg`, and other file types
+- handles `ts`, `tsx`, `js`, `jsx` `html`, `css`, `json`, `png`, `jpg`, `jpeg`, `ico`, `svg`, and other file types
 - built in code optimazation and minification with `--optimize` option
 - built in file watcher with `--watch` option
-
+- 
 - typescript and javascript
   - handles dynamic `import()` statements
   - handles `fetch()` statements
@@ -78,14 +75,11 @@ are used to with deno.
   - handles `webmanifest` files
 - css
   - handles `css` `@import` statements
-  - supports [postcss-preset-env](https://preset-env.cssdb.org) **stage 2** and
-    **nesting-rules** by default
+  - supports [postcss-preset-env](https://preset-env.cssdb.org) **stage 2** and **nesting-rules** by default
 
 ### But there is _deno bundle_ and _Deno.emit_, right?
 
-`deno bundle` CLI command and `Deno.emit` can transpile and bundle a file to a
-standalone module. This might work for some occations but is limited to script
-files. Bundler works similar to `Deno.emit` but with the web in mind.
+`deno bundle` CLI command and `Deno.emit` can transpile and bundle a file to a standalone module. This might work for some occations but is limited to script files. Bundler works similar to `Deno.emit` but with the web in mind.
 
 ## Getting Started
 
@@ -133,13 +127,11 @@ Typescript code will be transpiled into javascript code.
 
 #### Bundle
 
-Bundler will bundle `javascript` sources together while smart splitting
-dependencies and injecting file paths.
+Bundler will bundle `javascript` sources together while smart splitting dependencies and injecting file paths.
 
 #### Optimization
 
-Bundler will optimize and minify code with the `--optimize` option using
-[terser](https://github.com/terser/terser).
+Bundler will optimize and minify code with the `--optimize` option using [terser](https://github.com/terser/terser).
 
 #### Support
 
@@ -345,8 +337,7 @@ The file path must end with `.json`.
 
 #### Transformation
 
-A `json` file will be transformed into an esm module if it is imported diretcly
-into typescript or javascript.
+A `json` file will be transformed into an esm module if it is imported diretcly into typescript or javascript.
 
 ```json
 /* src/data.json */
@@ -363,13 +354,11 @@ console.log(data); // { "foo": "bar" }
 
 #### Optimization
 
-Bundler will minify code with the `--optimize` option using `JSON.stringify`
-without spaces.
+Bundler will minify code with the `--optimize` option using `JSON.stringify` without spaces.
 
 ### Webmanifest
 
-Webmanifest files are specially treated `json` files and src properties in
-`icons` are extracted as dependencies.
+Webmanifest files are specially treated `json` files and src properties in `icons` are extracted as dependencies.
 
 ```html
 <!-- src/index.html -->
@@ -402,8 +391,7 @@ Webmanifest files are specially treated `json` files and src properties in
 
 #### Test
 
-The file path can have any extension but must be imported with
-`rel="webmanifest"`.
+The file path can have any extension but must be imported with `rel="webmanifest"`.
 
 ### Html
 
@@ -517,8 +505,7 @@ The file must have `.css` extension.
 
 #### Transformation
 
-A css file will be transformed into a esm module with a default string export if
-the css file is it is imported into typescript or javascript.
+A css file will be transformed into a esm module with a default string export if the css file is it is imported into typescript or javascript.
 
 ```css
 /* src/style.json */
@@ -535,21 +522,15 @@ console.log(data); // div { color: red }
 
 #### Optimization
 
-Bundler will optimize and minify code with the `--optimize` option using
-[csso](https://github.com/css/csso).
+Bundler will optimize and minify code with the `--optimize` option using [csso](https://github.com/css/csso).
 
 #### Postcss
 
-[postcss-preset-env](https://preset-env.cssdb.org) with **stage 2** features and
-**nesting-rules** is enabled by default so you can use the latest css features
-out of the box.
+[postcss-preset-env](https://preset-env.cssdb.org) with **stage 2** features and **nesting-rules** is enabled by default so you can use the latest css features out of the box.
 
 #### A word on preprocessors
 
-The functionality of css has grown in recent years and is native to browsers.
-Therefore bundler focuses on making css usage really easy instead of supporting
-preprocessors like sass, scss, less or stylus. Most features a preprocessor does
-should be covered with todays css and postcss.
+The functionality of css has grown in recent years and is native to browsers. Therefore bundler focuses on making css usage really easy instead of supporting preprocessors like sass, scss, less or stylus. Most features a preprocessor does should be covered with todays css and postcss.
 
 #### Support
 
@@ -611,21 +592,15 @@ The file must have `.ico`, `.png`, `.jpg`, `.jpeg` or `.svg` extension.
 
 #### Optimization
 
-Bundler minifies `.svg` files with the `--optimize` option using
-[svgo](https://github.com/svg/svgo).
+Bundler minifies `.svg` files with the `--optimize` option using [svgo](https://github.com/svg/svgo).
 
 ### Other
 
-Other files can be fetched via the `fetch API`. They will not be transformed or
-optimized.
+Other files can be fetched via the `fetch API`. They will not be transformed or optimized.
 
 ## Smart Splitting
 
-Bundler automatically analyzes the dependency graph and splits dependencies into
-separate files, if the code is used in different entry points. This prevents
-code duplication and allows bundle files to share code. You can check out
-[this example](https://github.com/timreichen/Bundler/tree/master/examples/smart_splitting)
-to see smart splitting in action.
+Bundler automatically analyzes the dependency graph and splits dependencies into separate files, if the code is used in different entry points. This prevents code duplication and allows bundle files to share code. You can check out [this example](https://github.com/timreichen/Bundler/tree/master/examples/smart_splitting) to see smart splitting in action.
 
 ## Examples
 

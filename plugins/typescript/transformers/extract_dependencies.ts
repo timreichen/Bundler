@@ -173,6 +173,17 @@ export function typescriptExtractDependenciesTransformer(
                 const propertyName = declaration.name.text;
                 const name = declaration.name.text;
                 exports[filePath].specifiers[name] = propertyName;
+              } else if (ts.isObjectBindingPattern(declaration.name)) {
+                declaration.name.elements.forEach((element) => {
+                  if (ts.isIdentifier(element.name)) {
+                    const propertyName = (element.propertyName &&
+                        ts.isIdentifier(element.propertyName) &&
+                        (element.propertyName?.text) ||
+                      element.name.text) as string;
+                    const name = element.name.text;
+                    exports[filePath].specifiers[name] = propertyName;
+                  }
+                });
               }
             });
           }

@@ -482,6 +482,36 @@ tests({
       },
     },
     {
+      name: "object variable export",
+      fn() {
+        const fileName = "src/a.ts";
+        const sourceText = `export const { a: x, b, c } = object;`;
+
+        const dependencies: Dependencies = { imports: {}, exports: {} };
+        const sourceFile = ts.createSourceFile(
+          fileName,
+          sourceText,
+          ts.ScriptTarget.Latest,
+        );
+        ts.transform(
+          sourceFile,
+          [typescriptExtractDependenciesTransformer(dependencies)],
+          compilerOptions,
+        );
+        assertEquals(dependencies.imports, {});
+        assertEquals(dependencies.exports, {
+          "src/a.ts": {
+            specifiers: { "x": "a", "b": "b", "c": "c" },
+            defaults: [],
+            namespaces: [],
+            types: {},
+            type: DependencyType.Export,
+            format: Format.Script,
+          },
+        });
+      },
+    },
+    {
       name: "class export",
       fn() {
         const fileName = "src/a.ts";

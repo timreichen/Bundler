@@ -228,6 +228,20 @@ export const x = "x";
 ```
 
 </td>
+
+<td style="text-align:center">✅</td>
+</tr>
+
+<tr>
+<td>variable list export</td>
+<td>
+
+```ts
+export const { x, y, z } = obj;
+```
+
+</td>
+
 <td style="text-align:center">✅</td>
 </tr>
 <tr>

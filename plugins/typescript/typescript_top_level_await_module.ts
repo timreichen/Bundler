@@ -32,6 +32,8 @@ function createReturnNode(
   exportIdentifierMap: Record<string, string>,
   exportNamespaces: string[],
 ) {
+  console.log(exportIdentifierMap);
+
   const exportPropertyNodes: ts.ObjectLiteralElementLike[] = Object.entries(
     exportIdentifierMap,
   )

@@ -350,7 +350,11 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
 
       const asset = getAsset(graph, input, type);
       const shared = isSharedChunk(chunks, bundleInput, input);
-      addIdentifiers(importIdentifierMap, [input]);
+      addIdentifiers(importIdentifierMap, [
+        input,
+        ...Object.keys(asset.dependencies.imports),
+        ...Object.keys(asset.dependencies.exports),
+      ]);
 
       if (
         input === bundleInput || !shared

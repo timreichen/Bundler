@@ -31,20 +31,20 @@ export class CssPlugin extends Plugin {
   }
   async transformSource(
     bundleInput: string,
-    chunk: Chunk,
+    item: Item,
     context: Context,
   ) {
     const { graph, bundler } = context;
-    const asset = getAsset(graph, bundleInput, chunk.type);
+    const asset = getAsset(graph, bundleInput, item.type);
     const bundleOutput = asset.output;
 
     const processor = postcss.default([
       ...this.use,
-      postcssInjectImportsPlugin(chunk, context, this.use),
+      postcssInjectImportsPlugin(item, context, this.use),
       postcssInjectDependenciesPlugin(bundleInput, bundleOutput, context),
     ]);
 
-    const source = await bundler.readSource(chunk, context);
+    const source = await bundler.readSource(item, context);
 
     const { css } = await processor.process(source as string);
 
@@ -92,49 +92,35 @@ export class CssPlugin extends Plugin {
     context: Context,
     chunkList: ChunkList,
   ) {
-    const rootInput = item.history[0];
+    const dependencyItems: Item[] = [];
+    const chunkInput = item.history[0];
+    const asset = getAsset(context.graph, chunkInput, item.type);
 
-    const { graph } = context;
-    const dependencyList = [item];
+    const dependencies = [
+      ...Object.entries(asset.dependencies.imports),
+      ...Object.entries(asset.dependencies.exports),
+    ];
 
-    for (const dependencyItem of dependencyList) {
-      const { history, type } = dependencyItem;
-      const input = history[0];
+    for (const [input, dependency] of dependencies) {
+      if (input === chunkInput) continue;
+      const { type, format } = dependency;
+      const newItem: Item = {
+        history: [input, ...item.history],
+        type,
+        format,
+      };
 
-      const asset = getAsset(graph, input, type);
       if (
-        input === rootInput || asset.format === Format.Style
+        input === chunkInput || format === Format.Style
       ) {
       } else {
-        chunkList.push(dependencyItem);
+        chunkList.push(newItem);
       }
-      Object.entries(asset.dependencies.imports).forEach(
-        ([dependency, { type, format }]) => {
-          if (dependency && dependency !== input) {
-            dependencyList.push({
-              history: [dependency, ...history],
-              type,
-              format,
-            });
-          }
-        },
-      );
-      Object.entries(asset.dependencies.exports).forEach(
-        ([dependency, { type, format }]) => {
-          if (dependency && dependency !== input) {
-            dependencyList.push({
-              history: [dependency, ...history],
-              type,
-              format,
-            });
-          }
-        },
-      );
     }
 
     return {
-      ...item,
-      dependencies: dependencyList,
+      item,
+      dependencyItems,
     };
   }
   async createBundle(
@@ -144,10 +130,10 @@ export class CssPlugin extends Plugin {
     const { graph, bundler, reload } = context;
 
     let needsBundleUpdate = false;
+    const bundleItem = chunk.item;
+    const bundleInput = bundleItem.history[0];
 
-    const bundleInput = chunk.history[0];
-
-    for (const dependencyItem of chunk.dependencies) {
+    for (const dependencyItem of [chunk.item, ...chunk.dependencyItems]) {
       const { history } = dependencyItem;
       const input = history[0];
       const resolvedFilePath = resolveCache(input);
@@ -179,7 +165,8 @@ export class CssPlugin extends Plugin {
         );
       }
     }
-    const bundleAsset = getAsset(graph, bundleInput, chunk.type);
+
+    const bundleAsset = getAsset(graph, bundleInput, bundleItem.type);
     if (!needsBundleUpdate && await fs.exists(bundleAsset.output)) {
       return;
     }

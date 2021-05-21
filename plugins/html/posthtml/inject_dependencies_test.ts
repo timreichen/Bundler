@@ -25,6 +25,7 @@ tests({
         const inputOutput = "dist/a.html";
         const dependency = "custom/path/b.png";
         const dependencyOutput = "b.png";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -58,7 +59,7 @@ tests({
         const plugin = posthtmlInjectImageDependencies(
           input,
           dependencyOutput,
-          { importMap, graph },
+          { importMap, graph, outDirPath },
         );
         const processor = posthtml([plugin]);
 
@@ -80,6 +81,7 @@ tests({
         const inputOutput = "dist/a.html";
         const dependency = "custom/path/b.png";
         const dependencyOutput = "dist/b.png";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -113,7 +115,7 @@ tests({
         const plugin = posthtmlInjectImageDependencies(
           input,
           inputOutput,
-          { importMap, graph },
+          { importMap, graph, outDirPath },
         );
         const processor = posthtml([plugin]);
 
@@ -136,6 +138,7 @@ tests({
         const inputOutput = "dist/a.html";
         const dependency = "custom/path/b.png";
         const dependencyOutput = "dist/b.png";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -169,7 +172,7 @@ tests({
         const plugin = posthtmlInjectImageDependencies(
           input,
           inputOutput,
-          { importMap, graph },
+          { importMap, graph, outDirPath },
         );
         const processor = posthtml([plugin]);
 
@@ -192,6 +195,7 @@ tests({
         const inputOutput = "dist/a.html";
         const dependency = "src/b.css";
         const dependencyOutput = "dist/b.css";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -225,7 +229,7 @@ tests({
         const plugin = posthtmlInjectLinkDependencies(
           input,
           inputOutput,
-          { importMap, graph },
+          { importMap, graph, outDirPath },
         );
         const processor = posthtml([plugin]);
 
@@ -248,6 +252,7 @@ tests({
         const inputOutput = "a.html";
         const dependency = "src/b.css";
         const dependencyOutput = "dist/b.css";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -281,7 +286,7 @@ tests({
         const plugin = posthtmlInjectLinkDependencies(
           input,
           inputOutput,
-          { importMap, graph },
+          { importMap, graph, outDirPath },
         );
         const processor = posthtml([plugin]);
 
@@ -304,6 +309,7 @@ tests({
         const inputOutput = "dist/a.html";
         const dependency = "src/b.css";
         const dependencyOutput = "b.css";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -337,7 +343,7 @@ tests({
         const plugin = posthtmlInjectLinkDependencies(
           input,
           inputOutput,
-          { importMap, graph },
+          { importMap, graph, outDirPath },
         );
         const processor = posthtml([plugin]);
 
@@ -360,6 +366,7 @@ tests({
         const inputOutput = "dist/a.html";
         const dependency = "src/webmanifest.json";
         const dependencyOutput = "dist/webmanifest.json";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -393,7 +400,7 @@ tests({
         const plugin = posthtmlInjectLinkDependencies(
           input,
           inputOutput,
-          { importMap, graph },
+          { importMap, graph, outDirPath },
         );
         const processor = posthtml([plugin]);
 
@@ -416,6 +423,7 @@ tests({
         const inputOutput = "dist/a.html";
         const dependency = "src/b.js";
         const dependencyOutput = "dist/b.js";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -446,7 +454,6 @@ tests({
             },
           },
         };
-        const outDirPath = "dist";
         const plugin = posthtmlInjectScriptDependencies(
           input,
           inputOutput,
@@ -459,7 +466,7 @@ tests({
 
         assertStringIncludes(
           html,
-          `<html><body><script src="/b.js"></script></body></html>`,
+          `<html><body><script src="./b.js" type="module"></script></body></html>`,
         );
       },
     },
@@ -503,16 +510,18 @@ tests({
           },
         };
         const chunk: Chunk = {
-          history: [input],
-          dependencies: [
+          item: {
+            history: [input],
+            type: DependencyType.Import,
+            format: Format.Html,
+          },
+          dependencyItems: [
             {
               history: [dependency, input],
               type: DependencyType.Import,
               format: Format.Style,
             },
           ],
-          type: DependencyType.Import,
-          format: Format.Html,
         };
         const bundler = new Bundler([]);
         const sources = {
@@ -534,9 +543,9 @@ tests({
           chunks: [chunk],
           bundles: {},
         };
-
+        const item = chunk.item;
         const plugin = posthtmlInjectStyleDependencies(
-          chunk,
+          item,
           context,
           use,
         );
@@ -592,16 +601,18 @@ tests({
           },
         };
         const chunk: Chunk = {
-          history: [input],
-          dependencies: [
+          item: {
+            history: [input],
+            type: DependencyType.Import,
+            format: Format.Html,
+          },
+          dependencyItems: [
             {
               history: [dependency, input],
               type: DependencyType.Import,
               format: Format.Image,
             },
           ],
-          type: DependencyType.Import,
-          format: Format.Html,
         };
         const bundler = new Bundler([]);
         const context: Context = {
@@ -620,8 +631,9 @@ tests({
           chunks: [chunk],
           bundles: {},
         };
+        const item = chunk.item;
         const plugin = posthtmlInjectInlineStyleDependencies(
-          chunk,
+          item,
           context,
           use,
         );

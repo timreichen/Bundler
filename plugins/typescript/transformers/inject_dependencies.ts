@@ -2,16 +2,16 @@ import { colors, ImportMap, path, ts } from "../../../deps.ts";
 import { addRelativePrefix, isURL } from "../../../_util.ts";
 import { resolve as resolveDependency } from "../../../dependency.ts";
 import { getAsset, Graph } from "../../../graph.ts";
-import { Chunk, DependencyType } from "../../plugin.ts";
+import { DependencyType, Item } from "../../plugin.ts";
 
 /**
  * injects dependency paths
  */
 export function typescriptInjectDependenciesTranformer(
-  chunk: Chunk,
+  item: Item,
   { graph, importMap }: { graph: Graph; importMap: ImportMap },
 ): ts.TransformerFactory<ts.SourceFile> {
-  const { history, type } = chunk;
+  const { history, type } = item;
   const rootInput = history[history.length - 1];
 
   const rootAsset = getAsset(

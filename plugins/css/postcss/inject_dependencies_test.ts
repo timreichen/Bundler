@@ -5,7 +5,7 @@ import { DependencyType, Format } from "../../plugin.ts";
 import { postcssInjectDependenciesPlugin } from "./inject_dependencies.ts";
 
 tests({
-  name: "postcss plugin → inject dependencies",
+  name: "postcss plugin → inject depe, outDirPathndencies",
   tests: () => [
     {
       name: "url()",
@@ -13,6 +13,7 @@ tests({
         const input = "src/a.css";
         const inputOutput = "dist/a.css";
         const dependency = "src/image.png";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -46,7 +47,7 @@ tests({
         const plugin = postcssInjectDependenciesPlugin(
           input,
           "dist/a.css",
-          { graph },
+          { graph, outDirPath },
         );
         const processor = postcss.default([plugin]);
 
@@ -66,6 +67,7 @@ tests({
         const inputOutput = "dist/a.css";
         const dependency = "src/image.png";
         const dependencyOutput = "image.png";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -99,7 +101,7 @@ tests({
         const plugin = postcssInjectDependenciesPlugin(
           input,
           inputOutput,
-          { graph },
+          { graph, outDirPath },
         );
         const processor = postcss.default([plugin]);
 
@@ -119,6 +121,7 @@ tests({
         const inputOutput = "a.css";
         const dependency = "src/image.png";
         const dependencyOutput = "dist/image.png";
+        const outDirPath = "dist";
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
@@ -152,7 +155,7 @@ tests({
         const plugin = postcssInjectDependenciesPlugin(
           input,
           inputOutput,
-          { graph },
+          { graph, outDirPath },
         );
         const processor = postcss.default([plugin]);
 
@@ -206,7 +209,7 @@ tests({
 //     const plugin = postcssInjectDependenciesPlugin(input, inputOutput, {
 //       graph,
 //     });
-//     const processor = postcss.default([plugin]);
+//     const processor = postcss.default([plugin, oudoutDirPath]);
 
 //     const source = `@import "./b.css";`;
 //     const { css } = await processor.process(source);
@@ -253,7 +256,7 @@ tests({
 //     const plugin = postcssInjectDependenciesPlugin(input, inputOutput, {
 //       graph,
 //     });
-//     const processor = postcss.default([plugin]);
+//     const processor = postcss.default([plugin, oudoutDirPath]);
 
 //     const source = `@import url("./b.css");`;
 //     const { css } = await processor.process(source);

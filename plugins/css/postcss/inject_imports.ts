@@ -1,19 +1,19 @@
 import { path, postcss, postcssValueParser } from "../../../deps.ts";
 import { resolve as resolveDependency } from "../../../dependency.ts";
 import { addRelativePrefix } from "../../../_util.ts";
-import { Chunk, Context, DependencyType, Format, Item } from "../../plugin.ts";
+import { Context, DependencyType, Format, Item } from "../../plugin.ts";
 import { getAsset } from "../../../graph.ts";
 
 export function postcssInjectImportsPlugin(
-  chunk: Chunk,
+  item: Item,
   context: Context,
   use: postcss.AcceptedPlugin[],
 ): any {
   const { bundler, graph, importMap, chunks } = context;
   const processor = postcss.default(use);
-  const input = chunk.history[0];
+  const input = item.history[0];
 
-  const parentAsset = getAsset(graph, input, chunk.type);
+  const parentAsset = getAsset(graph, input, item.type);
   return (root: any) => {
     const promises: Promise<any>[] = [];
     let importIndex = 0;
@@ -57,10 +57,11 @@ export function postcssInjectImportsPlugin(
 
         // // if @import should stay
         if (
-          chunks.find((chunk) =>
-            chunk.history[0] === resolvedUrl &&
-            chunk.type === DependencyType.Import
-          ) &&
+          chunks.find((chunk) => {
+            const item = chunk.item;
+            item.history[0] === resolvedUrl &&
+              item.type === DependencyType.Import;
+          }) &&
           ruleIndex !== undefined &&
           ruleIndex <= importIndex
         ) {
@@ -77,13 +78,13 @@ export function postcssInjectImportsPlugin(
         } else {
           // if @import should be replace with source code
           const promise = new Promise(async (resolve) => {
-            const item: Item = {
-              history: [resolvedUrl, ...chunk.history],
+            const newItem: Item = {
+              history: [resolvedUrl, ...item.history],
               type: DependencyType.Import,
               format: Format.Style,
             };
             const source = await bundler.readSource(
-              item,
+              newItem,
               context,
             );
 

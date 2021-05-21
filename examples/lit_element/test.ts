@@ -9,7 +9,7 @@ Deno.test({
   name: "example → lit_element",
   async fn() {
     const importMap = JSON.parse(
-      Deno.readTextFileSync("examples/lit_element/importmap.json"),
+      Deno.readTextFileSync("examples/lit_element/import_map.json"),
     );
     const plugins: Plugin[] = [
       new HtmlPlugin(),
@@ -61,7 +61,7 @@ Deno.test({
 
     const chunks = await bundler.createChunks(inputs, graph, { importMap });
 
-    assertEquals(chunks.map((chunk) => chunk.history[0]), [
+    assertEquals(chunks.map((chunk) => chunk.item.history[0]), [
       input,
       "examples/lit_element/src/index.ts",
     ]);

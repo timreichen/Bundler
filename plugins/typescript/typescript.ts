@@ -126,50 +126,35 @@ export class TypescriptPlugin extends Plugin {
     context: Context,
     chunkList: ChunkList,
   ) {
-    const dependencies: Item[] = [];
-    const dependencyList: Item[] = [item];
-    const checkedItems: any = {};
-    for (const dependencyItem of dependencyList) {
-      const { history, type } = dependencyItem;
-      const input = history[0];
-      if (checkedItems[type]?.[input]) continue;
-      const asset = getAsset(context.graph, input, type);
-      checkedItems[type] = checkedItems[type] || {};
-      checkedItems[type][input] = asset;
-      switch (asset.format) {
+    const dependencyItems: Item[] = [];
+    const { history, type } = item;
+    const chunkInput = history[0];
+    const asset = getAsset(context.graph, chunkInput, type);
+
+    const dependencies = [
+      ...Object.entries(asset.dependencies.imports),
+      ...Object.entries(asset.dependencies.exports),
+    ];
+    for (const [input, dependency] of dependencies) {
+      if (input === chunkInput) continue;
+      const { type, format } = dependency;
+      const newItem: Item = {
+        history: [input, ...item.history],
+        type,
+        format,
+      };
+      switch (format) {
         case Format.Script: {
           switch (type) {
             case DependencyType.Import:
             case DependencyType.Export:
-              dependencies.push(dependencyItem);
-              Object.entries(
-                asset.dependencies.imports,
-              ).forEach(([dependency, { type, format }]) => {
-                if (dependency !== input) {
-                  dependencyList.push({
-                    history: [dependency, ...history],
-                    type,
-                    format,
-                  });
-                }
-              });
-              Object.entries(
-                asset.dependencies.exports,
-              ).forEach(([dependency, { type, format }]) => {
-                if (dependency !== input) {
-                  dependencyList.push({
-                    history: [dependency, ...history],
-                    type,
-                    format,
-                  });
-                }
-              });
+              dependencyItems.push(newItem);
               break;
             case DependencyType.DynamicImport:
             case DependencyType.ServiceWorker:
             case DependencyType.WebWorker:
             case DependencyType.Import:
-              chunkList.push(dependencyItem);
+              chunkList.push(newItem);
               break;
           }
           break;
@@ -177,11 +162,11 @@ export class TypescriptPlugin extends Plugin {
         case Format.Json: {
           switch (type) {
             case DependencyType.Import: {
-              dependencies.push(dependencyItem);
+              dependencyItems.push(newItem);
               break;
             }
             default: {
-              chunkList.push(dependencyItem);
+              chunkList.push(newItem);
               break;
             }
           }
@@ -190,26 +175,25 @@ export class TypescriptPlugin extends Plugin {
         case Format.Style: {
           switch (type) {
             case DependencyType.Import: {
-              dependencies.push(dependencyItem);
+              dependencyItems.push(newItem);
               break;
             }
             default: {
-              chunkList.push(dependencyItem);
+              chunkList.push(newItem);
               break;
             }
           }
           break;
         }
         default: {
-          chunkList.push(dependencyItem);
+          chunkList.push(newItem);
           break;
         }
       }
     }
-
     return {
-      ...item,
-      dependencies,
+      item,
+      dependencyItems,
     };
   }
 }

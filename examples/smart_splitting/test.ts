@@ -42,8 +42,7 @@ Deno.test({
     ]);
 
     const chunks = await bundler.createChunks(inputs, graph);
-
-    assertEquals(chunks.map((chunk) => chunk.history[0]), [
+    assertEquals(chunks.map((chunk) => chunk.item.history[0]), [
       input,
       "examples/smart_splitting/src/a.ts",
       "examples/smart_splitting/src/b.ts",
@@ -58,20 +57,33 @@ Deno.test({
       "dist/a.js",
       "dist/b.js",
       "dist/deps/cc48d69a5071eab490d13fa66ddad7c5d07f4474cde05a347df22a49b4639228.js",
-      "dist/deps/072d6f2302ead5d3f5ff90d0d8feb8235db6ae4f64a5400b93ee81c0edf8cd4f.js",
     ]);
 
     assertStringIncludes(
       bundles[
         "dist/b.js"
       ] as string,
-      `export default (async () => {`,
+      `export default (async ()=>{`,
     );
     assertStringIncludes(
       bundles[
         "dist/b.js"
       ] as string,
-      `return {}`,
+      `return {
+    };`,
+    );
+
+    assertStringIncludes(
+      bundles[
+        "dist/deps/cc48d69a5071eab490d13fa66ddad7c5d07f4474cde05a347df22a49b4639228.js"
+      ] as string,
+      `export default (async ()=>{`,
+    );
+    assertStringIncludes(
+      bundles[
+        "dist/deps/cc48d69a5071eab490d13fa66ddad7c5d07f4474cde05a347df22a49b4639228.js"
+      ] as string,
+      `const mod = (async ()=>{`,
     );
   },
 });

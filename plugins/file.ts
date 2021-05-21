@@ -40,8 +40,8 @@ export class FilePlugin extends Plugin {
     chunkList: ChunkList,
   ): Promise<Chunk> {
     return {
-      ...item,
-      dependencies: [],
+      item,
+      dependencyItems: [],
     };
   }
   async createBundle(
@@ -49,7 +49,8 @@ export class FilePlugin extends Plugin {
     context: Context,
   ): Promise<Source | void> {
     const { bundler, reload, graph } = context;
-    const { history, type } = chunk;
+    const item = chunk.item;
+    const { history, type } = item;
     const bundleInput = history[0];
     const bundleAsset = getAsset(graph, bundleInput, type);
 
@@ -64,6 +65,6 @@ export class FilePlugin extends Plugin {
         throw error;
       }
     }
-    return await bundler.readSource(chunk, context);
+    return await bundler.readSource(item, context);
   }
 }

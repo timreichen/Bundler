@@ -52,7 +52,7 @@ Deno.test({
 
     const chunks = await bundler.createChunks(inputs, graph);
 
-    assertEquals(chunks.map((chunk) => chunk.history[0]), [
+    assertEquals(chunks.map((chunk) => chunk.item.history[0]), [
       "examples/images/src/index.html",
       "examples/images/src/index.ts",
       "examples/images/src/styles.css",

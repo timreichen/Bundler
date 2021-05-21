@@ -1,5 +1,9 @@
 import { path, postcss, postcssValueParser } from "../../../deps.ts";
-import { addRelativePrefix, isURL } from "../../../_util.ts";
+import {
+  addRelativePrefix,
+  isURL,
+  removeRelativePrefix,
+} from "../../../_util.ts";
 import { resolve as resolveDependency } from "../../../dependency.ts";
 import { getAsset, Graph } from "../../../graph.ts";
 import { DependencyType } from "../../plugin.ts";
@@ -7,7 +11,7 @@ import { DependencyType } from "../../plugin.ts";
 export const postcssInjectDependenciesPlugin = (
   bundleInput: string,
   bundleOutput: string,
-  { graph }: { graph: Graph },
+  { graph, outDirPath }: { graph: Graph; outDirPath: string },
 ): any => {
   const bundleDirPath = path.dirname(bundleOutput);
   return (root: any) => {

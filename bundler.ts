@@ -278,12 +278,13 @@ export class Bundler {
           chunkList,
         );
         if (chunk !== undefined) {
+          const dependencyItems = chunk.dependencyItems;
           this.logger.debug(
             colors.blue("Create Chunk"),
-            chunk.history[0],
+            chunk.item.history[0],
             colors.dim(plugin.constructor.name),
             colors.dim(colors.italic(`(${timestamp(time)})`)),
-            ...chunk.dependencies.map((dependency) =>
+            ...dependencyItems.map((dependency) =>
               colors.dim(
                 [
                   `\n`,
@@ -361,11 +362,13 @@ export class Bundler {
     chunk: Chunk,
     context: Context,
   ) {
+    const item = chunk.item;
+    const input = item.history[0];
+
     const time = performance.now();
     for (const plugin of this.plugins) {
-      if (plugin.createBundle && await plugin.test(chunk, context)) {
+      if (plugin.createBundle && await plugin.test(item, context)) {
         const bundle = await plugin.createBundle(chunk, context) as string;
-        const input = chunk.history[0];
         if (bundle !== undefined) {
           this.logger.debug(
             colors.blue("Create Bundle"),
@@ -374,8 +377,8 @@ export class Bundler {
             colors.dim(colors.italic(`(${timestamp(time)})`)),
             `\n`,
             colors.dim(`➞`),
-            colors.dim((getAsset(context.graph, input, chunk.type).output)),
-            colors.dim(`{ ${Format[chunk.format]}, ${chunk.type} }`),
+            colors.dim((getAsset(context.graph, input, item.type).output)),
+            colors.dim(`{ ${Format[item.format]}, ${item.type} }`),
           );
           const length = bundle.length;
           this.logger.info(
@@ -386,7 +389,7 @@ export class Bundler {
             colors.dim(colors.italic(`(${timestamp(time)})`)),
             `\n`,
             colors.dim(`➞`),
-            colors.dim((getAsset(context.graph, input, chunk.type).output)),
+            colors.dim((getAsset(context.graph, input, item.type).output)),
           );
           return bundle;
         } else {
@@ -398,30 +401,31 @@ export class Bundler {
             colors.dim(colors.italic(`(${timestamp(time)})`)),
             `\n`,
             colors.dim(`➞`),
-            colors.dim((getAsset(context.graph, input, chunk.type).output)),
+            colors.dim((getAsset(context.graph, input, item.type).output)),
           );
           // exit
           return;
         }
       }
     }
-    throw new Error(`No createBundle plugin found: '${chunk.history[0]}'`);
+    throw new Error(`No createBundle plugin found: '${input}'`);
   }
   async optimizeBundle(chunk: Chunk, context: Context) {
+    const item = chunk.item;
+    const input = item.history[0];
     this.logger.trace("optimizeBundle");
     const time = performance.now();
-    const output = getAsset(context.graph, chunk.history[0], chunk.type).output;
+    const output = getAsset(context.graph, input, item.type).output;
     let bundle = context.bundles[output];
     for (const plugin of this.plugins) {
-      if (plugin.optimizeBundle && await plugin.test(chunk, context)) {
-        const input = chunk.history[0];
-        const output = getAsset(context.graph, input, chunk.type).output;
+      if (plugin.optimizeBundle && await plugin.test(item, context)) {
+        const output = getAsset(context.graph, input, item.type).output;
         bundle = await plugin.optimizeBundle(output, context);
         this.logger.debug(
           colors.blue("Optimize Bundle"),
           input,
           colors.dim(`➞`),
-          colors.dim((getAsset(context.graph, input, chunk.type).output)),
+          colors.dim((getAsset(context.graph, input, item.type).output)),
           colors.dim(plugin.constructor.name),
           colors.dim(colors.italic(`(${timestamp(time)})`)),
         );
@@ -458,8 +462,8 @@ export class Bundler {
     for (const chunk of context.chunks) {
       let bundle = await this.createBundle(chunk, context);
       if (bundle !== undefined) {
-        const input = chunk.history[0];
-        const chunkAsset = getAsset(graph, input, chunk.type);
+        const item = chunk.item;
+        const chunkAsset = getAsset(graph, item.history[0], item.type);
         const output = chunkAsset.output;
         bundles[output] = bundle;
         if (context.optimize) {

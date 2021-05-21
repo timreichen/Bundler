@@ -233,7 +233,7 @@ export const x = "x";
 </tr>
 
 <tr>
-<td>variable list export</td>
+<td>object binding pattern export</td>
 <td>
 
 ```ts

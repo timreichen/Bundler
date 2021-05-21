@@ -44,7 +44,7 @@ Deno.test({
 
     const chunks = await bundler.createChunks(inputs, graph);
 
-    assertEquals(chunks.map((chunk) => chunk.history[0]), [
+    assertEquals(chunks.map((chunk) => chunk.item.history[0]), [
       input,
       "examples/webmanifest/src/manifest.json",
       "examples/webmanifest/src/images/icon-128x128.png",

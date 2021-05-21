@@ -60,15 +60,19 @@ export type Source = unknown;
 export type Sources = Record<string, Source>;
 
 export type Bundles = Record<string, Source>;
+
 export type ChunkList = Item[];
+
 export interface Item {
   history: History;
   type: DependencyType;
   format: Format;
 }
-export interface Chunk extends Item {
-  dependencies: Item[];
+export interface Chunk {
+  item: Item;
+  dependencyItems: Item[];
 }
+
 export type Chunks = Chunk[];
 export type Cache = Record<string, string>;
 

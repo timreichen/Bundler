@@ -5,48 +5,8 @@ import {
   assertStringIncludes,
   tests,
 } from "../../../test_deps.ts";
-import { Chunk, DependencyType, Format } from "../../plugin.ts";
+import { DependencyType, Format, Item } from "../../plugin.ts";
 import { typescriptInjectDependenciesTranformer } from "./inject_dependencies.ts";
-
-const defaultCompilerOptions: ts.CompilerOptions = {
-  jsx: ts.JsxEmit.React,
-  jsxFactory: "React.createElement",
-  jsxFragmentFactory: "React.Fragment",
-  allowJs: false,
-  allowUmdGlobalAccess: false,
-  allowUnreachableCode: false,
-  allowUnusedLabels: false,
-  alwaysStrict: true,
-  assumeChangesOnlyAffectDirectDependencies: false,
-  checkJs: false,
-  disableSizeLimit: false,
-  generateCpuProfile: "profile.cpuprofile",
-  lib: [],
-  noFallthroughCasesInSwitch: false,
-  noImplicitAny: true,
-  noImplicitReturns: true,
-  noImplicitThis: true,
-  noImplicitUseStrict: false,
-  noStrictGenericChecks: false,
-  noUnusedLocals: false,
-  noUnusedParameters: false,
-  preserveConstEnums: false,
-  removeComments: false,
-  // resolveJsonModule: true,
-  strict: true,
-  strictBindCallApply: true,
-  strictFunctionTypes: true,
-  strictNullChecks: true,
-  strictPropertyInitialization: true,
-  suppressExcessPropertyErrors: false,
-  suppressImplicitAnyIndexErrors: false,
-  useDefineForClassFields: false,
-};
-
-const compilerOptions: ts.CompilerOptions = {
-  ...defaultCompilerOptions,
-  target: ts.ScriptTarget.Latest,
-};
 
 const printer: ts.Printer = ts.createPrinter({ removeComments: false });
 
@@ -95,17 +55,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [resolvedInput],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [resolvedDependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -115,14 +68,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -169,17 +121,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -189,14 +134,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
 
@@ -244,17 +188,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -264,14 +201,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -318,17 +254,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -338,14 +267,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -392,17 +320,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -412,14 +333,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -466,17 +386,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -486,14 +399,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -540,17 +452,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -560,14 +465,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -614,17 +518,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -634,14 +531,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -688,17 +584,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -708,14 +597,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -762,17 +650,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -782,14 +663,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -839,17 +719,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -859,14 +732,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -913,17 +785,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -933,14 +798,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -990,17 +854,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Fetch,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -1010,14 +867,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -1064,17 +920,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Fetch,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -1084,14 +933,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -1138,17 +986,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -1158,14 +999,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);
@@ -1212,17 +1052,10 @@ tests({
             },
           },
         };
-        const chunk: Chunk = {
+        const item: Item = {
           history: [input],
           type: DependencyType.Import,
           format: Format.Script,
-          dependencies: [
-            {
-              history: [dependency],
-              type: DependencyType.Import,
-              format: Format.Script,
-            },
-          ],
         };
 
         const sourceFile = ts.createSourceFile(
@@ -1232,14 +1065,13 @@ tests({
         );
         const transformers = [
           typescriptInjectDependenciesTranformer(
-            chunk,
+            item,
             { graph, importMap },
           ),
         ];
         const { diagnostics, transformed } = ts.transform(
           sourceFile,
           transformers,
-          compilerOptions,
         );
         const outputText = printer.printFile(transformed[0]);
         assertEquals(diagnostics, []);

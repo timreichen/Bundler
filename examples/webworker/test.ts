@@ -33,7 +33,7 @@ Deno.test({
 
     const chunks = await bundler.createChunks(inputs, graph);
 
-    assertEquals(chunks.map((chunk) => chunk.history[0]), [
+    assertEquals(chunks.map((chunk) => chunk.item.history[0]), [
       input,
       "examples/webworker/src/index.ts",
       "examples/webworker/src/worker.ts",

@@ -63,42 +63,40 @@ export class WebManifestPlugin extends JsonPlugin {
     context: Context,
     chunkList: ChunkList,
   ) {
-    const { history, type } = item;
-    const { graph } = context;
-    const input = history[0];
-    const asset = getAsset(graph, input, type);
-    const { imports, exports } = asset.dependencies;
-    const dependencies: Item[] = [item];
+    const dependencyItems: Item[] = [];
+    const chunkInput = item.history[0];
+    const asset = getAsset(context.graph, chunkInput, item.type);
 
-    Object.entries(imports).forEach(([dependency, { type, format }]) =>
-      chunkList.push({
-        history,
+    const dependencies = [
+      ...Object.entries(asset.dependencies.imports),
+      ...Object.entries(asset.dependencies.exports),
+    ];
+    for (const [input, dependency] of dependencies) {
+      if (input === chunkInput) continue;
+      const { type, format } = dependency;
+      const newItem: Item = {
+        history: [input, ...item.history],
         type,
         format,
-      })
-    );
-    Object.entries(exports).forEach(([dependency, { type, format }]) =>
-      chunkList.push({
-        history,
-        type,
-        format,
-      })
-    );
+      };
+      chunkList.push(newItem);
+    }
 
     return {
-      ...item,
-      dependencies,
+      item,
+      dependencyItems,
     };
   }
   async createBundle(
     chunk: Chunk,
     context: Context,
   ) {
-    const input = chunk.history[0];
+    const item = chunk.item;
+    const input = item.history[0];
 
     const { graph, bundler, reload } = context;
 
-    const asset = getAsset(graph, input, chunk.type);
+    const asset = getAsset(graph, input, item.type);
     const exists = await fs.exists(asset.output);
     const needsUpdate = reload || !exists ||
       Deno.statSync(asset.output).mtime! <
@@ -108,7 +106,7 @@ export class WebManifestPlugin extends JsonPlugin {
     const bundleOutput = path.dirname(asset.output);
 
     const source = await bundler.readSource(
-      chunk,
+      item,
       context,
     ) as string;
 

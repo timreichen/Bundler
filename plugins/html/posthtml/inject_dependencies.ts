@@ -1,14 +1,10 @@
 import { ImportMap, path, postcss } from "../../../deps.ts";
-import {
-  addRelativePrefix,
-  isURL,
-  removeRelativePrefix,
-} from "../../../_util.ts";
+import { addRelativePrefix, isURL } from "../../../_util.ts";
 import { resolve as resolveDependency } from "../../../dependency.ts";
 import { getBase, resolveBase } from "../_util.ts";
 import { postcssInjectDependenciesPlugin } from "../../css/postcss/inject_dependencies.ts";
 import { getAsset, Graph } from "../../../graph.ts";
-import { Chunk, Context, DependencyType } from "../../plugin.ts";
+import { Context, DependencyType, Item } from "../../plugin.ts";
 import { postcssInjectImportsPlugin } from "../../css/postcss/inject_imports.ts";
 
 export function posthtmlInjectScriptDependencies(
@@ -20,13 +16,13 @@ export function posthtmlInjectScriptDependencies(
     outDirPath: string;
   },
 ) {
-  // const bundleDirPath = path.dirname(bundleOutput);
+  const bundleDirPath = path.dirname(bundleOutput);
 
   return async (tree: any) => {
     const base = getBase(tree);
 
-    let scriptIndex = 0;
-    const promises: Promise<any>[] = [];
+    // let scriptIndex = 0;
+    // const promises: Promise<any>[] = [];
 
     tree.walk((node: any) => {
       if (node.tag === "script") {
@@ -39,49 +35,54 @@ export function posthtmlInjectScriptDependencies(
             importMap,
           );
           const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
-          node.attrs.src = removeRelativePrefix(
-            "/" + path.relative(outDirPath, asset.output),
+          node.attrs.src = addRelativePrefix(
+            path.relative(bundleDirPath, asset.output),
           );
+          node.attrs.type = "module";
         } else if (node.content?.[0]) {
-          const promise = new Promise(async (resolve) => {
-            const source = node.content[0];
-            const identifier = `_${scriptIndex++}.ts`;
-            const dependency = path.join(bundleInput, identifier);
-            // bundler.sources[dependency] = source;
-            // const dependencyAsset = await bundler.createAsset(
-            //   dependency,
-            //   DependencyType.Import,
-            //   context,
-            // );
-            // graph.set(dependency, dependencyAsset);
-            // const dependencyChunk = await bundler.createChunk(
-            //   dependency,
-            //   [dependency, ...chunk.history],
-            //   [],
-            //   context,
-            // );
-            // const bundle = await bundler.createBundle(
-            //   input,
-            //   dependencyChunk,
-            //   context,
-            // );
-            // node.content[0] = bundle;
-            resolve(undefined);
-          });
-          promises.push(promise);
+          // const promise = new Promise(async (resolve) => {
+          //   // const source = node.content[0];
+          //   // const identifier = `_${scriptIndex++}.ts`;
+          //   // const dependency = path.join(bundleInput, identifier);
+          //   // bundler.sources[dependency] = source;
+          //   // const dependencyAsset = await bundler.createAsset(
+          //   //   dependency,
+          //   //   DependencyType.Import,
+          //   //   context,
+          //   // );
+          //   // graph.set(dependency, dependencyAsset);
+          //   // const dependencyChunk = await bundler.createChunk(
+          //   //   dependency,
+          //   //   [dependency, ...chunk.history],
+          //   //   [],
+          //   //   context,
+          //   // );
+          //   // const bundle = await bundler.createBundle(
+          //   //   input,
+          //   //   dependencyChunk,
+          //   //   context,
+          //   // );
+          //   // node.content[0] = bundle;
+          //   resolve(undefined);
+          // });
+          // promises.push(promise);
         }
       }
 
       return node;
     });
-    await Promise.all(promises);
+    // await Promise.all(promises);
     return tree;
   };
 }
 export function posthtmlInjectLinkDependencies(
   bundleInput: string,
   bundleOutput: string,
-  { graph, importMap }: { graph: Graph; importMap: ImportMap },
+  { graph, importMap, outDirPath }: {
+    graph: Graph;
+    importMap: ImportMap;
+    outDirPath: string;
+  },
 ) {
   const bundleDirPath = path.dirname(bundleOutput);
 
@@ -112,7 +113,11 @@ export function posthtmlInjectLinkDependencies(
 export function posthtmlInjectImageDependencies(
   bundleInput: string,
   bundleOutput: string,
-  { graph, importMap }: { graph: Graph; importMap: ImportMap },
+  { graph, importMap, outDirPath }: {
+    graph: Graph;
+    importMap: ImportMap;
+    outDirPath: string;
+  },
 ) {
   const bundleDirPath = path.dirname(bundleOutput);
 
@@ -142,17 +147,20 @@ export function posthtmlInjectImageDependencies(
   };
 }
 export function posthtmlInjectStyleDependencies(
-  chunk: Chunk,
+  item: Item,
   context: Context,
   use: postcss.AcceptedPlugin[],
 ) {
-  const bundleInput = chunk.history[0];
-  const { graph } = context;
-  const asset = getAsset(graph, bundleInput, chunk.type);
+  const bundleInput = item.history[0];
+  const { graph, outDirPath } = context;
+  const asset = getAsset(graph, bundleInput, item.type);
   const processor = postcss.default([
     ...use,
-    postcssInjectImportsPlugin(chunk, context, use),
-    postcssInjectDependenciesPlugin(bundleInput, asset.output, { graph }),
+    postcssInjectImportsPlugin(item, context, use),
+    postcssInjectDependenciesPlugin(bundleInput, asset.output, {
+      graph,
+      outDirPath,
+    }),
   ]);
 
   return async (tree: any) => {
@@ -173,19 +181,22 @@ export function posthtmlInjectStyleDependencies(
   };
 }
 export function posthtmlInjectInlineStyleDependencies(
-  chunk: Chunk,
+  item: Item,
   context: Context,
   use: postcss.AcceptedPlugin[],
 ) {
-  const bundleInput = chunk.history[0];
-  const { graph } = context;
+  const bundleInput = item.history[0];
+  const { graph, outDirPath } = context;
 
-  const asset = getAsset(graph, bundleInput, chunk.type);
+  const asset = getAsset(graph, bundleInput, item.type);
 
   const processor = postcss.default([
     ...use,
     // postcssInjectImportsPlugin(chunk, context, use), /* disabled because @import are not possible in script attributes */
-    postcssInjectDependenciesPlugin(bundleInput, asset.output, { graph }),
+    postcssInjectDependenciesPlugin(bundleInput, asset.output, {
+      graph,
+      outDirPath,
+    }),
   ]);
 
   const promises: Promise<any>[] = [];

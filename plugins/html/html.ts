@@ -91,48 +91,39 @@ export class HtmlPlugin extends Plugin {
     context: Context,
     chunkList: ChunkList,
   ) {
+    const dependencyItems: Item[] = [];
     const { history, type } = item;
-    const input = history[0];
-    const { graph } = context;
-    const dependencies: Item[] = [item];
-    const asset = getAsset(graph, input, type);
-    Object.entries(asset.dependencies.imports).forEach(
-      ([dependency, { type, format }]) => {
-        if (dependency && dependency !== input) {
-          dependencies.push({
-            history: [dependency, ...history],
-            type,
-            format,
-          });
-        }
-      },
-    );
-    Object.entries(asset.dependencies.exports).forEach(
-      ([dependency, { type, format }]) => {
-        if (dependency && dependency !== input) {
-          dependencies.push({
-            history: [dependency, ...history],
-            type,
-            format,
-          });
-        }
-      },
-    );
+    const chunkInput = history[0];
+    const asset = getAsset(context.graph, chunkInput, type);
 
-    chunkList.push(...dependencies);
+    const dependencies = [
+      ...Object.entries(asset.dependencies.imports),
+      ...Object.entries(asset.dependencies.exports),
+    ];
+    for (const [input, dependency] of dependencies) {
+      if (input === chunkInput) continue;
+      const { type, format } = dependency;
+      const newItem: Item = {
+        history: [input, ...item.history],
+        type,
+        format,
+      };
+      chunkList.push(newItem);
+    }
 
     return {
-      ...item,
-      dependencies,
+      item,
+      dependencyItems,
     };
   }
 
   async createBundle(
-    chunk: Chunk,
+    bundleChunk: Chunk,
     context: Context,
   ) {
     const { bundler, reload, graph } = context;
-    const { history, type } = chunk;
+    const bundleItem = bundleChunk.item;
+    const { history, type } = bundleItem;
     const bundleInput = history[0];
     const bundleAsset = getAsset(graph, bundleInput, type);
 
@@ -151,7 +142,7 @@ export class HtmlPlugin extends Plugin {
 
     const source = await bundler.transformSource(
       bundleInput,
-      chunk,
+      bundleChunk.item,
       context,
     ) as string;
 
@@ -161,12 +152,12 @@ export class HtmlPlugin extends Plugin {
       posthtmlInjectLinkDependencies(filePath, bundleOutput, context),
       posthtmlInjectImageDependencies(filePath, bundleOutput, context),
       posthtmlInjectStyleDependencies(
-        chunk,
+        bundleItem,
         context,
         this.use,
       ),
       posthtmlInjectInlineStyleDependencies(
-        chunk,
+        bundleItem,
         context,
         this.use,
       ),

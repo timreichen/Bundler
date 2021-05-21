@@ -5,7 +5,7 @@
 Run
 
 ```sh
-bundler bundle --import-map=importmap.json src/index.html=index.html
+bundler bundle --import-map=import_map.json src/index.html=index.html
 ```
 
 ## 2. Serve

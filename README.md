@@ -1,7 +1,7 @@
 <!-- deno-fmt-ignore-file -->
 # Bundler
 
-A Bundler with the web in mind.
+Deno bundler with the web in mind.
 
 ![Donate](https://img.shields.io/badge/Deno-≥%201.8-blue.svg?style=for-the-badge&logo=deno)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg?style=for-the-badge)](https://www.paypal.com/donate?hosted_button_id=ACDW2YV2RTP8A)
@@ -79,7 +79,7 @@ Bundler is a web bundler for deno. It allows to write code for the web like we a
 
 ### But there is _deno bundle_ and _Deno.emit_, right?
 
-`deno bundle` CLI command and `Deno.emit` can transpile and bundle a file to a standalone module. This might work for some occations but is limited to script files. Bundler works similar to `Deno.emit` but with the web in mind.
+`deno bundle` CLI command and `Deno.emit` can transpile and bundle a file to a standalone module. This might work for some occations but is limited to script files. Bundler uses `Deno.emit` and typescirpt compiler API under the hood to optimize codefor the web.
 
 ## Getting Started
 

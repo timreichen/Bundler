@@ -309,8 +309,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       ...Object.entries(bundleAsset.dependencies.exports),
     ];
 
-    bundler.logger.debug("Dependencies", bundleDependencies);
-
     for (const chunk of chunks) {
       if (chunk === bundleChunk) continue;
       const item = chunk.item;
@@ -613,21 +611,24 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
 
         const t3 = performance.now();
 
-        const filePath = "/x.tsx";
+        // const filePath = `/mod.tsx`;
+        //   console.log(source);
 
-        const { files } = await Deno.emit(filePath, {
-          sources: {
-            [filePath]: source,
-          },
-          check: false,
-          // compilerOptions: this.compilerOptions
-        });
-        const transpiledFilePath = `file://${filePath}.js`;
-        const transpiledSource = files[transpiledFilePath];
-        // const transpiledSource = ts.transpile(source, {
-        //   ...defaultCompilerOptions,
-        //   ...this.compilerOptions,
+        // const { files } = await Deno.emit(filePath, {
+        //   sources: {
+        //     [filePath]: source,
+        //   },
+        //   check: false,
+        //   // compilerOptions: this.compilerOptions
         // });
+        // console.log({ files });
+
+        // const transpiledFilePath = `file://${filePath}.js`;
+        // const transpiledSource = files[transpiledFilePath];
+        const transpiledSource = ts.transpile(source, {
+          ...defaultCompilerOptions,
+          ...this.compilerOptions,
+        });
         context.bundler.logger.trace(
           "Transpile",
           input,

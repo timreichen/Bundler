@@ -188,7 +188,7 @@ export class Bundler {
     for (const item of itemList) {
       const { history, type } = item;
       const input = history[0];
-      const entry = graph[input] = graph[input] || {};
+      const entry = graph[input] ||= {};
       if (entry[type]) continue;
       let asset = context.graph[input]?.[type];
 
@@ -344,7 +344,7 @@ export class Bundler {
       const input = history[0];
       if (checkedChunks[type]?.[input]) continue;
       const chunk = await this.createChunk(item, context, chunkList);
-      checkedChunks[type] = checkedChunks[type] || {};
+      checkedChunks[type] ||= {};
       checkedChunks[type][input] = chunk;
       chunks.push(chunk);
       counter += 1;

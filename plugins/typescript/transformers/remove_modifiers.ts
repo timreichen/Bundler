@@ -93,6 +93,35 @@ export function typescriptRemoveModifiersTransformer(): ts.TransformerFactory<
           node.name,
           node.members,
         );
+      } else if (
+        ts.isInterfaceDeclaration(node) && node.modifiers &&
+        hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
+      ) {
+        node = ts.factory.updateInterfaceDeclaration(
+          node,
+          node.decorators,
+          removeModifiers(node.modifiers, [
+            ts.SyntaxKind.ExportKeyword,
+          ]),
+          node.name,
+          node.typeParameters,
+          node.heritageClauses,
+          node.members,
+        );
+      } else if (
+        ts.isTypeAliasDeclaration(node) && node.modifiers &&
+        hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
+      ) {
+        node = ts.factory.updateTypeAliasDeclaration(
+          node,
+          node.decorators,
+          removeModifiers(node.modifiers, [
+            ts.SyntaxKind.ExportKeyword,
+          ]),
+          node.name,
+          node.typeParameters,
+          node.type,
+        );
       }
       return ts.visitEachChild(node, visitor, context);
     };

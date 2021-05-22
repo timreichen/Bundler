@@ -17,6 +17,7 @@ import {
   posthtmlExtractScriptDependencies,
   posthtmlExtractStyleDependencies,
 } from "./posthtml/extract_dependencies.ts";
+import { posthtmlInjectBase } from "./posthtml/inject_base.ts";
 import {
   posthtmlInjectImageDependencies,
   posthtmlInjectInlineStyleDependencies,
@@ -121,7 +122,7 @@ export class HtmlPlugin extends Plugin {
     bundleChunk: Chunk,
     context: Context,
   ) {
-    const { bundler, reload, graph } = context;
+    const { bundler, reload, graph, outDirPath } = context;
     const bundleItem = bundleChunk.item;
     const { history, type } = bundleItem;
     const bundleInput = history[0];
@@ -161,6 +162,7 @@ export class HtmlPlugin extends Plugin {
         context,
         this.use,
       ),
+      posthtmlInjectBase(context),
     ]);
     const { html } = await processor.process(source as string);
     // await bundler.setCache(bundleInput, bundleInput, html, context);

@@ -15,6 +15,7 @@ export function getBase(tree: any) {
   const base = head?.content.find((item: any) =>
     item instanceof Object && item.tag === "base"
   );
+
   return base?.attrs?.href || ".";
 }
 
@@ -23,4 +24,27 @@ export function resolveBase(url: string, base: string) {
     url = path.join(base, url);
   }
   return url;
+}
+
+export function setBase(tree: any, href: string) {
+  const html = tree.find((item: any) =>
+    item instanceof Object && item.tag === "html"
+  );
+  let head = html?.content.find((item: any) =>
+    item instanceof Object && item.tag === "head"
+  );
+  if (!head) {
+    head = { tag: "head", content: [] };
+    html.content.push(head);
+  }
+  let base = head?.content.find((item: any) =>
+    item instanceof Object && item.tag === "base"
+  );
+  if (base) {
+    base.attrs ||= {};
+    base.attrs.href = href;
+  } else {
+    base = { tag: "base", attrs: { href } };
+    head.content.unshift(base);
+  }
 }

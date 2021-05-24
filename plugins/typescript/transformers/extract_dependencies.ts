@@ -23,6 +23,27 @@ function hasModifier(
 export function typescriptExtractDependenciesTransformer(
   { imports, exports }: Dependencies,
 ) {
+  function addImportEntry(filePath: string, type: DependencyType) {
+    imports[filePath] = {
+      specifiers: {},
+      namespaces: [],
+      types: {},
+      defaults: [],
+      type,
+      format: getFormat(filePath) || Format.Script,
+    } as Dependency;
+  }
+  function addExportEntry(filePath: string) {
+    exports[filePath] ||= {
+      specifiers: {},
+      defaults: [],
+      namespaces: [],
+      types: {},
+      type: DependencyType.Export,
+      format: Format.Script,
+    } as Dependency;
+  }
+
   return (context: ts.TransformationContext) => {
     const visitor = (sourceFile: ts.SourceFile): ts.Visitor => {
       const visit: ts.Visitor = (node: ts.Node) => {
@@ -35,16 +56,8 @@ export function typescriptExtractDependenciesTransformer(
           if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
             filePath = moduleSpecifier.text;
           }
-          const format = getFormat(filePath) || Format.Script;
-          imports[filePath] = imports[filePath] ||
-            {
-              specifiers: {},
-              namespaces: [],
-              types: {},
-              defaults: [],
-              type: DependencyType.Import,
-              format,
-            } as Dependency;
+
+          addImportEntry(filePath, DependencyType.Import);
 
           if (importClause) {
             if (importClause.namedBindings) {
@@ -94,17 +107,8 @@ export function typescriptExtractDependenciesTransformer(
           if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
             filePath = moduleSpecifier.text;
           }
-          const format = getFormat(filePath) || Format.Script;
 
-          exports[filePath] = exports[filePath] ||
-            {
-              specifiers: {},
-              namespaces: [],
-              types: {},
-              defaults: [],
-              type: DependencyType.Export,
-              format,
-            } as Dependency;
+          addExportEntry(filePath);
 
           const exportClause = node.exportClause;
           if (exportClause) {
@@ -142,15 +146,7 @@ export function typescriptExtractDependenciesTransformer(
           return node;
         } else if (ts.isExportAssignment(node)) {
           // export default "abc"
-          exports[filePath] = exports[filePath] ||
-            {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Export,
-              format: Format.Script,
-            };
+          addExportEntry(filePath);
           return node;
         } else if (ts.isVariableStatement(node)) {
           if (
@@ -158,16 +154,8 @@ export function typescriptExtractDependenciesTransformer(
             hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
           ) {
             // export const x = "x"
-            exports[filePath] = exports[filePath] ||
-              {
-                specifiers: {},
-                defaults: [],
-                namespaces: [],
+            addExportEntry(filePath);
 
-                types: {},
-                type: DependencyType.Export,
-                format: Format.Script,
-              };
             node.declarationList.declarations.forEach((declaration) => {
               if (ts.isIdentifier(declaration.name)) {
                 const propertyName = declaration.name.text;
@@ -193,16 +181,8 @@ export function typescriptExtractDependenciesTransformer(
             node.modifiers &&
             hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
           ) {
-            exports[filePath] = exports[filePath] ||
-              {
-                specifiers: {},
-                defaults: [],
-                namespaces: [],
+            addExportEntry(filePath);
 
-                types: {},
-                type: DependencyType.Export,
-                format: Format.Script,
-              };
             if (
               hasModifier(node.modifiers, ts.SyntaxKind.DefaultKeyword)
             ) {
@@ -221,16 +201,8 @@ export function typescriptExtractDependenciesTransformer(
             node.modifiers &&
             hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
           ) {
-            exports[filePath] = exports[filePath] ||
-              {
-                specifiers: {},
-                defaults: [],
-                namespaces: [],
+            addExportEntry(filePath);
 
-                types: {},
-                type: DependencyType.Export,
-                format: Format.Script,
-              };
             if (
               hasModifier(node.modifiers, ts.SyntaxKind.DefaultKeyword)
             ) {
@@ -248,16 +220,8 @@ export function typescriptExtractDependenciesTransformer(
             node.modifiers &&
             hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
           ) {
-            exports[filePath] = exports[filePath] ||
-              {
-                specifiers: {},
-                defaults: [],
-                namespaces: [],
+            addExportEntry(filePath);
 
-                types: {},
-                type: DependencyType.Export,
-                format: Format.Script,
-              };
             // export interface x {}
             const name = node.name.text;
 
@@ -268,16 +232,8 @@ export function typescriptExtractDependenciesTransformer(
             node.modifiers &&
             hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
           ) {
-            exports[filePath] = exports[filePath] ||
-              {
-                specifiers: {},
-                defaults: [],
-                namespaces: [],
+            addExportEntry(filePath);
 
-                types: {},
-                type: DependencyType.Export,
-                format: Format.Script,
-              };
             // export interface x {}
             const name = node.name.text;
             exports[filePath].types[name] = name;
@@ -290,10 +246,8 @@ export function typescriptExtractDependenciesTransformer(
           if (ts.isStringLiteral(argument)) {
             // import("./x.ts")
             filePath = argument.text;
-            imports[filePath] = imports[filePath] || {
-              type: DependencyType.DynamicImport,
-              format: Format.Script,
-            };
+
+            addImportEntry(filePath, DependencyType.DynamicImport);
           } else {
             console.warn(
               colors.yellow("Warning"),
@@ -309,11 +263,10 @@ export function typescriptExtractDependenciesTransformer(
           const argument = node.arguments[0];
           if (ts.isStringLiteral(argument)) {
             const filePath = argument.text;
+
             // if is url, do not add as dependency
             if (!isURL(filePath)) {
-              const format = getFormat(filePath) || Format.Unknown;
-              imports[filePath] = imports[filePath] ||
-                { type: DependencyType.Fetch, format };
+              addImportEntry(filePath, DependencyType.Fetch);
             }
           }
         } else if (
@@ -323,8 +276,8 @@ export function typescriptExtractDependenciesTransformer(
           const argument = node.arguments?.[0];
           if (argument && ts.isStringLiteral(argument)) {
             const filePath = argument.text;
-            imports[filePath] = imports[filePath] ||
-              { type: DependencyType.WebWorker, format: Format.Script };
+
+            addImportEntry(filePath, DependencyType.WebWorker);
           }
         } else if (
           ts.isCallExpression(node) &&
@@ -336,23 +289,15 @@ export function typescriptExtractDependenciesTransformer(
           const argument = node.arguments?.[0];
           if (argument && ts.isStringLiteral(argument)) {
             const filePath = argument.text;
-            imports[filePath] = imports[filePath] ||
-              { type: DependencyType.ServiceWorker, format: Format.Script };
+
+            addImportEntry(filePath, DependencyType.ServiceWorker);
           }
         } else if (ts.isEnumDeclaration(node)) {
           if (
             node.modifiers &&
             hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
           ) {
-            exports[filePath] = exports[filePath] ||
-              {
-                specifiers: {},
-                defaults: [],
-                namespaces: [],
-                types: {},
-                type: DependencyType.Export,
-                format: Format.Script,
-              };
+            addExportEntry(filePath);
             // export enum x {}
             const identifier = node.name.text;
             const name = node.name.text;

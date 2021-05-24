@@ -1,12 +1,12 @@
 import { resolve } from "./dependency.ts";
-import { assertEquals, tests } from "./test_deps.ts";
+import { assertEquals, tests } from "../test_deps.ts";
 
 tests({
-  name: "typescript transfomer → extract dependencies",
+  name: "dependency",
   tests: () => [
     {
       name: "resolve path",
-      fn: async () => {
+      fn: () => {
         const importMap = {
           imports: {
             "directory/": "my/path/",
@@ -21,7 +21,7 @@ tests({
 
     {
       name: "resolve url",
-      fn: async () => {
+      fn: () => {
         const importMap = {
           imports: {
             "directory/":

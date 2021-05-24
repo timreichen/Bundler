@@ -1,23 +1,18 @@
 import { Bundler } from "./bundler.ts";
-import { Args, colors, fs, ImportMap, path, ts } from "./deps.ts";
+import { Args, colors, fs, path, ts } from "./deps.ts";
 import { invalidSubcommandError, Program } from "./deps.ts";
 import { Graph } from "./graph.ts";
 import { Logger, LogLevel, logLevels } from "./logger.ts";
-import { Plugin } from "./plugins/plugin.ts";
-import { readTextFile, removeRelativePrefix, timestamp } from "./_util.ts";
-import {
-  createDefaultPlugins,
-  defaultTypescriptCompilerOptions,
-} from "./defaults.ts";
+import { OutputMap, Plugin } from "./plugins/plugin.ts";
+import { readTextFile, removeRelativePrefix } from "./_util.ts";
+import { createDefaultPlugins } from "./defaults.ts";
 import { Watcher } from "./watcher.ts";
 
-type Inputs = string[];
-type OutputMap = Record<string, string>;
 type Options = {
-  inputs: Inputs;
+  inputs: string[];
   initialGraph: Graph;
-  compilerOptions: ts.CompilerOptions;
-  importMap: ImportMap;
+  compilerOptions: Deno.CompilerOptions;
+  importMap: Deno.ImportMap;
   outputMap: OutputMap;
   outDirPath: string;
   depsDirPath: string;
@@ -98,7 +93,7 @@ async function createOptions({
   const entries = parseEntries(_, outDir);
 
   const outputMap: OutputMap = {};
-  const inputs: Inputs = [];
+  const inputs: string[] = [];
   for (const { input, output } of entries) {
     inputs.push(input);
     if (output) {
@@ -118,14 +113,9 @@ async function createOptions({
   const config = configFilePath && fs.existsSync(configFilePath)
     ? JSON.parse(await readTextFile(configFilePath))
     : {};
-  const compilerOptions = config.compilerOptions
-    ? ts.convertCompilerOptionsFromJson(
-      config.compilerOptions,
-      Deno.cwd(),
-    ).options
-    : {};
+  const compilerOptions = config.compilerOptions || {};
 
-  const importMap: ImportMap =
+  const importMap: Deno.ImportMap =
     (importMapPath
       ? JSON.parse(await readTextFile(importMapPath))
       : { imports: {} });
@@ -154,39 +144,35 @@ async function bundleCommand(
 ) {
   const options = await createOptions(args);
 
-  let {
-    inputs,
-    initialGraph,
-    compilerOptions,
-    importMap,
-    outputMap,
-    outDirPath,
-    // depsDirPath,
-    // cacheDirPath,
-    cacheFilePath,
-    logLevel,
-    reload,
-    optimize,
-    watch,
-    quiet,
-  } = options;
-
   const plugins: Plugin[] = createDefaultPlugins({
     typescriptCompilerOptions: {
-      // default compiler options
-      ...defaultTypescriptCompilerOptions,
       // custom compiler options
-      ...compilerOptions,
+      ...options.compilerOptions,
     },
   });
 
-  const logger = new Logger({ logLevel, quiet });
+  const logger = new Logger({
+    logLevel: options.logLevel,
+    quiet: options.quiet,
+  });
   const bundler = new Bundler(plugins, { logger });
-  const watcher = new Watcher({ logger: bundler.logger });
+  const watcher = new Watcher();
 
   async function bundleFunction() {
-    const time = performance.now();
     try {
+      let {
+        inputs,
+        initialGraph,
+        importMap,
+        outputMap,
+        outDirPath,
+        // depsDirPath,
+        // cacheDirPath,
+        cacheFilePath,
+        reload,
+        optimize,
+      } = options;
+
       const { cache, graph, bundles } = await bundler.bundle(inputs, {
         importMap,
         graph: initialGraph,
@@ -195,6 +181,7 @@ async function bundleCommand(
         optimize,
         reload,
       });
+
       for (const [cacheFilePath, source] of Object.entries(cache)) {
         await fs.ensureFile(cacheFilePath);
         await Deno.writeTextFile(cacheFilePath, source as string);
@@ -213,15 +200,7 @@ async function bundleCommand(
       await fs.ensureFile(cacheFilePath);
       await Deno.writeTextFile(
         cacheFilePath,
-        JSON.stringify({ graph: graph }, null, " "),
-      );
-      const keys = Object.keys(bundles);
-      const length = keys.length;
-
-      logger.info(
-        colors.brightBlue("Bundle"),
-        length ? `${length} file${length === 1 ? "" : "s"}` : `up-to-date`,
-        colors.dim(colors.italic(`(${timestamp(time)})`)),
+        JSON.stringify({ graph: graph }, null, "  "),
       );
 
       initialGraph = graph;
@@ -229,10 +208,20 @@ async function bundleCommand(
       console.error(error);
     }
 
-    if (watch) {
-      await watcher.watch(Object.keys(initialGraph)).then(() =>
-        bundleFunction()
+    if (options.watch) {
+      options.reload = false;
+      logger.info(
+        colors.brightBlue(`Watcher`),
+        `Process terminated! Restarting on file change...`,
       );
+      watcher.addEventListener("change", async (event: any) => {
+        logger.info(
+          colors.brightBlue(`Watcher`),
+          `File change detected! Restarting!`,
+        );
+        bundleFunction();
+      }, { once: true });
+      watcher.watch(Object.keys(options.initialGraph));
     }
   }
 

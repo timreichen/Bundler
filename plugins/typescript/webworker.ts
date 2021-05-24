@@ -1,17 +1,8 @@
-import { path, Sha256, ts } from "../../deps.ts";
+import { path, Sha256 } from "../../deps.ts";
 import { Context, DependencyType, Item } from "../plugin.ts";
 import { TypescriptTopLevelAwaitModulePlugin } from "./typescript_top_level_await_module.ts";
 
 export class WebWorkerPlugin extends TypescriptTopLevelAwaitModulePlugin {
-  constructor(
-    {
-      compilerOptions = {},
-    }: {
-      compilerOptions?: ts.CompilerOptions;
-    } = {},
-  ) {
-    super({ compilerOptions });
-  }
   async test(item: Item, context: Context) {
     return item.type === DependencyType.WebWorker &&
       await super.test(item, context);

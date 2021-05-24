@@ -1,6 +1,6 @@
-import { ImportMap, path, postcss } from "../../../deps.ts";
+import { path, postcss } from "../../../deps.ts";
 import { addRelativePrefix, isURL } from "../../../_util.ts";
-import { resolve as resolveDependency } from "../../../dependency.ts";
+import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
 import { getBase, resolveBase } from "../_util.ts";
 import { postcssInjectDependenciesPlugin } from "../../css/postcss/inject_dependencies.ts";
 import { getAsset, Graph } from "../../../graph.ts";
@@ -11,7 +11,7 @@ export function posthtmlInjectScriptDependencies(
   bundleInput: string,
   bundleOutput: string,
   { importMap, graph, outDirPath }: {
-    importMap: ImportMap;
+    importMap: Deno.ImportMap;
     graph: Graph;
     outDirPath: string;
   },
@@ -35,6 +35,7 @@ export function posthtmlInjectScriptDependencies(
             importMap,
           );
           const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
+
           node.attrs.src = addRelativePrefix(
             path.relative(bundleDirPath, asset.output),
           );
@@ -80,7 +81,7 @@ export function posthtmlInjectLinkDependencies(
   bundleOutput: string,
   { graph, importMap, outDirPath }: {
     graph: Graph;
-    importMap: ImportMap;
+    importMap: Deno.ImportMap;
     outDirPath: string;
   },
 ) {
@@ -115,7 +116,7 @@ export function posthtmlInjectImageDependencies(
   bundleOutput: string,
   { graph, importMap, outDirPath }: {
     graph: Graph;
-    importMap: ImportMap;
+    importMap: Deno.ImportMap;
     outDirPath: string;
   },
 ) {
@@ -157,10 +158,7 @@ export function posthtmlInjectStyleDependencies(
   const processor = postcss.default([
     ...use,
     postcssInjectImportsPlugin(item, context, use),
-    postcssInjectDependenciesPlugin(bundleInput, asset.output, {
-      graph,
-      outDirPath,
-    }),
+    postcssInjectDependenciesPlugin(bundleInput, asset.output, { graph }),
   ]);
 
   return async (tree: any) => {
@@ -186,7 +184,7 @@ export function posthtmlInjectInlineStyleDependencies(
   use: postcss.AcceptedPlugin[],
 ) {
   const bundleInput = item.history[0];
-  const { graph, outDirPath } = context;
+  const { graph } = context;
 
   const asset = getAsset(graph, bundleInput, item.type);
 
@@ -195,7 +193,6 @@ export function posthtmlInjectInlineStyleDependencies(
     // postcssInjectImportsPlugin(chunk, context, use), /* disabled because @import are not possible in script attributes */
     postcssInjectDependenciesPlugin(bundleInput, asset.output, {
       graph,
-      outDirPath,
     }),
   ]);
 

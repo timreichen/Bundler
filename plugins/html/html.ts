@@ -1,6 +1,6 @@
 import { path, postcss, posthtml, Sha256 } from "../../deps.ts";
 import { getAsset } from "../../graph.ts";
-import { readTextFile } from "../../_util.ts";
+import { readTextFile, removeRelativePrefix } from "../../_util.ts";
 import {
   Chunk,
   ChunkList,
@@ -40,8 +40,8 @@ export class HtmlPlugin extends Plugin {
     const input = item.history[0];
     return input.endsWith(".html");
   }
-  async readSource(filePath: string) {
-    return readTextFile(filePath);
+  async readSource(input: string) {
+    return readTextFile(input);
   }
   async createAsset(
     item: Item,
@@ -77,7 +77,7 @@ export class HtmlPlugin extends Plugin {
 
     const extension = path.extname(input);
     return {
-      filePath: input,
+      input,
       output: outputMap[input] ||
         path.join(
           depsDirPath,
@@ -122,18 +122,18 @@ export class HtmlPlugin extends Plugin {
     bundleChunk: Chunk,
     context: Context,
   ) {
-    const { bundler, reload, graph, outDirPath } = context;
+    const { bundler, reload, graph } = context;
     const bundleItem = bundleChunk.item;
     const { history, type } = bundleItem;
     const bundleInput = history[0];
     const bundleAsset = getAsset(graph, bundleInput, type);
 
-    const { filePath, output } = bundleAsset;
+    const { input, output } = bundleAsset;
 
     try {
       const bundleNeedsUpdate = reload == true ||
         (Array.isArray(reload) && reload.includes(bundleInput)) ||
-        Deno.statSync(output).mtime! < Deno.statSync(filePath).mtime!;
+        Deno.statSync(output).mtime! < Deno.statSync(input).mtime!;
       if (!bundleNeedsUpdate) return;
     } catch (error) {
       if (!(error instanceof Deno.errors.NotFound)) {
@@ -148,10 +148,19 @@ export class HtmlPlugin extends Plugin {
     ) as string;
 
     const bundleOutput = bundleAsset.output;
+
+    let basePath = path.relative(context.outDirPath, path.dirname(output));
+    if (!basePath.startsWith("/")) {
+      basePath = "/" + basePath;
+    }
+    if (!basePath.endsWith("/")) {
+      basePath += "/";
+    }
+
     const processor = posthtml([
-      posthtmlInjectScriptDependencies(filePath, bundleOutput, context),
-      posthtmlInjectLinkDependencies(filePath, bundleOutput, context),
-      posthtmlInjectImageDependencies(filePath, bundleOutput, context),
+      posthtmlInjectScriptDependencies(input, bundleOutput, context),
+      posthtmlInjectLinkDependencies(input, bundleOutput, context),
+      posthtmlInjectImageDependencies(input, bundleOutput, context),
       posthtmlInjectStyleDependencies(
         bundleItem,
         context,
@@ -162,10 +171,9 @@ export class HtmlPlugin extends Plugin {
         context,
         this.use,
       ),
-      posthtmlInjectBase(context),
+      posthtmlInjectBase(basePath),
     ]);
     const { html } = await processor.process(source as string);
-    // await bundler.setCache(bundleInput, bundleInput, html, context);
 
     return html;
   }

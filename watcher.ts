@@ -1,15 +1,10 @@
-import { colors, fs, Sha256 } from "./deps.ts";
-import { Logger, logLevels } from "./logger.ts";
+import { fs, Sha256 } from "./deps.ts";
 import { isURL, readFile } from "./_util.ts";
 
-export class Watcher {
-  logger: Logger;
+export class Watcher extends EventTarget {
   hashes: Record<string, string>;
-  constructor(
-    { logger = new Logger({ logLevel: logLevels.info }) }: { logger?: Logger } =
-      {},
-  ) {
-    this.logger = logger;
+  constructor() {
+    super();
     this.hashes = {};
   }
   async watch(filePaths: string[]) {
@@ -28,31 +23,16 @@ export class Watcher {
 
     const watcher = Deno.watchFs(paths);
     // only reload on first time when watched
-    this.logger.info(
-      colors.brightBlue(`Watcher`),
-      `Process terminated! Restarting on file change...`,
-    );
 
-    loop:
     for await (const { kind, paths } of watcher) {
-      // checks if actual file content changed
-      if (kind === "modify") {
-        for (const filePath of paths) {
-          const hash = new Sha256().update(await readFile(filePath))
-            .hex();
-          if (this.hashes[filePath] !== hash) {
-            this.hashes[filePath] = hash;
-            break loop;
-          }
+      for (const filePath of paths) {
+        const hash = new Sha256().update(await readFile(filePath))
+          .hex();
+        if (this.hashes[filePath] !== hash) {
+          this.hashes[filePath] = hash;
+          this.dispatchEvent(new CustomEvent("change", { detail: { paths } }));
         }
-      } else {
-        break loop;
       }
     }
-
-    this.logger.info(
-      colors.brightBlue(`Watcher`),
-      `File change detected! Restarting!`,
-    );
   }
 }

@@ -1,4 +1,4 @@
-import { ImportMap, ts } from "../../../deps.ts";
+import { ts } from "../../../deps.ts";
 import { Graph } from "../../../graph.ts";
 import {
   assertEquals,
@@ -16,7 +16,9 @@ tests({
     {
       name: "importMap",
       fn() {
-        const importMap: ImportMap = { imports: { "src/": "custom/path/" } };
+        const importMap: Deno.ImportMap = {
+          imports: { "src/": "custom/path/" },
+        };
         const input = "src/a.ts";
         const resolvedInput = "custom/path/a.ts";
         const bundleOutput = "dist/a.js";
@@ -28,7 +30,7 @@ tests({
         const graph: Graph = {
           [resolvedInput]: {
             [DependencyType.Import]: {
-              filePath: resolvedInput,
+              input: resolvedInput,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -48,7 +50,7 @@ tests({
           },
           [resolvedDependency]: {
             [DependencyType.Import]: {
-              filePath: resolvedDependency,
+              input: resolvedDependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -84,7 +86,7 @@ tests({
     {
       name: "namespace import",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -94,7 +96,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -114,7 +116,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Import]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -151,7 +153,7 @@ tests({
     {
       name: "named import",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -161,7 +163,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -181,7 +183,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Import]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -217,7 +219,7 @@ tests({
     {
       name: "default import",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -227,7 +229,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -247,7 +249,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Import]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -283,7 +285,7 @@ tests({
     {
       name: "module specifier import",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -293,7 +295,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -313,7 +315,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Import]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -349,7 +351,7 @@ tests({
     {
       name: "dynamic import",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -359,7 +361,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -379,7 +381,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.DynamicImport]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -415,7 +417,7 @@ tests({
     {
       name: "dynamic import warn",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -425,7 +427,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -445,7 +447,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Import]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -481,7 +483,7 @@ tests({
     {
       name: "type export",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -491,7 +493,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -511,7 +513,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Export]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -547,7 +549,7 @@ tests({
     {
       name: "namespace export",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -557,7 +559,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -577,7 +579,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Export]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -613,7 +615,7 @@ tests({
     {
       name: "namespace alias export",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -623,7 +625,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -643,7 +645,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Export]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -682,7 +684,7 @@ tests({
     {
       name: "forward named export",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -692,7 +694,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -712,7 +714,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Export]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -748,7 +750,7 @@ tests({
     {
       name: "WebWorker",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -758,7 +760,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -778,7 +780,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.WebWorker]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -817,7 +819,7 @@ tests({
     {
       name: "fetch",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -827,7 +829,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -847,7 +849,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Fetch]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -883,7 +885,7 @@ tests({
     {
       name: "fetch level down",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "a.js";
         const dependency = "src/b.ts";
@@ -893,7 +895,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -913,7 +915,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Fetch]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -949,7 +951,7 @@ tests({
     {
       name: "fetch level up",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -959,7 +961,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -979,7 +981,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Fetch]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,
@@ -1015,7 +1017,7 @@ tests({
     {
       name: "ServiceWorker",
       fn() {
-        const importMap: ImportMap = { imports: {} };
+        const importMap: Deno.ImportMap = { imports: {} };
         const input = "src/a.ts";
         const bundleOutput = "dist/a.js";
         const dependency = "src/b.ts";
@@ -1025,7 +1027,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: bundleOutput,
               dependencies: {
                 imports: {
@@ -1045,7 +1047,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.ServiceWorker]: {
-              filePath: dependency,
+              input: dependency,
               output: dependencyOutput,
               dependencies: { imports: {}, exports: {} },
               format: Format.Script,

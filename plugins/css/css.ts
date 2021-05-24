@@ -10,7 +10,7 @@ import {
   Plugin,
 } from "../plugin.ts";
 import { postcssExtractDependenciesPlugin } from "./postcss/extract_dependencies.ts";
-import { resolve as resolveCache } from "../../cache.ts";
+import { resolve as resolveCache } from "../../cache/cache.ts";
 import { postcssInjectImportsPlugin } from "./postcss/inject_imports.ts";
 import { postcssInjectDependenciesPlugin } from "./postcss/inject_dependencies.ts";
 import { getAsset } from "../../graph.ts";
@@ -50,8 +50,8 @@ export class CssPlugin extends Plugin {
 
     return css;
   }
-  async readSource(filePath: string) {
-    return await readTextFile(filePath);
+  async readSource(input: string) {
+    return await readTextFile(input);
   }
   async createAsset(
     item: Item,
@@ -77,7 +77,7 @@ export class CssPlugin extends Plugin {
     const extension = path.extname(input);
 
     return {
-      filePath: input,
+      input,
       output: outputMap[input] ||
         path.join(
           depsDirPath,
@@ -111,9 +111,8 @@ export class CssPlugin extends Plugin {
       };
 
       if (
-        input === chunkInput || format === Format.Style
+        input !== chunkInput && format !== Format.Style
       ) {
-      } else {
         chunkList.push(newItem);
       }
     }

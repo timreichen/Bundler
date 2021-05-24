@@ -48,7 +48,7 @@ export class WebManifestPlugin extends JsonPlugin {
 
     const extension = path.extname(input);
     return {
-      filePath: input,
+      input,
       output: outputMap[input] ||
         path.join(
           depsDirPath,
@@ -100,7 +100,7 @@ export class WebManifestPlugin extends JsonPlugin {
     const exists = await fs.exists(asset.output);
     const needsUpdate = reload || !exists ||
       Deno.statSync(asset.output).mtime! <
-        Deno.statSync(asset.filePath).mtime!;
+        Deno.statSync(asset.input).mtime!;
 
     if (!needsUpdate) return;
     const bundleOutput = path.dirname(asset.output);

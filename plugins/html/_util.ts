@@ -34,17 +34,24 @@ export function setBase(tree: any, href: string) {
     item instanceof Object && item.tag === "head"
   );
   if (!head) {
-    head = { tag: "head", content: [] };
+    head = { tag: "head" };
     html.content.push(head);
   }
-  let base = head?.content.find((item: any) =>
+  head.content ||= [];
+
+  let index = head.content.findIndex((item: any) =>
     item instanceof Object && item.tag === "base"
   );
-  if (base) {
-    base.attrs ||= {};
-    base.attrs.href = href;
-  } else {
-    base = { tag: "base", attrs: { href } };
-    head.content.unshift(base);
+  let base = { tag: "base", attrs: { href } };
+  if (index !== -1) {
+    const baseItem = head.content.splice(index, 1);
+    if (baseItem.attrs) {
+      base.attrs = {
+        ...baseItem.attrs,
+        ...base.attrs,
+      };
+    }
   }
+
+  head.content.unshift(base);
 }

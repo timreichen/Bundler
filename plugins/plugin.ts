@@ -1,16 +1,17 @@
-import { ImportMap, path } from "../deps.ts";
+import { path } from "../deps.ts";
 import { Bundler } from "../bundler.ts";
 import { Asset, Graph } from "../graph.ts";
 import { isURL } from "../_util.ts";
+import { Logger } from "../logger.ts";
 
 export enum DependencyType {
-  Import = "import",
-  Export = "export",
+  Import = "Import",
+  Export = "Export",
 
-  DynamicImport = "dynamicImport",
-  Fetch = "fetch",
-  WebWorker = "webWorker",
-  ServiceWorker = "serviceWorker",
+  DynamicImport = "DynamicImport",
+  Fetch = "Fetch",
+  WebWorker = "WebWorker",
+  ServiceWorker = "ServiceWorker",
 }
 
 export enum Format {
@@ -60,6 +61,7 @@ export type Source = unknown;
 export type Sources = Record<string, Source>;
 
 export type Bundles = Record<string, Source>;
+export type OutputMap = Record<string, string>;
 
 export type ChunkList = Item[];
 
@@ -99,14 +101,14 @@ export type Dependencies = {
 };
 
 export type Context = {
-  importMap: ImportMap;
+  importMap: Deno.ImportMap;
   cacheDirPath: string;
   depsDirPath: string;
   outDirPath: string;
   reload: boolean | string[];
   optimize: boolean;
   quiet: boolean;
-  outputMap: Record<string, string>;
+  outputMap: OutputMap;
 
   graph: Graph;
   chunks: Chunks;
@@ -115,11 +117,13 @@ export type Context = {
   sources: Sources;
   cache: Cache;
 
+  logger: Logger;
+
   bundler: Bundler;
 };
 
 export interface Plugin {
-  test(item: Item, context: Context): Promise<Boolean>;
+  test(item: Item, context: Context): Promise<boolean>;
   readSource?(
     input: string,
     context: Context,
@@ -138,6 +142,8 @@ export interface Plugin {
     context: Context,
     chunkList: ChunkList,
   ): Promise<Chunk>;
+  splitChunks?(item: Item, context: Context): Promise<Item[]>;
+
   createBundle?(
     chunk: Chunk,
     context: Context,

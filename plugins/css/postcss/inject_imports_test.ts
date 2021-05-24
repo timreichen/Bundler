@@ -1,6 +1,7 @@
 import { Bundler } from "../../../bundler.ts";
 import { postcss } from "../../../deps.ts";
 import { Graph } from "../../../graph.ts";
+import { Logger, logLevels } from "../../../logger.ts";
 import { assertEquals, tests } from "../../../test_deps.ts";
 import { Chunk, Context, DependencyType, Format } from "../../plugin.ts";
 import { postcssInjectImportsPlugin } from "./inject_imports.ts";
@@ -20,7 +21,7 @@ tests({
         const graph: Graph = {
           [input]: {
             [DependencyType.Import]: {
-              filePath: input,
+              input,
               output: "dist/input.css",
               dependencies: {
                 imports: {
@@ -40,7 +41,7 @@ tests({
           },
           [dependency]: {
             [DependencyType.Import]: {
-              filePath: dependency,
+              input: dependency,
               output: "dist/dependency.css",
               dependencies: { imports: {}, exports: {} },
               format: Format.Style,
@@ -74,6 +75,7 @@ tests({
           cache: {},
           graph,
           chunks: [],
+          logger: new Logger({ logLevel: logLevels.info }),
           bundles: {},
         };
 

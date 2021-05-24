@@ -79,7 +79,7 @@ Bundler is a web bundler for deno. It allows to write code for the web like we a
 
 ### But there is _deno bundle_ and _Deno.emit_, right?
 
-`deno bundle` CLI command and `Deno.emit` can transpile and bundle a file to a standalone module. This might work for some occations but is limited to script files. Bundler uses `Deno.emit` and typescirpt compiler API under the hood to optimize codefor the web.
+`deno bundle` CLI command and `Deno.emit` can transpile and bundle a file to a standalone module. This might work for some occations but is limited to script files. Bundler uses `Deno.emit` and typescirpt compiler API under the hood to optimize code for the web.
 
 ## Getting Started
 

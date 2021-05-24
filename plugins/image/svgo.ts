@@ -6,7 +6,7 @@ export class SvgoPlugin extends Plugin {
     const input = item.history[0];
     return item.format === Format.Image && input.endsWith(".svg");
   }
-  async optimizeBundle(
+  optimizeBundle(
     output: string,
     context: Context,
   ) {

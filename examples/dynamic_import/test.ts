@@ -53,11 +53,11 @@ Deno.test({
 
     assertStringIncludes(
       indexSource,
-      `const { message  } = await import("./e447e137aeff698a0e83a3673ce8e12a50a55d7e0f1888b83396be6950ef07bd.js").then(async (data)=>await data.default`,
+      `const { message } = await import("./e447e137aeff698a0e83a3673ce8e12a50a55d7e0f1888b83396be6950ef07bd.js").then(async (data) => await data.default`,
     );
     assertStringIncludes(
       indexSource,
-      `export default (async ()=>{`,
+      `export default (async () => {`,
     );
     const messageSource = bundles[
       "dist/deps/e447e137aeff698a0e83a3673ce8e12a50a55d7e0f1888b83396be6950ef07bd.js"
@@ -65,13 +65,11 @@ Deno.test({
 
     assertStringIncludes(
       messageSource,
-      `export default (async ()=>{`,
+      `export default (async () => {`,
     );
     assertStringIncludes(
       messageSource,
-      `return {
-        message
-    };`,
+      `return { message };`,
     );
   },
 });

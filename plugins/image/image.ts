@@ -8,8 +8,8 @@ export class ImagePlugin extends FilePlugin {
     const input = item.history[0];
     return /\.(png|jpe?g|ico|gif)$/.test(input);
   }
-  async readSource(filePath: string, context: Context) {
-    return await readFile(filePath);
+  async readSource(input: string, context: Context) {
+    return await readFile(input);
   }
   async createAsset(
     item: Item,

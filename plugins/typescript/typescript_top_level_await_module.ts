@@ -1,21 +1,17 @@
-import { colors, fs, ImportMap, path, ts } from "../../deps.ts";
-import { addRelativePrefix, timestamp } from "../../_util.ts";
-import { Chunk, Context, Dependency, Format, Item } from "../plugin.ts";
-import { TypescriptPlugin } from "./typescript.ts";
-import { Asset, getAsset, Graph } from "../../graph.ts";
-import { typescriptInjectDependenciesTranformer } from "./transformers/inject_dependencies.ts";
 import { typescriptTransformDynamicImportTransformer } from "./transformers/dynamic_imports.ts";
-import { typescriptTransformImportsExportsTransformer } from "./transformers/imports_exports.ts";
-import { typescriptRemoveModifiersTransformer } from "./transformers/remove_modifiers.ts";
-import { typescriptInjectIdentifiersTransformer } from "./transformers/inject_identifiers.ts";
 import { typescriptExtractIdentifiersTransformer } from "./transformers/extract_identifiers.ts";
+import { typescriptTransformImportsExportsTransformer } from "./transformers/imports_exports.ts";
+import { typescriptInjectDependenciesTranformer } from "./transformers/inject_dependencies.ts";
+import { typescriptInjectIdentifiersTransformer } from "./transformers/inject_identifiers.ts";
+import { typescriptRemoveModifiersTransformer } from "./transformers/remove_modifiers.ts";
 import { getIdentifier } from "./transformers/_util.ts";
-
-export const defaultCompilerOptions: ts.CompilerOptions = {
-  // needed for plugin to work correctly
-  target: ts.ScriptTarget.Latest,
-  module: ts.ModuleKind.ESNext,
-};
+import { colors, fs, path, ts } from "../../deps.ts";
+import { Asset, getAsset, Graph } from "../../graph.ts";
+import { Logger } from "../../logger.ts";
+import { addRelativePrefix, timestamp } from "../../_util.ts";
+import { Chunk, Context, Format, Item } from "../plugin.ts";
+import { TypescriptPlugin } from "./typescript.ts";
+import { topologicalSort } from "./_util.ts";
 
 const printer: ts.Printer = ts.createPrinter({ removeComments: false });
 
@@ -112,7 +108,7 @@ function createIdentifierMap(
     if (identifier === "default") {
       value = "_default";
     }
-    let newIdentifier = createIdentifier(
+    const newIdentifier = createIdentifier(
       value,
       blacklistIdentifiers,
     );
@@ -144,7 +140,7 @@ function createTopLevelAwaitModuleNode(
   sourceFile: ts.SourceFile,
   importIdentifierMap: Map<string, string>,
   exportIdentifierMap: Record<string, string>,
-  { graph, importMap }: { graph: Graph; importMap: ImportMap },
+  { graph, importMap }: { graph: Graph; importMap: Deno.ImportMap },
 ) {
   // these identifierMap are reserved for constants tha represent imports
   const blacklistIdentifiers = new Set(importIdentifierMap.values());
@@ -175,13 +171,15 @@ function createTopLevelAwaitModuleNode(
     typescriptInjectDependenciesTranformer(item, { graph, importMap }),
   ]);
 
+  if (diagnostics?.length) throw Error(diagnostics![0].messageText as string);
+
   const exportNamespaces: string[] = [];
 
   Object.entries(asset.dependencies.exports).forEach(
-    ([filePath, { namespaces }]: any) => {
-      namespaces.forEach((namespace: string) => {
+    ([input, { namespaces }]) => {
+      (namespaces as string[]).forEach((namespace) => {
         if (namespace === undefined) {
-          const identifier = getIdentifier(importIdentifierMap, filePath);
+          const identifier = getIdentifier(importIdentifierMap, input);
           exportNamespaces.push(identifier);
         } else {
           exportIdentifierMap[namespace] = namespace;
@@ -199,163 +197,71 @@ function createTopLevelAwaitModuleNode(
   return functionNode;
 }
 
-/**
-  * check whether dependency is shared between chunks. If so, make sure that dependency creates its own chunk.
-  * This prevents duplicate code across multiple bundle files
-  */
-// function isSharedChunk(
-//   chunks: Chunk[],
-//   bundleInput: string,
-//   dependency: string,
-// ) {
-//   return chunks.some((chunk) => {
-//     return chunk.history[0] !== dependency &&
-//       chunk.history[0] !== bundleInput && chunk.dependencies.some((dep) =>
-//         dep.history[0] === dependency
-//       );
-//   });
-// }
-// function createSharedChunk(
-//   chunks: Chunk[],
-//   dependency: string,
-//   asset: Asset,
-//   item: Item,
-// ) {
-//   const dependencies = Object.entries(asset.dependencies.imports).map(
-//       ([input, { type, format }]) => {
-//         return {
-//           history: [input, ...item.history],
-//           type,
-//           format,
-//         };
-//       },
-//     ),
-//     dependencyChunk: Chunk = new Map();
-//   const newItem = {
-//     history: [dependency, ...item.history],
-//     format: Format.Script,
-//     type: DependencyType.Import,
-//   };
-
-//   dependencyChunk.set(newItem, newDependencyItem);
-//   chunks.push(dependencyChunk);
-//   return dependencyChunk;
-// }
-
-function topologicalSort(items: Item[], graph: Graph) {
-  const result: Item[] = [];
-  const sorted: Set<string> = new Set();
-  const itemInputs = items.map((item) => item.history[0]);
-
-  function sort(
-    item: Item,
-  ) {
-    const input = item.history[0];
-    if (sorted.has(input)) return;
-    sorted.add(input);
-
-    const asset = getAsset(graph, input, item.type);
-    const dependencies: [string, Dependency][] = [
-      ...Object.entries(asset.dependencies.imports),
-      ...Object.entries(asset.dependencies.exports),
-    ].filter(([dependency]) => itemInputs.includes(dependency));
-
-    for (let [dependency, dependencyItem] of dependencies) {
-      if (
-        !sorted.has(dependency)
-      ) {
-        const newDependencyItem: Item = {
-          history: [dependency, ...item.history],
-          type: dependencyItem.type,
-          format: dependencyItem.format,
-        };
-        sort(newDependencyItem);
-      }
-    }
-    result.push(item);
-  }
-
-  for (const item of items) {
-    sort(item);
-  }
-  return result;
+async function denoTranspile(
+  source: string,
+  compilerOptions: Deno.CompilerOptions,
+) {
+  const name = "/x.tsx";
+  const { files } = await Deno.emit(name, {
+    sources: {
+      [name]: source,
+    },
+    compilerOptions: {
+      target: "esnext",
+      module: "esnext",
+      strict: false,
+      ...compilerOptions,
+    },
+    check: false,
+  });
+  return files[`file://${name}.js`];
+}
+function tsTranspile(
+  source: string,
+  compilerOptions: ts.CompilerOptions,
+) {
+  return ts.transpile(source, {
+    target: ts.ScriptTarget.ESNext,
+    module: ts.ModuleKind.ESNext,
+    ...compilerOptions,
+  });
+}
+async function transpile(
+  source: string,
+  compilerOptions: Deno.CompilerOptions,
+) {
+  // return await denoTranspile(source, compilerOptions);
+  const tsCompilerOptions =
+    ts.convertCompilerOptionsFromJson({ compilerOptions }, Deno.cwd())
+      .options;
+  return await tsTranspile(source, {
+    jsx: ts.JsxEmit.React,
+    jsxFactory: "React.createElement",
+    jsxFragmentFactory: "React.Fragment",
+    ...tsCompilerOptions,
+  });
 }
 
 export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
-  constructor(
-    {
-      compilerOptions = {},
-    }: {
-      compilerOptions?: ts.CompilerOptions;
-    } = {},
-  ) {
-    super({ compilerOptions });
-  }
-
-  async createBundle(
-    bundleChunk: Chunk,
-    context: Context,
-  ) {
+  async createBundle(bundleChunk: Chunk, context: Context) {
+    const { chunks, graph, importMap, reload, bundler, logger } = context;
     const bundleItem = bundleChunk.item;
     const bundleInput = bundleItem.history[0];
-    const { chunks, graph, importMap, reload, bundler } = context;
 
-    bundler.logger.debug("Bundle", bundleInput);
+    const importItems: Record<string, Item> = {};
+    const inlineItems: Record<string, Item> = {};
 
-    const bundleAsset = getAsset(graph, bundleInput, bundleItem.type);
-
-    const bundleDependencies = [
-      ...Object.entries(bundleAsset.dependencies.imports),
-      ...Object.entries(bundleAsset.dependencies.exports),
-    ];
-
-    for (const chunk of chunks) {
-      if (chunk === bundleChunk) continue;
-      const item = chunk.item;
-      const asset = getAsset(graph, item.history[0], item.type);
-      const dependencies = new Set([
-        ...Object.keys(asset.dependencies.imports),
-        ...Object.keys(asset.dependencies.exports),
-      ]);
-      const sharedDependencies = bundleDependencies.filter(([dependency]) =>
-        dependencies.has(dependency)
-      );
-
-      for (const [sharedDependency, { type, format }] of sharedDependencies) {
-        if (
-          chunks.some((chunk) => chunk.item.history[0] === sharedDependency)
-        ) {
-          continue;
-        }
-        const sharedItem = {
-          history: [sharedDependency, ...item.history],
-          type,
-          format,
-        };
-        const sharedChunk = await bundler.createChunk(
-          sharedItem,
-          context,
-          [],
-        );
-        chunks.push(sharedChunk);
-        bundler.logger.debug("Split chunk", sharedDependency);
-        bundleChunk.dependencyItems.push(sharedItem);
-      }
-    }
-
-    let bundleNeedsUpdate = false;
-
-    const importItems: Map<string, Item> = new Map();
-    const inlineItems: Map<string, Item> = new Map();
+    inlineItems[bundleInput] = bundleItem;
 
     const importIdentifierMap: Map<string, string> = new Map();
 
-    inlineItems.set(bundleChunk.item.history[0], bundleChunk.item);
+    const dependencyItems = [...bundleChunk.dependencyItems];
 
-    let dependencyItems = [...bundleChunk.dependencyItems];
     for (const dependencyItem of dependencyItems) {
-      const input = dependencyItem.history[0];
-      const asset = getAsset(graph, input, dependencyItem.type);
+      const { history, type } = dependencyItem;
+      const input = history[0];
+
+      const asset = getAsset(graph, input, type);
 
       addIdentifiers(importIdentifierMap, [
         input,
@@ -366,26 +272,59 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       if (
         chunks.some((chunk) => chunk.item.history[0] === input)
       ) {
-        if (importItems.has(input)) continue;
-        importItems.set(input, dependencyItem);
-        bundler.logger.debug("Import", input);
+        if (importItems[input]) continue;
+        importItems[input] = dependencyItem;
+        logger.debug(
+          colors.dim(`→`),
+          colors.dim(`Import`),
+          colors.dim(input),
+          colors.dim(
+            `{ ${Format[dependencyItem.format]} }`,
+          ),
+        );
       } else {
-        if (inlineItems.has(input)) continue;
-        const chunk = await bundler.createChunk(dependencyItem, context, []);
+        if (inlineItems[input]) continue;
+        inlineItems[input] = dependencyItem;
+        logger.debug(
+          colors.dim(`→`),
+          colors.dim(`Inline`),
+          colors.dim(input),
+          colors.dim(
+            `{ ${Format[dependencyItem.format]} }`,
+          ),
+        );
+        const chunk = await bundler.createChunk(dependencyItem, {
+          ...context,
+          logger: new Logger({
+            logLevel: logger.logLevel,
+            quiet: true,
+          }),
+        }, []);
         dependencyItems.push(...chunk.dependencyItems);
-        inlineItems.set(input, dependencyItem);
-        bundler.logger.debug("Inline", input);
       }
     }
 
-    const sortedInlineItems = topologicalSort([...inlineItems.values()], graph);
+    logger.debug(
+      colors.dim(`→`),
+      colors.dim(`Export`),
+      colors.dim(bundleInput),
+      colors.dim(
+        `{ ${Format[bundleItem.format]} }`,
+      ),
+    );
 
-    addIdentifiers(importIdentifierMap, [bundleInput]);
+    let bundleNeedsUpdate = false;
+
+    const bundleAsset = getAsset(graph, bundleInput, bundleItem.type);
+
+    const sortedInlineItems = topologicalSort(
+      Object.values(inlineItems),
+      graph,
+    );
 
     const bundleSources: Record<string, string> = {};
 
     for (const dependencyItem of sortedInlineItems) {
-      const time = performance.now();
       const { history, type } = dependencyItem;
       const input = history[0];
 
@@ -398,12 +337,13 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
         !await bundler.hasCache(bundleInput, input, context);
 
       if (needsUpdate) {
-        const t1 = performance.now();
+        const transformTime = performance.now();
 
         const { bundler } = context;
         bundleNeedsUpdate = true;
 
-        let newSourceFile: any;
+        let newSourceFile: ts.SourceFile | undefined;
+
         switch (asset.format) {
           case Format.Script: {
             const sourceFile = await bundler.transformSource(
@@ -415,11 +355,11 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
             const exportIdentifierMap: Record<string, string> = {};
 
             Object.entries(asset.dependencies.exports).forEach(
-              ([specifier, exports]: any) => {
+              ([specifier, exports]) => {
                 Object.entries(exports.specifiers)
-                  .forEach(([key, value]: any) => {
+                  .forEach(([key, value]) => {
                     if (specifier === input) {
-                      exportIdentifierMap[key] = value;
+                      exportIdentifierMap[key] = value as string;
                     } else {
                       exportIdentifierMap[key] = key;
                     }
@@ -430,11 +370,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
               },
             );
 
-            // const isModule = [
-            //   ...Object.keys(asset.dependencies.imports),
-            //   ...Object.keys(asset.dependencies.exports),
-            // ].length > 0;
-
             const functionNode = createTopLevelAwaitModuleNode(
               bundleItem,
               asset,
@@ -443,8 +378,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
               exportIdentifierMap,
               { graph, importMap },
             );
-
-            newSourceFile = sourceFile;
 
             if (input === bundleInput) {
               const defaultExportNode = createDefaultExportNode(functionNode);
@@ -512,7 +445,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
               exportIdentifierMap,
               { graph, importMap },
             );
-
             const identifier = getIdentifier(importIdentifierMap, input);
             const variableDeclaration = ts.factory.createVariableStatement(
               undefined,
@@ -587,78 +519,40 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
             break;
           }
         }
+
         if (!newSourceFile) {
           throw new Error(
             `newSourceFile is invalid: ${input} in ${bundleInput}`,
           );
         }
-        context.bundler.logger.trace(
-          "Transform",
-          input,
-          colors.dim(colors.italic(`(${timestamp(t1)})`)),
-        );
-        const t2 = performance.now();
-        const source = printer.printList(
-          ts.ListFormat.SourceFileStatements,
-          newSourceFile.statements,
-          newSourceFile,
-        );
-        context.bundler.logger.trace(
-          "Print",
-          input,
-          colors.dim(colors.italic(`(${timestamp(t2)})`)),
+
+        logger.trace(
+          colors.dim(`→`),
+          colors.dim("Transform"),
+          colors.dim(input),
+          colors.dim(colors.italic(`(${timestamp(transformTime)})`)),
         );
 
-        const t3 = performance.now();
+        const printTime = performance.now();
+        const source = printer.printFile(newSourceFile);
 
-        // const filePath = `/mod.tsx`;
-        //   console.log(source);
+        const commentedSource = `/* ${input} */\n${source}`;
 
-        // const { files } = await Deno.emit(filePath, {
-        //   sources: {
-        //     [filePath]: source,
-        //   },
-        //   check: false,
-        //   // compilerOptions: this.compilerOptions
-        // });
-        // console.log({ files });
-
-        // const transpiledFilePath = `file://${filePath}.js`;
-        // const transpiledSource = files[transpiledFilePath];
-        const transpiledSource = ts.transpile(source, {
-          ...defaultCompilerOptions,
-          ...this.compilerOptions,
-        });
-        context.bundler.logger.trace(
-          "Transpile",
-          input,
-          colors.dim(colors.italic(`(${timestamp(t3)})`)),
+        logger.trace(
+          colors.dim(`→`),
+          colors.dim("Print"),
+          colors.dim(input),
+          colors.dim(colors.italic(`(${timestamp(printTime)})`)),
         );
 
-        if (transpiledSource === undefined) {
-          throw new Error(
-            `transpiledSource must be a string: ${input} in ${bundleInput}`,
-          );
-        }
-        context.bundler.logger.debug(
-          colors.yellow(`Update`),
-          input,
-          colors.dim(colors.italic(`(${timestamp(time)})`)),
-        );
-        const commentedTranspiledSource = `/* ${input} */\n${transpiledSource}`;
         await bundler.setCache(
           bundleInput,
           input,
-          commentedTranspiledSource,
+          commentedSource,
           context,
         );
-        bundleSources[input] = commentedTranspiledSource;
+        bundleSources[input] = commentedSource;
       } else {
-        context.bundler.logger.debug(
-          colors.green(`up-to-date`),
-          input,
-          colors.dim(colors.italic(`(${timestamp(time)})`)),
-        );
         const source = await bundler.getCache(bundleInput, input, context);
         if (source === undefined) {
           throw Error(`cache file for input not found: '${input}'`);
@@ -672,7 +566,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       return;
     }
 
-    const importNodes = [...importItems.values()].map(
+    const importNodes = Object.values(importItems).map(
       (importItem) => {
         const { history, type } = importItem;
         const input = history[0];
@@ -694,36 +588,84 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
       },
     );
 
-    // const statements = Object.entries(bundleSources)
-    //   .flatMap(([input, source]) => {
-    //     const sourceFile = ts.createSourceFile(
-    //       input,
-    //       source,
-    //       ts.ScriptTarget.Latest,
-    //       undefined,
-    //       ts.ScriptKind.JS,
-    //     );
-
-    //     ts.addSyntheticLeadingComment(
-    //       sourceFile.getChildAt(0),
-    //       ts.SyntaxKind.MultiLineCommentTrivia,
-    //       ` ${input} `,
-    //       true,
-    //     );
-    //     return sourceFile.getChildren(sourceFile) as ts.Statement[];
-    //   });
-
     const sourceFile = ts.factory.createSourceFile(
-      [
-        ...importNodes,
-        // ...statements,
-      ],
+      importNodes,
       ts.createToken(ts.SyntaxKind.EndOfFileToken),
       ts.NodeFlags.None,
     );
 
-    return `${printer.printFile(sourceFile)}\n${
-      Object.values(bundleSources).join("\n")
-    }`;
+    const moduleString = [
+      printer.printFile(sourceFile),
+      ...Object.values(bundleSources),
+    ].join("\n");
+
+    const transpileTime = performance.now();
+    const transpiledSource = await transpile(
+      moduleString,
+      this.compilerOptions,
+    );
+
+    logger.trace(
+      colors.dim(`→`),
+      colors.dim("Transpile"),
+      colors.dim(bundleInput),
+      colors.dim(colors.italic(`(${timestamp(transpileTime)})`)),
+    );
+
+    return transpiledSource;
+  }
+
+  async splitChunks(bundleItem: Item, context: Context) {
+    const { chunks, graph, bundler, logger } = context;
+
+    const bundleInput = bundleItem.history[0];
+    const bundleAsset = getAsset(graph, bundleInput, bundleItem.type);
+
+    const bundleDependencies = [
+      ...Object.entries(bundleAsset.dependencies.imports),
+      ...Object.entries(bundleAsset.dependencies.exports),
+    ];
+
+    const sharedItems: Item[] = [];
+
+    for (const chunk of chunks) {
+      const item = chunk.item;
+      if (item === bundleItem) continue;
+      const asset = getAsset(graph, item.history[0], item.type);
+      const dependencies = new Set([
+        ...Object.keys(asset.dependencies.imports),
+        ...Object.keys(asset.dependencies.exports),
+      ]);
+      const sharedDependencies = bundleDependencies.filter(([dependency]) =>
+        dependencies.has(dependency)
+      );
+
+      for (const [sharedDependency, { type, format }] of sharedDependencies) {
+        if (
+          chunks.some((chunk) => chunk.item.history[0] === sharedDependency)
+        ) {
+          continue;
+        }
+        const asset = getAsset(graph, sharedDependency, type);
+        const sharedItem = {
+          asset,
+          history: [sharedDependency, ...item.history],
+          type,
+          format,
+        };
+        logger.debug(
+          "Split Chunk",
+          sharedDependency,
+        );
+        const sharedChunk = await bundler.createChunk(
+          sharedItem,
+          context,
+          [],
+        );
+        chunks.push(sharedChunk);
+        sharedItems.push(sharedItem);
+      }
+    }
+    return sharedItems;
   }
 }

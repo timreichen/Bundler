@@ -1,15 +1,15 @@
-import { ImportMap, ts } from "../../../deps.ts";
-import { resolve as resolveDependency } from "../../../dependency.ts";
+import { ts } from "../../../deps.ts";
+import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
 import { getIdentifier } from "./_util.ts";
 
 export function typescriptTransformImportsExportsTransformer(
-  importMap: ImportMap,
+  importMap: Deno.ImportMap,
   importIdentifierMap: Map<string, string>,
   identifierMap: Map<string, string>,
 ): ts.TransformerFactory<
   ts.SourceFile
 > {
-  const usedImports: any = {};
+  const usedImports: Record<string, Set<string>> = {};
 
   return (context: ts.TransformationContext) => {
     const visitor = (sourceFile: ts.SourceFile): ts.Visitor => {
@@ -58,7 +58,7 @@ export function typescriptTransformImportsExportsTransformer(
                   const elements: ts.BindingElement[] = [];
                   importClause.namedBindings.elements.forEach((element) => {
                     let name = element.name.text;
-                    let propertyName = element.propertyName?.text;
+                    const propertyName = element.propertyName?.text;
                     if (identifierMap.has(name)) {
                       name = identifierMap.get(name)!;
                     }

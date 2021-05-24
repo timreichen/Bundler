@@ -12,8 +12,8 @@ import {
 } from "./plugin.ts";
 
 export class FilePlugin extends Plugin {
-  async readSource(filePath: string, context: Context): Promise<Source> {
-    return await readFile(filePath);
+  async readSource(input: string, context: Context): Promise<Source> {
+    return await readFile(input);
   }
   async createAsset(
     item: Item,
@@ -24,7 +24,7 @@ export class FilePlugin extends Plugin {
     const extension = path.extname(input);
 
     return {
-      filePath: input,
+      input,
       output: outputMap[input] ||
         path.join(
           depsDirPath,
@@ -54,11 +54,11 @@ export class FilePlugin extends Plugin {
     const bundleInput = history[0];
     const bundleAsset = getAsset(graph, bundleInput, type);
 
-    const { filePath, output } = bundleAsset;
+    const { input, output } = bundleAsset;
     try {
       const bundleNeedsUpdate = reload == true ||
         (Array.isArray(reload) && reload.includes(bundleInput)) ||
-        Deno.statSync(output).mtime! < Deno.statSync(filePath).mtime!;
+        Deno.statSync(output).mtime! < Deno.statSync(input).mtime!;
       if (!bundleNeedsUpdate) return;
     } catch (error) {
       if (!(error instanceof Deno.errors.NotFound)) {

@@ -1,6 +1,6 @@
-import { colors, ImportMap, path, ts } from "../../../deps.ts";
+import { colors, path, ts } from "../../../deps.ts";
 import { addRelativePrefix, isURL } from "../../../_util.ts";
-import { resolve as resolveDependency } from "../../../dependency.ts";
+import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
 import { getAsset, Graph } from "../../../graph.ts";
 import { DependencyType, Item } from "../../plugin.ts";
 
@@ -9,7 +9,7 @@ import { DependencyType, Item } from "../../plugin.ts";
  */
 export function typescriptInjectDependenciesTranformer(
   item: Item,
-  { graph, importMap }: { graph: Graph; importMap: ImportMap },
+  { graph, importMap }: { graph: Graph; importMap: Deno.ImportMap },
 ): ts.TransformerFactory<ts.SourceFile> {
   const { history, type } = item;
   const rootInput = history[history.length - 1];
@@ -71,6 +71,7 @@ export function typescriptInjectDependenciesTranformer(
           const moduleSpecifier = node.moduleSpecifier;
           if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
             const resolvedSpecifier = resolve(moduleSpecifier.text);
+
             const asset = getAsset(
               graph,
               resolvedSpecifier,

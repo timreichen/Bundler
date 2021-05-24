@@ -1,4 +1,4 @@
-import { postcss, postcssPresetEnv, ts } from "./deps.ts";
+import { postcss, postcssPresetEnv } from "./deps.ts";
 import { CssPlugin } from "./plugins/css/css.ts";
 import { CssoPlugin } from "./plugins/css/csso.ts";
 import { FetchPlugin } from "./plugins/fetch.ts";
@@ -13,12 +13,6 @@ import { TypescriptTopLevelAwaitModulePlugin } from "./plugins/typescript/typesc
 import { TerserPlugin } from "./plugins/typescript/terser.ts";
 import { WebWorkerPlugin } from "./plugins/typescript/webworker.ts";
 
-export const defaultTypescriptCompilerOptions: ts.CompilerOptions = {
-  jsx: ts.JsxEmit.React,
-  jsxFactory: "React.createElement",
-  jsxFragmentFactory: "React.Fragment",
-};
-
 export const defaultPostcssPlugins: postcss.AcceptedPlugin[] = [
   postcssPresetEnv({
     stage: 2,
@@ -29,10 +23,10 @@ export const defaultPostcssPlugins: postcss.AcceptedPlugin[] = [
 ];
 
 export function createDefaultPlugins({
-  typescriptCompilerOptions = defaultTypescriptCompilerOptions,
+  typescriptCompilerOptions = {},
   postcssPlugins = defaultPostcssPlugins,
 }: {
-  typescriptCompilerOptions?: ts.CompilerOptions;
+  typescriptCompilerOptions?: Deno.CompilerOptions;
   postcssPlugins?: postcss.AcceptedPlugin[];
 } = {}) {
   return [

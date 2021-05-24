@@ -1,7 +1,7 @@
 import { Dependencies, DependencyType, Format } from "./plugins/plugin.ts";
 
 export interface Asset {
-  filePath: string;
+  input: string;
   output: string;
   dependencies: Dependencies;
   format: Format | null;
@@ -17,7 +17,7 @@ export function getAsset(graph: Graph, input: string, type: DependencyType) {
   const asset = graph[input]?.[type];
   if (!asset) {
     throw new Error(
-      `asset does not exist in graph: ${input} ${type}`,
+      `asset in graph not found: ${input} ${type}`,
     );
   }
   return asset;

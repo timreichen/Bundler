@@ -1,10 +1,10 @@
-import { ImportMap, path, resolveWithImportMap } from "./deps.ts";
-import { ensureExtension, isURL } from "./_util.ts";
+import { path, resolveWithImportMap } from "../deps.ts";
+import { ensureExtension, isURL } from "../_util.ts";
 
 export function resolve(
   filePath: string,
   dependencyPath: string,
-  importMap: ImportMap = { imports: {}, scopes: {} },
+  importMap: Deno.ImportMap = { imports: {}, scopes: {} },
 ) {
   const resolvedImportPath = resolveWithImportMap(
     dependencyPath,

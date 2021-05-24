@@ -1,6 +1,5 @@
 import { path, postcss, postcssValueParser } from "../../../deps.ts";
-import { resolve as resolveDependency } from "../../../dependency.ts";
-import { addRelativePrefix } from "../../../_util.ts";
+import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
 import { Context, DependencyType, Format, Item } from "../../plugin.ts";
 import { getAsset } from "../../../graph.ts";
 
@@ -69,8 +68,9 @@ export function postcssInjectImportsPlugin(
 
           const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
 
-          const resolvedOutput = addRelativePrefix(
-            path.relative(path.dirname(parentAsset.output), asset.output),
+          const resolvedOutput = path.relative(
+            path.dirname(parentAsset.output),
+            asset.output,
           );
 
           valueNode.value = resolvedOutput;

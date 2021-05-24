@@ -12,7 +12,7 @@ export function typescriptExtractIdentifiersTransformer(
           identifiers.add(text);
         } else if (ts.isCallExpression(node)) {
           // console.log(x)
-          let expression = node.expression;
+          const expression = node.expression;
           if (ts.isIdentifier(expression)) {
             const text = expression.text;
             identifiers.add(text);
@@ -28,7 +28,7 @@ export function typescriptExtractIdentifiersTransformer(
           });
         } else if (ts.isFunctionDeclaration(node)) {
           // function x() { }
-          let name = node.name;
+          const name = node.name;
           if (name) {
             const text = name.text;
             identifiers.add(text);
@@ -106,8 +106,8 @@ export function typescriptExtractIdentifiersTransformer(
         } else if (ts.isBinaryExpression(node)) {
           // x instanceof x
           //x += 1
-          let left = node.left;
-          let right = node.right;
+          const left = node.left;
+          const right = node.right;
           if (ts.isIdentifier(left)) {
             const text = left.text;
             identifiers.add(text);
@@ -130,9 +130,9 @@ export function typescriptExtractIdentifiersTransformer(
           identifiers.add(text);
         } else if (ts.isConditionalExpression(node)) {
           // x ? x : x
-          let condition = node.condition;
-          let whenTrue = node.whenTrue;
-          let whenFalse = node.whenFalse;
+          const condition = node.condition;
+          const whenTrue = node.whenTrue;
+          const whenFalse = node.whenFalse;
           if (ts.isIdentifier(condition)) {
             const text = condition.text;
             identifiers.add(text);
@@ -147,43 +147,43 @@ export function typescriptExtractIdentifiersTransformer(
           }
         } else if (ts.isIfStatement(node)) {
           // if (x) { }
-          let expression = node.expression;
+          const expression = node.expression;
           if (ts.isIdentifier(expression)) {
             const text = expression.text;
             identifiers.add(text);
           }
         } else if (ts.isSwitchStatement(node)) {
           // switch (x) { }
-          let expression = node.expression;
+          const expression = node.expression;
           if (ts.isIdentifier(expression)) {
             const text = expression.text;
             identifiers.add(text);
           }
         } else if (ts.isCaseClause(node)) {
-          let expression = node.expression;
+          const expression = node.expression;
           if (ts.isIdentifier(expression)) {
             const text = expression.text;
             identifiers.add(text);
           }
         } else if (ts.isWhileStatement(node)) {
           // while (x) { }
-          let expression = node.expression;
+          const expression = node.expression;
           if (ts.isIdentifier(expression)) {
             const text = expression.text;
             identifiers.add(text);
           }
         } else if (ts.isDoStatement(node)) {
           // do {} while (x) { }
-          let expression = node.expression;
+          const expression = node.expression;
           if (ts.isIdentifier(expression)) {
             const text = expression.text;
             identifiers.add(text);
           }
         } else if (ts.isForStatement(node)) {
           // for (let x = 0; x > 0; i++) { }
-          let initializer = node.initializer;
-          let condition = node.condition;
-          let incrementor = node.incrementor;
+          const initializer = node.initializer;
+          const condition = node.condition;
+          const incrementor = node.incrementor;
           if (initializer && ts.isIdentifier(initializer)) {
             const text = initializer.text;
             identifiers.add(text);
@@ -198,8 +198,8 @@ export function typescriptExtractIdentifiersTransformer(
           }
         } else if (ts.isForOfStatement(node)) {
           // for (x of x) { }
-          let initializer = node.initializer;
-          let expression = node.expression;
+          const initializer = node.initializer;
+          const expression = node.expression;
           if (ts.isIdentifier(initializer)) {
             const text = initializer.text;
             identifiers.add(text);
@@ -210,8 +210,8 @@ export function typescriptExtractIdentifiersTransformer(
           }
         } else if (ts.isForInStatement(node)) {
           // for (x in x) { }
-          let initializer = node.initializer;
-          let expression = node.expression;
+          const initializer = node.initializer;
+          const expression = node.expression;
           if (ts.isIdentifier(initializer)) {
             const text = initializer.text;
             identifiers.add(text);
@@ -222,13 +222,13 @@ export function typescriptExtractIdentifiersTransformer(
           }
         } else if (ts.isNewExpression(node)) {
           // new x()
-          let expression = node.expression;
+          const expression = node.expression;
           if (ts.isIdentifier(expression)) {
             const text = expression.text;
             identifiers.add(text);
           }
         } else if (ts.isEnumDeclaration(node)) {
-          let name = node.name;
+          const name = node.name;
           if (ts.isIdentifier(name)) {
             const text = name.text;
             identifiers.add(text);

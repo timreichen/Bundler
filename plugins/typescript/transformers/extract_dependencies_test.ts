@@ -3,10 +3,8 @@ import { assertEquals, tests } from "../../../test_deps.ts";
 import { Dependencies, DependencyType, Format } from "../../plugin.ts";
 import { typescriptExtractDependenciesTransformer } from "./extract_dependencies.ts";
 
-const compilerOptions: ts.CompilerOptions = {};
-
 tests({
-  name: "typescript transfomer → extract dependencies",
+  name: "typescript → extract dependencies transfomer",
   tests: () => [
     {
       name: "type import",
@@ -22,7 +20,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {
           "./b.ts": {
@@ -30,7 +27,7 @@ tests({
             format: 8,
             namespaces: [],
             specifiers: {},
-            type: "import",
+            type: "Import",
             types: {
               A: "A",
             },
@@ -54,7 +51,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {
           "./b.ts": {
@@ -84,7 +80,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {
           "./b.ts": {
@@ -114,7 +109,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {
           "./b.ts": {
@@ -144,7 +138,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {
           "./b.ts": {
@@ -174,7 +167,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {
           "./b.ts": {
@@ -204,12 +196,15 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {
           "./b.ts": {
+            defaults: [],
             type: DependencyType.DynamicImport,
+            namespaces: [],
+            specifiers: {},
             format: Format.Script,
+            types: {},
           },
         });
         assertEquals(dependencies.exports, {});
@@ -230,7 +225,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {});
@@ -251,7 +245,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -260,7 +253,7 @@ tests({
             format: 8,
             namespaces: [],
             specifiers: {},
-            type: "export",
+            type: "Export",
             types: {
               A: "A",
             },
@@ -283,7 +276,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -292,7 +284,7 @@ tests({
             format: 8,
             namespaces: [],
             specifiers: {},
-            type: "export",
+            type: "Export",
             types: {
               A: "A",
             },
@@ -315,7 +307,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -345,7 +336,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -375,7 +365,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -405,7 +394,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -435,7 +423,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
 
         assertEquals(dependencies.imports, {});
@@ -466,7 +453,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -496,7 +482,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -526,7 +511,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -556,7 +540,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -586,7 +569,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -616,7 +598,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -646,7 +627,6 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
@@ -676,10 +656,16 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {
-          "./b.ts": { type: DependencyType.WebWorker, format: Format.Script },
+          "./b.ts": {
+            defaults: [],
+            type: DependencyType.WebWorker,
+            namespaces: [],
+            specifiers: {},
+            format: Format.Script,
+            types: {},
+          },
         });
         assertEquals(dependencies.exports, {});
       },
@@ -699,12 +685,15 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {
           "./b.ts": {
+            defaults: [],
             type: DependencyType.Fetch,
+            namespaces: [],
+            specifiers: {},
             format: Format.Script,
+            types: {},
           },
         });
         assertEquals(dependencies.exports, {});
@@ -725,12 +714,15 @@ tests({
         ts.transform(
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
-          compilerOptions,
         );
         assertEquals(dependencies.imports, {
           "./b.ts": {
+            defaults: [],
             type: DependencyType.ServiceWorker,
+            namespaces: [],
+            specifiers: {},
             format: Format.Script,
+            types: {},
           },
         });
         assertEquals(dependencies.exports, {});

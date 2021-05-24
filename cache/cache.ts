@@ -1,15 +1,7 @@
-import {
-  colors,
-  fs,
-  ImportMap,
-  path,
-  resolveWithImportMap,
-  Sha256,
-  ts,
-} from "./deps.ts";
+import { colors, fs, path, resolveWithImportMap, Sha256, ts } from "../deps.ts";
 
-import { resolve as resolveDependency } from "./dependency.ts";
-import { isURL } from "./_util.ts";
+import { resolve as resolveDependency } from "../dependency/dependency.ts";
+import { isURL } from "../_util.ts";
 
 const { green } = colors;
 
@@ -81,12 +73,12 @@ function typescriptExtractDependenciesTransformer(
 }
 
 export function extractDependencies(
-  filePath: string,
+  input: string,
   source: string,
   { compilerOptions = {} }: Options = {},
 ): Set<string> {
   const sourceFile = ts.createSourceFile(
-    filePath,
+    input,
     source,
     ts.ScriptTarget.Latest,
   );
@@ -175,7 +167,7 @@ const metadataExtension = ".metadata.json";
 export async function cache(
   filePath: string,
   { importMap = { imports: {} }, reload = false, compilerOptions = {} }: {
-    importMap?: ImportMap;
+    importMap?: Deno.ImportMap;
     reload?: boolean | string[];
     compilerOptions?: ts.CompilerOptions;
   } = {},
@@ -183,8 +175,8 @@ export async function cache(
   if (!isURL(filePath)) return;
 
   const resolvedSpecifier = resolveWithImportMap(filePath, importMap);
-
   const filePaths = new Set([resolvedSpecifier]);
+
   for (const filePath of filePaths) {
     const cachedFilePath = createCacheModulePathForURL(filePath);
 
@@ -196,7 +188,6 @@ export async function cache(
       needsReload || !await fs.exists(cachedFilePath)
     ) {
       console.info(green("Download"), filePath);
-
       const response = await fetch(filePath, { redirect: "follow" });
       const text = await response.text();
       if (response.status !== 200) {
@@ -223,7 +214,9 @@ export async function cache(
       );
 
       dependencies.forEach((dependencyFilePath) =>
-        filePaths.add(resolveDependency(filePath, dependencyFilePath))
+        filePaths.add(
+          resolveDependency(filePath, dependencyFilePath),
+        )
       );
     }
   }

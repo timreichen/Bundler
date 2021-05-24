@@ -46,6 +46,7 @@ Deno.test({
       input,
       "examples/smart_splitting/src/a.ts",
       "examples/smart_splitting/src/b.ts",
+      "examples/smart_splitting/src/c.ts",
     ]);
 
     const bundles = await bundler.createBundles(chunks, graph, {
@@ -63,27 +64,26 @@ Deno.test({
       bundles[
         "dist/b.js"
       ] as string,
-      `export default (async ()=>{`,
+      `export default (async () => {`,
     );
     assertStringIncludes(
       bundles[
         "dist/b.js"
       ] as string,
-      `return {
-    };`,
+      `return {};`,
     );
 
     assertStringIncludes(
       bundles[
         "dist/deps/cc48d69a5071eab490d13fa66ddad7c5d07f4474cde05a347df22a49b4639228.js"
       ] as string,
-      `export default (async ()=>{`,
+      `export default (async () => {`,
     );
     assertStringIncludes(
       bundles[
         "dist/deps/cc48d69a5071eab490d13fa66ddad7c5d07f4474cde05a347df22a49b4639228.js"
       ] as string,
-      `const mod = (async ()=>{`,
+      `const mod = (async () => {`,
     );
   },
 });

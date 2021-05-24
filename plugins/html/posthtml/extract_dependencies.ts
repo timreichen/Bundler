@@ -1,5 +1,4 @@
-import { resolve as resolveDependency } from "../../../dependency.ts";
-import { ImportMap } from "../../../deps.ts";
+import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
 import { isURL } from "../../../_util.ts";
 import { postcss } from "../../../deps.ts";
 import { postcssExtractDependenciesPlugin } from "../../css/postcss/extract_dependencies.ts";
@@ -11,7 +10,7 @@ export function posthtmlExtractImageDependencies(
 ) {
   return (
     input: string,
-    { importMap }: { importMap: ImportMap },
+    { importMap }: { importMap: Deno.ImportMap },
   ) => {
     return (tree: any) => {
       const base = getBase(tree);
@@ -49,7 +48,7 @@ export function posthtmlExtractLinkDependencies(
 ) {
   return (
     input: string,
-    { importMap }: { importMap: ImportMap },
+    { importMap }: { importMap: Deno.ImportMap },
   ) => {
     return (tree: any) => {
       const base = getBase(tree);
@@ -104,7 +103,7 @@ export function posthtmlExtractScriptDependencies(
 ) {
   return (
     input: string,
-    { importMap }: { importMap: ImportMap },
+    { importMap }: { importMap: Deno.ImportMap },
   ) => {
     return (tree: any) => {
       const base = getBase(tree);
@@ -141,7 +140,10 @@ export function posthtmlExtractStyleDependencies(
 ) {
   return (
     input: string,
-    { importMap, use }: { importMap: ImportMap; use: postcss.AcceptedPlugin[] },
+    { importMap, use }: {
+      importMap: Deno.ImportMap;
+      use: postcss.AcceptedPlugin[];
+    },
   ) => {
     const postcssPlugin = postcssExtractDependenciesPlugin(dependencies);
     const processor = postcss.default([
@@ -167,7 +169,10 @@ export function posthtmlExtractInlineStyleDependencies(
 ) {
   return (
     input: string,
-    { importMap, use }: { importMap: ImportMap; use: postcss.AcceptedPlugin[] },
+    { importMap, use }: {
+      importMap: Deno.ImportMap;
+      use: postcss.AcceptedPlugin[];
+    },
   ) => {
     const postcssPlugin = postcssExtractDependenciesPlugin(dependencies);
     const processor = postcss.default([

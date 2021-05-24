@@ -1,19 +1,19 @@
-import { assertEquals, assertThrowsAsync, tests } from "./test_deps.ts";
+import { assertEquals, assertThrowsAsync, tests } from "../test_deps.ts";
 import {
   cache,
   extractDependencies,
   resolve as resolveCache,
 } from "./cache.ts";
 
-import { fs, ImportMap, path } from "./deps.ts";
-import { resolve } from "./dependency.ts";
+import { fs, path } from "../deps.ts";
+import { resolve } from "../dependency/dependency.ts";
 
 tests({
   name: "cache",
   tests: () => [
     {
       name: "resolve",
-      fn: async () => {
+      fn: () => {
         const input = "https://deno.land/std@0.70.0/path/mod.ts";
         assertEquals(
           path.basename(resolveCache(input)),
@@ -49,8 +49,8 @@ tests({
     },
     {
       name: "extract dependencies resolve path",
-      fn: async () => {
-        const importMap: ImportMap = {
+      fn: () => {
+        const importMap: Deno.ImportMap = {
           imports: {
             "directory/": "my/path/",
           },
@@ -63,7 +63,7 @@ tests({
     },
     {
       name: "extract dependencies resolve url",
-      fn: async () => {
+      fn: () => {
         const importMap = {
           imports: {
             "directory/":

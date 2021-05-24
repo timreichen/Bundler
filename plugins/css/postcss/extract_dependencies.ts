@@ -1,5 +1,5 @@
-import { ImportMap, postcss, postcssValueParser } from "../../../deps.ts";
-import { resolve as resolveDependency } from "../../../dependency.ts";
+import { postcss, postcssValueParser } from "../../../deps.ts";
+import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
 import { isURL } from "../../../_util.ts";
 import { Dependencies, DependencyType, Format } from "../../plugin.ts";
 
@@ -8,7 +8,7 @@ export function postcssExtractDependenciesPlugin(
 ) {
   return (
     input: string,
-    { importMap }: { importMap: ImportMap },
+    { importMap }: { importMap: Deno.ImportMap },
   ): postcss.AcceptedPlugin => {
     return {
       postcssPlugin: "extract-dependencies",

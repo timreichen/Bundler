@@ -7,8 +7,8 @@ export class JsonPlugin extends FilePlugin {
     const input = item.history[0];
     return input.endsWith(".json");
   }
-  async readSource(filePath: string, context: Context) {
-    return await readTextFile(filePath);
+  async readSource(input: string, context: Context) {
+    return await readTextFile(input);
   }
   async createAsset(
     item: Item,

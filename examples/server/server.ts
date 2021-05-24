@@ -18,15 +18,15 @@ const outputMap = {
   "src/index.html": root,
 };
 
-const watcher = new Watcher({ logger: bundler.logger });
+const watcher = new Watcher();
 
-let bundles: Record<string, any> = {};
+let bundles: Record<string, string> = {};
 async function bundle() {
   const { bundles: newBundles, graph: newGraph } = await bundler.bundle(
     inputs,
     { outputMap },
   );
-  bundles = { ...bundles, ...newBundles };
+  bundles = { ...bundles, ...newBundles as Record<string, string> };
   watcher.watch(Object.keys(newGraph)).then(() => bundle());
 }
 await bundle();
@@ -48,7 +48,7 @@ app.use((context: Context) => {
   if (!type) return context.throw(500);
 
   context.response.headers.set("Content-Type", type);
-  response.body = bundles[pathname];
+  response.body = bundles[pathname] as string;
 });
 
 app.addEventListener("listen", ({ hostname, port, secure }) => {

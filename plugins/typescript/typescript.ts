@@ -1,4 +1,4 @@
-import { colors, ImportMap, path, Sha256, ts } from "../../deps.ts";
+import { path, Sha256, ts } from "../../deps.ts";
 import {
   ChunkList,
   Context,
@@ -8,16 +8,28 @@ import {
   Item,
   Plugin,
 } from "../plugin.ts";
-import { resolve as resolveDependency } from "../../dependency.ts";
+import { resolve as resolveDependency } from "../../dependency/dependency.ts";
 import { typescriptExtractDependenciesTransformer } from "./transformers/extract_dependencies.ts";
-import { cache, resolve as resolveCache } from "../../cache.ts";
+import { cache, resolve as resolveCache } from "../../cache/cache.ts";
 import { getAsset } from "../../graph.ts";
-import { isURL, readTextFile, timestamp } from "../../_util.ts";
+import { isURL, readTextFile, removeRelativePrefix } from "../../_util.ts";
 
+function extractDependencies(
+  sourceFile: ts.SourceFile,
+  compilerOptions?: ts.CompilerOptions,
+) {
+  const dependencies: Dependencies = { imports: {}, exports: {} };
+  ts.transform(
+    sourceFile,
+    [typescriptExtractDependenciesTransformer(dependencies)],
+    compilerOptions,
+  );
+  return dependencies;
+}
 function resolveDependencies(
-  filePath: string,
+  input: string,
   { imports, exports }: Dependencies,
-  { importMap = { imports: {} } }: { importMap: ImportMap },
+  { importMap = { imports: {} } }: { importMap: Deno.ImportMap },
 ) {
   const dependencies: Dependencies = {
     imports: {},
@@ -25,19 +37,19 @@ function resolveDependencies(
   };
 
   Object.keys(imports).forEach((dependencyPath) => {
-    const resolvedDependencyPath = resolveDependency(
-      filePath,
+    const resolvedDependencyPath = removeRelativePrefix(resolveDependency(
+      input,
       dependencyPath,
       importMap,
-    );
+    ));
     dependencies.imports[resolvedDependencyPath] = imports[dependencyPath];
   });
   Object.keys(exports).forEach((dependencyPath) => {
-    const resolvedDependencyPath = resolveDependency(
-      filePath,
+    const resolvedDependencyPath = removeRelativePrefix(resolveDependency(
+      input,
       dependencyPath,
       importMap,
-    );
+    ));
     dependencies.exports[resolvedDependencyPath] = exports[dependencyPath];
   });
 
@@ -45,12 +57,12 @@ function resolveDependencies(
 }
 
 export class TypescriptPlugin extends Plugin {
-  compilerOptions: ts.CompilerOptions;
+  protected compilerOptions: Deno.CompilerOptions;
   constructor(
     {
       compilerOptions = {},
     }: {
-      compilerOptions?: ts.CompilerOptions;
+      compilerOptions?: Deno.CompilerOptions;
     } = {},
   ) {
     super();
@@ -62,7 +74,7 @@ export class TypescriptPlugin extends Plugin {
       (isURL(input) &&
         !/([\.][a-zA-Z]\w*)$/.test(
           input,
-        )); /* is handle url without extension as script */
+        )); /* handle url without extension as script files */
   }
   async readSource(input: string, context: Context) {
     let filePath = input;
@@ -74,45 +86,31 @@ export class TypescriptPlugin extends Plugin {
     const sourceFile = ts.createSourceFile(
       input,
       source,
-      ts.ScriptTarget.Latest,
+      ts.ScriptTarget.ESNext,
     );
     return sourceFile;
   }
+
   async createAsset(
     item: Item,
     context: Context,
   ) {
     const input = item.history[0];
-
     const { bundler, outputMap, depsDirPath, importMap } = context;
+
     const sourceFile = await bundler.readSource(item, context) as ts.SourceFile;
-    const dependencies: Dependencies = { imports: {}, exports: {} };
-    const t2 = performance.now();
-    ts.transform(
-      sourceFile,
-      [typescriptExtractDependenciesTransformer(dependencies)],
-      this.compilerOptions,
-    );
-    context.bundler.logger.trace(
-      "Extract Dependencies",
-      input,
-      colors.dim(colors.italic(`(${timestamp(t2)})`)),
-    );
-    const t3 = performance.now();
+
+    const dependencies = extractDependencies(sourceFile);
+
     const resolvedDependencies = resolveDependencies(
       input,
       dependencies,
       { importMap },
     );
-    context.bundler.logger.trace(
-      "Resolve Dependencies",
-      input,
-      colors.dim(colors.italic(`(${timestamp(t3)})`)),
-    );
 
     const extension = ".js";
     return {
-      filePath: input,
+      input,
       output: outputMap[input] || path.join(
         depsDirPath,
         `${new Sha256().update(input).hex()}${extension}`,
@@ -126,10 +124,11 @@ export class TypescriptPlugin extends Plugin {
     context: Context,
     chunkList: ChunkList,
   ) {
+    const { graph } = context;
     const dependencyItems: Item[] = [];
     const { history, type } = item;
     const chunkInput = history[0];
-    const asset = getAsset(context.graph, chunkInput, type);
+    const asset = getAsset(graph, chunkInput, type);
 
     const dependencies = [
       ...Object.entries(asset.dependencies.imports),
@@ -138,6 +137,7 @@ export class TypescriptPlugin extends Plugin {
     for (const [input, dependency] of dependencies) {
       if (input === chunkInput) continue;
       const { type, format } = dependency;
+
       const newItem: Item = {
         history: [input, ...item.history],
         type,
@@ -153,7 +153,6 @@ export class TypescriptPlugin extends Plugin {
             case DependencyType.DynamicImport:
             case DependencyType.ServiceWorker:
             case DependencyType.WebWorker:
-            case DependencyType.Import:
               chunkList.push(newItem);
               break;
           }

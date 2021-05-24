@@ -33,8 +33,8 @@ jobs:
         with:
           deno-version: ${{ matrix.deno }} # tests across multiple Deno versions
 
-      - name: Verify formatting
-        run: deno fmt --check
+      # - name: Verify formatting
+      #   run: deno fmt --check
 
       # - name: Run linter
       #   run: deno lint

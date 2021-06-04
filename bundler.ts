@@ -419,10 +419,12 @@ export class Bundler {
       checkedChunks[type] ||= {};
       checkedChunks[type]![input] = chunk;
       chunks.push(chunk);
+    }
+
+    for (const chunk of chunks) {
       for (const plugin of this.plugins) {
-        if (plugin.splitChunks && await plugin.test(item, context)) {
-          const sharedItems = await plugin.splitChunks(item, context);
-          chunk.dependencyItems.push(...sharedItems);
+        if (plugin.splitChunks && await plugin.test(chunk.item, context)) {
+          await plugin.splitChunks(chunk, context);
         }
       }
     }

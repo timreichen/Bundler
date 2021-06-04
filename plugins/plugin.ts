@@ -142,7 +142,7 @@ export interface Plugin {
     context: Context,
     chunkList: ChunkList,
   ): Promise<Chunk>;
-  splitChunks?(item: Item, context: Context): Promise<Item[]>;
+  splitChunks?(chunk: Chunk, context: Context): Promise<void>;
 
   createBundle?(
     chunk: Chunk,

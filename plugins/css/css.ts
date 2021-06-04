@@ -72,7 +72,11 @@ export class CssPlugin extends Plugin {
     const processor = postcss.default(use);
 
     // TODO store AST to avoid re-parsing in other plugins
-    await processor.process(source as string);
+    try {
+      await processor.process(source as string);
+    } catch(error) {
+      throw new Error(`${input}: ${error.message}`)
+    }
 
     const extension = path.extname(input);
 

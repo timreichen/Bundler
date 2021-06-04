@@ -7,9 +7,9 @@ import { typescriptRemoveModifiersTransformer } from "./transformers/remove_modi
 import { getIdentifier } from "./transformers/_util.ts";
 import { colors, fs, path, ts } from "../../deps.ts";
 import { Asset, getAsset, Graph } from "../../graph.ts";
-import { Logger } from "../../logger.ts";
+import { Logger, logLevels } from "../../logger.ts";
 import { addRelativePrefix, timestamp } from "../../_util.ts";
-import { Chunk, Context, Format, Item } from "../plugin.ts";
+import { Chunk, Context, DependencyType, Format, Item } from "../plugin.ts";
 import { TypescriptPlugin } from "./typescript.ts";
 import { topologicalSort } from "./_util.ts";
 
@@ -89,6 +89,8 @@ function createIdentifier(
   blacklistIdentifiers: Set<string>,
 ) {
   const match = regex.exec(identifier);
+  console.log(identifier);
+  
   const { name, number } = match!.groups!;
   let newIdentifier = identifier;
   let index: number = Number(number) || 1;
@@ -615,57 +617,99 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
     return transpiledSource;
   }
 
-  async splitChunks(bundleItem: Item, context: Context) {
-    const { chunks, graph, bundler, logger } = context;
+  async splitChunks(bundleChunk: Chunk, context: Context) {
+    const { chunks, graph, bundler } = context;
 
+    const bundleItem = bundleChunk.item;
     const bundleInput = bundleItem.history[0];
-    const bundleAsset = getAsset(graph, bundleInput, bundleItem.type);
 
-    const bundleDependencies = [
-      ...Object.entries(bundleAsset.dependencies.imports),
-      ...Object.entries(bundleAsset.dependencies.exports),
-    ];
+    bundler.logger.debug(colors.yellow("Bundle"), bundleInput);
 
-    const sharedItems: Item[] = [];
+    const checkedItems = new Set();
+    const checkItems = [...bundleChunk.dependencyItems];
 
-    for (const chunk of chunks) {
-      const item = chunk.item;
-      if (item === bundleItem) continue;
-      const asset = getAsset(graph, item.history[0], item.type);
-      const dependencies = new Set([
-        ...Object.keys(asset.dependencies.imports),
-        ...Object.keys(asset.dependencies.exports),
-      ]);
-      const sharedDependencies = bundleDependencies.filter(([dependency]) =>
-        dependencies.has(dependency)
+    checkItemsLoop:
+    for (const checkItem of checkItems) {
+      const { history, type } = checkItem;
+      const checkInput = history[0];
+      if (checkedItems.has(checkInput)) continue;
+      checkedItems.add(checkInput);
+      // if dependency is already a chunk
+      if (chunks.some((chunk) => chunk.item.history[0] === checkInput)) {
+        continue;
+      }
+
+      bundler.logger.debug(
+        colors.dim("→"),
+        colors.dim("Check"),
+        colors.dim(checkInput),
       );
 
-      for (const [sharedDependency, { type, format }] of sharedDependencies) {
-        if (
-          chunks.some((chunk) => chunk.item.history[0] === sharedDependency)
-        ) {
-          continue;
+      const checkedDependencyItems = new Set();
+      // if for shared dependencies with other chunk dependencies
+      for (const chunk of chunks) {
+        const dependencyItems = [...chunk.dependencyItems];
+        for (const dependencyItem of dependencyItems) {
+          const { history, type } = dependencyItem;
+          const dependencyInput = history[0];
+          if (chunk === bundleChunk && dependencyInput === checkInput) continue;
+          if (checkedDependencyItems.has(dependencyInput)) continue;
+          checkedDependencyItems.add(dependencyInput);
+
+          if (
+            checkInput === dependencyInput
+            && dependencyItem.format === Format.Script
+          ) {
+            bundler.logger.debug(
+              colors.dim("→"),
+              colors.yellow("Split"),
+              dependencyInput,
+              chunk.item.history,
+            );
+            const logger = new Logger({ logLevel: logLevels.debug });
+            logger.quiet = true;
+            const newChunk = await bundler.createChunk(
+              dependencyItem,
+              { ...context, logger },
+              [],
+            );
+            chunks.push(newChunk);
+            continue checkItemsLoop;
+          }
+
+          if (
+            chunks.some((chunk) => chunk.item.history[0] === dependencyInput)
+          ) {
+            continue;
+          }
+
+          const asset = getAsset(graph, dependencyInput, type);
+          [
+            ...Object.entries(asset.dependencies.imports),
+            ...Object.entries(asset.dependencies.exports),
+          ].forEach(([dependency, entry]) => {
+            dependencyItems.push({
+              history: [dependency, ...history],
+              format: entry.format,
+              type: entry.type,
+            });
+          });
         }
-        const asset = getAsset(graph, sharedDependency, type);
-        const sharedItem = {
-          asset,
-          history: [sharedDependency, ...item.history],
-          type,
-          format,
-        };
-        logger.debug(
-          "Split Chunk",
-          sharedDependency,
-        );
-        const sharedChunk = await bundler.createChunk(
-          sharedItem,
-          context,
-          [],
-        );
-        chunks.push(sharedChunk);
-        sharedItems.push(sharedItem);
       }
+
+      // if no shared dependency is found, check sub dependencies
+      const asset = getAsset(graph, checkInput, type);
+      [
+        ...Object.entries(asset.dependencies.imports),
+        ...Object.entries(asset.dependencies.exports),
+      ].forEach(([dependency, entry]) => {
+        if (dependency === checkInput) return;
+        checkItems.push({
+          history: [dependency, ...history],
+          format: entry.format,
+          type: entry.type,
+        });
+      });
     }
-    return sharedItems;
   }
 }

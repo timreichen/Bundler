@@ -1,4 +1,4 @@
-import { colors, ts } from "../../../deps.ts";
+import { colors, fs, ts } from "../../../deps.ts";
 import { isURL } from "../../../_util.ts";
 import {
   Dependencies,
@@ -265,7 +265,7 @@ export function typescriptExtractDependenciesTransformer(
             const filePath = argument.text;
 
             // if is url, do not add as dependency
-            if (!isURL(filePath)) {
+            if (!isURL(filePath) && fs.existsSync(filePath)) {
               addImportEntry(filePath, DependencyType.Fetch);
             }
           }

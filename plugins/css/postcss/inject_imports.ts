@@ -49,7 +49,7 @@ export function postcssInjectImportsPlugin(
         /* example
           @import "a.css";
           @import "b.css";
-          */
+        */
         // If "a.css" is a chunk and "b.css" is not a chunk, "a.css" can be imported via @import while "b.css" can be inlined.
         // If "a.css" is a not a chunk and "b.css" is a chunk, both must be inlined. to avoid an @import rule after other rules.
         const ruleIndex = atRule.parent?.index(atRule);

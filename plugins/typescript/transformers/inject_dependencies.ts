@@ -1,4 +1,4 @@
-import { colors, path, ts } from "../../../deps.ts";
+import { colors, fs, path, ts } from "../../../deps.ts";
 import { addRelativePrefix, isURL } from "../../../_util.ts";
 import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
 import { getAsset, Graph } from "../../../graph.ts";
@@ -139,7 +139,7 @@ export function typescriptInjectDependenciesTranformer(
           if (ts.isStringLiteral(argument)) {
             const resolvedSpecifier = resolve(argument.text);
             // if is url, skip injection
-            if (!isURL(resolvedSpecifier)) {
+            if (!isURL(resolvedSpecifier)  && fs.existsSync(resolvedSpecifier)) {
               const asset = getAsset(
                 graph,
                 resolvedSpecifier,

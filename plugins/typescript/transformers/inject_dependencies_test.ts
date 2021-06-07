@@ -820,9 +820,9 @@ tests({
       name: "fetch",
       fn() {
         const importMap: Deno.ImportMap = { imports: {} };
-        const input = "src/a.ts";
+        const input = "testdata/a.ts";
         const bundleOutput = "dist/a.js";
-        const dependency = "src/b.ts";
+        const dependency = "testdata/b.ts";
         const dependencyOutput = "dist/b.js";
         const source = `fetch("./b.ts")`;
 
@@ -886,9 +886,9 @@ tests({
       name: "fetch level down",
       fn() {
         const importMap: Deno.ImportMap = { imports: {} };
-        const input = "src/a.ts";
+        const input = "testdata/a.ts";
         const bundleOutput = "a.js";
-        const dependency = "src/b.ts";
+        const dependency = "testdata/b.ts";
         const dependencyOutput = "dist/b.js";
         const source = `fetch("./b.ts")`;
 
@@ -952,9 +952,9 @@ tests({
       name: "fetch level up",
       fn() {
         const importMap: Deno.ImportMap = { imports: {} };
-        const input = "src/a.ts";
+        const input = "testdata/a.ts";
         const bundleOutput = "dist/a.js";
-        const dependency = "src/b.ts";
+        const dependency = "testdata/b.ts";
         const dependencyOutput = "b.js";
         const source = `fetch("./b.ts")`;
 

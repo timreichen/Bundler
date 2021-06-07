@@ -674,7 +674,7 @@ tests({
       name: "fetch",
       fn() {
         const fileName = "src/a.ts";
-        const sourceText = `fetch("./b.ts")`;
+        const sourceText = `fetch("./testdata/b.ts")`;
 
         const dependencies: Dependencies = { imports: {}, exports: {} };
         const sourceFile = ts.createSourceFile(
@@ -687,7 +687,7 @@ tests({
           [typescriptExtractDependenciesTransformer(dependencies)],
         );
         assertEquals(dependencies.imports, {
-          "./b.ts": {
+          "./testdata/b.ts": {
             defaults: [],
             type: DependencyType.Fetch,
             namespaces: [],

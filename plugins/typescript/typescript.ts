@@ -1,4 +1,4 @@
-import { path, Sha256, ts } from "../../deps.ts";
+import { path, resolveWithImportMap, Sha256, ts } from "../../deps.ts";
 import {
   ChunkList,
   Context,
@@ -37,19 +37,29 @@ function resolveDependencies(
   };
 
   Object.keys(imports).forEach((dependencyPath) => {
-    const resolvedDependencyPath = removeRelativePrefix(resolveDependency(
-      input,
-      dependencyPath,
-      importMap,
-    ));
+    let resolvedDependencyPath;
+    if (!isURL(dependencyPath) && !path.isAbsolute(dependencyPath)) {
+      resolvedDependencyPath = removeRelativePrefix(resolveDependency(
+        input,
+        dependencyPath,
+        importMap,
+      ));
+    } else {
+      resolvedDependencyPath = resolveWithImportMap(dependencyPath, importMap);
+    }
     dependencies.imports[resolvedDependencyPath] = imports[dependencyPath];
   });
   Object.keys(exports).forEach((dependencyPath) => {
-    const resolvedDependencyPath = removeRelativePrefix(resolveDependency(
-      input,
-      dependencyPath,
-      importMap,
-    ));
+    let resolvedDependencyPath;
+    if (!isURL(dependencyPath) && !path.isAbsolute(dependencyPath)) {
+      resolvedDependencyPath = removeRelativePrefix(resolveDependency(
+        input,
+        dependencyPath,
+        importMap,
+      ));
+    } else {
+      resolvedDependencyPath = resolveWithImportMap(dependencyPath, importMap);
+    }
     dependencies.exports[resolvedDependencyPath] = exports[dependencyPath];
   });
 
@@ -96,6 +106,7 @@ export class TypescriptPlugin extends Plugin {
     context: Context,
   ) {
     const input = item.history[0];
+
     const { bundler, outputMap, depsDirPath, importMap } = context;
 
     const sourceFile = await bundler.readSource(item, context) as ts.SourceFile;

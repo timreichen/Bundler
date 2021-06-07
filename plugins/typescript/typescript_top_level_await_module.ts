@@ -30,6 +30,7 @@ function createReturnNode(
 ) {
   const exportPropertyNodes: ts.ObjectLiteralElementLike[] = Object.entries(
     exportIdentifierMap,
+
   )
     .map(([key, value]) => {
       if (identifierMap.has(value)) {
@@ -83,13 +84,12 @@ function createIIFENode(
   );
 }
 
-const regex = /^(?<name>[A-Z_$][A-Z0-9_$]*?)(?<number>\d*)$/i;
+const regex = /^(?<name>[A-Z_$][A-Z0-9α-ω_$]*?)(?<number>\d*)$/i;
 function createIdentifier(
   identifier: string,
   blacklistIdentifiers: Set<string>,
 ) {
   const match = regex.exec(identifier);
-  console.log(identifier);
   
   const { name, number } = match!.groups!;
   let newIdentifier = identifier;
@@ -110,6 +110,7 @@ function createIdentifierMap(
     if (identifier === "default") {
       value = "_default";
     }
+    
     const newIdentifier = createIdentifier(
       value,
       blacklistIdentifiers,
@@ -154,7 +155,7 @@ function createTopLevelAwaitModuleNode(
   ts.transform(sourceFile, [
     typescriptExtractIdentifiersTransformer(identifiers),
   ]);
-
+  
   const identifierMap = createIdentifierMap(identifiers, blacklistIdentifiers);
   // replace "default" with "_default" to avoid invalid identifiers
   Object.entries(defaultBlacklistIdentifiers).forEach(([key, value]) =>
@@ -232,7 +233,7 @@ async function transpile(
   source: string,
   compilerOptions: Deno.CompilerOptions,
 ) {
-  // return await denoTranspile(source, compilerOptions);
+  return await denoTranspile(source, compilerOptions);
   const tsCompilerOptions =
     ts.convertCompilerOptionsFromJson({ compilerOptions }, Deno.cwd())
       .options;

@@ -1,4 +1,6 @@
-import { customElement, html, LitElement, unsafeCSS } from "lit-element";
+import { html, LitElement, unsafeCSS } from "lit";
+import { customElement, property } from "lit/decorators.js";
+
 import styles from "./styles.css";
 
 @customElement("my-element")

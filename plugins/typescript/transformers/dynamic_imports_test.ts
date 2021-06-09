@@ -25,7 +25,7 @@ tests({
           sourceFile,
           [typescriptTransformDynamicImportTransformer()],
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(
           outputText,
@@ -47,7 +47,7 @@ tests({
           sourceFile,
           [typescriptTransformDynamicImportTransformer()],
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertEquals(
           outputText,

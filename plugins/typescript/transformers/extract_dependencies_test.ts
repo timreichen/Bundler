@@ -170,7 +170,7 @@ tests({
         );
         assertEquals(dependencies.imports, {
           "./b.ts": {
-            specifiers: [],
+            specifiers: {},
             defaults: [],
             namespaces: [],
             types: {},
@@ -573,8 +573,8 @@ tests({
         assertEquals(dependencies.imports, {});
         assertEquals(dependencies.exports, {
           "src/a.ts": {
-            specifiers: [],
-            defaults: [],
+            specifiers: {},
+            defaults: ["_default"],
             namespaces: [],
             types: {},
             type: DependencyType.Export,
@@ -673,8 +673,8 @@ tests({
     {
       name: "fetch",
       fn() {
-        const fileName = "src/a.ts";
-        const sourceText = `fetch("./testdata/b.ts")`;
+        const fileName = "testdata/a.ts";
+        const sourceText = `fetch("./b.ts")`;
 
         const dependencies: Dependencies = { imports: {}, exports: {} };
         const sourceFile = ts.createSourceFile(
@@ -686,8 +686,9 @@ tests({
           sourceFile,
           [typescriptExtractDependenciesTransformer(dependencies)],
         );
+
         assertEquals(dependencies.imports, {
-          "./testdata/b.ts": {
+          "./b.ts": {
             defaults: [],
             type: DependencyType.Fetch,
             namespaces: [],

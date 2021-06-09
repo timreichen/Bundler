@@ -78,7 +78,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `import * as A from "./b.js";`);
       },
@@ -144,7 +144,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
 
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `import * as A from "./b.js";`);
@@ -211,7 +211,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, ``);
       },
@@ -277,7 +277,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, ``);
       },
@@ -343,7 +343,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, ``);
       },
@@ -409,7 +409,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `import("./b.js");`);
       },
@@ -475,7 +475,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `import("./" + "b.ts");`);
       },
@@ -541,7 +541,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `export type { A } from "./b.js";`);
       },
@@ -607,7 +607,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `export * from "./b.js";`);
       },
@@ -673,7 +673,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(
           outputText,
@@ -742,7 +742,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `export { a, b } from "./b.js";`);
       },
@@ -808,7 +808,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(
           outputText,
@@ -877,7 +877,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `fetch("./b.js")`);
       },
@@ -943,7 +943,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `fetch("./dist/b.js")`);
       },
@@ -1009,7 +1009,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `fetch("../b.js")`);
       },
@@ -1075,7 +1075,7 @@ tests({
           sourceFile,
           transformers,
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(
           outputText,

@@ -25,7 +25,7 @@ tests({
           sourceFile,
           [typescriptRemoveModifiersTransformer()],
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `const a = "a"`);
       },
@@ -45,7 +45,7 @@ tests({
           sourceFile,
           [typescriptRemoveModifiersTransformer()],
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `function x() { }`);
       },
@@ -65,7 +65,7 @@ tests({
           sourceFile,
           [typescriptRemoveModifiersTransformer()],
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `function x() { }`);
       },
@@ -85,7 +85,7 @@ tests({
           sourceFile,
           [typescriptRemoveModifiersTransformer()],
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `class X {\r\n}`);
       },
@@ -105,7 +105,7 @@ tests({
           sourceFile,
           [typescriptRemoveModifiersTransformer()],
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `class X {\r\n}`);
       },
@@ -124,7 +124,7 @@ tests({
           sourceFile,
           [typescriptRemoveModifiersTransformer()],
         );
-        const outputText = printer.printFile(transformed[0]);
+        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
         assertEquals(diagnostics, []);
         assertStringIncludes(outputText, `console.log("OK");\r\nenum X {`);
       },

@@ -43,7 +43,7 @@ Deno.test({
       bundles[
         "dist/deps/db86e1fd887f6089efeeabc89602a3e33578f97f3a853b0cd9cf95c8fedc996a.js"
       ] as string,
-      `const mod = (async () => {`,
+      `const mod = (async ()=>{`,
     );
     assertStringIncludes(
       bundles[
@@ -56,7 +56,7 @@ Deno.test({
       bundles[
         "dist/deps/db86e1fd887f6089efeeabc89602a3e33578f97f3a853b0cd9cf95c8fedc996a.js"
       ] as string,
-      `export default (async () => {`,
+      `export default (async ()=>{`,
     );
   },
 });

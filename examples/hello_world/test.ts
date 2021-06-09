@@ -47,25 +47,25 @@ Deno.test({
       bundles[
         "dist/deps/a44f6db2f2769e51be622a23d3ff909fc7d7fec8d2e0bdc23b636cdf12fccbe0.js"
       ] as string,
-      `const mod = (async () => {`,
+      `const mod = (async ()=>{`,
     );
     assertStringIncludes(
       bundles[
         "dist/deps/a44f6db2f2769e51be622a23d3ff909fc7d7fec8d2e0bdc23b636cdf12fccbe0.js"
       ] as string,
-      `export default (async () => {`,
+      `export default (async ()=>{`,
     );
     assertStringIncludes(
       bundles[
         "dist/deps/a44f6db2f2769e51be622a23d3ff909fc7d7fec8d2e0bdc23b636cdf12fccbe0.js"
       ] as string,
-      `const { world } = await mod;`,
+      `const { world  } = await mod;`,
     );
     assertStringIncludes(
       bundles[
         "dist/deps/a44f6db2f2769e51be622a23d3ff909fc7d7fec8d2e0bdc23b636cdf12fccbe0.js"
       ] as string,
-      `return { world };`,
+      `return {\n        world\n    };`,
     );
   },
 });

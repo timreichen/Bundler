@@ -20,7 +20,7 @@ export function injectIdentifiers(
   const { transformed } = ts.transform(sourceFile, [
     typescriptInjectIdentifiersTransformer(identifierMap, blacklistIdentifiers),
   ]);
-  return printer.printFile(transformed[0]);
+  return printer.printFile(transformed[0] as ts.SourceFile);
 }
 
 tests({

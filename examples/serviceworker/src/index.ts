@@ -3,7 +3,7 @@ navigator.serviceWorker.addEventListener("message", (event) => {
   h1.innerHTML = event.data;
 });
 
-navigator.serviceWorker.register("/sw.ts").then((registration) => {
+navigator.serviceWorker.register("./sw.ts").then((registration) => {
   console.log("ServiceWorker registration successful");
 }, (error) => {
   console.error("ServiceWorker registration failed:", error);

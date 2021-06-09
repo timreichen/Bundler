@@ -22,9 +22,7 @@ function removeModifiers(
 /**
  * remove `export` and `export default` keywords
  */
-export function typescriptRemoveModifiersTransformer(): ts.TransformerFactory<
-  ts.SourceFile
-> {
+export function typescriptRemoveModifiersTransformer() {
   return (context: ts.TransformationContext) => {
     const visitor: ts.Visitor = (node: ts.Node) => {
       if (ts.isExportAssignment(node)) {
@@ -125,7 +123,7 @@ export function typescriptRemoveModifiersTransformer(): ts.TransformerFactory<
       }
       return ts.visitEachChild(node, visitor, context);
     };
-    return (node: ts.SourceFile) =>
+    return (node: ts.Node) =>
       ts.visitNode(node, (child: ts.Node) => visitor(child));
   };
 }

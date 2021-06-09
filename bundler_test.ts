@@ -1,6 +1,6 @@
 import { Bundler } from "./bundler.ts";
 import { createDefaultPlugins } from "./defaults.ts";
-import { assertThrowsAsync, tests } from "./test_deps.ts";
+import { assertEquals, assertThrowsAsync, tests } from "./test_deps.ts";
 
 tests({
   name: "bundler",

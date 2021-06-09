@@ -9,7 +9,7 @@ import { colors, fs, path, ts } from "../../deps.ts";
 import { Asset, getAsset, Graph } from "../../graph.ts";
 import { Logger, logLevels } from "../../logger.ts";
 import { addRelativePrefix, timestamp } from "../../_util.ts";
-import { Chunk, Context, DependencyType, Format, Item } from "../plugin.ts";
+import { Chunk, Context, Format, Item } from "../plugin.ts";
 import { TypescriptPlugin } from "./typescript.ts";
 import { topologicalSort } from "./_util.ts";
 
@@ -30,7 +30,6 @@ function createReturnNode(
 ) {
   const exportPropertyNodes: ts.ObjectLiteralElementLike[] = Object.entries(
     exportIdentifierMap,
-
   )
     .map(([key, value]) => {
       if (identifierMap.has(value)) {
@@ -90,7 +89,7 @@ function createIdentifier(
   blacklistIdentifiers: Set<string>,
 ) {
   const match = regex.exec(identifier);
-  
+
   const { name, number } = match!.groups!;
   let newIdentifier = identifier;
   let index: number = Number(number) || 1;
@@ -110,7 +109,7 @@ function createIdentifierMap(
     if (identifier === "default") {
       value = "_default";
     }
-    
+
     const newIdentifier = createIdentifier(
       value,
       blacklistIdentifiers,
@@ -155,7 +154,7 @@ function createTopLevelAwaitModuleNode(
   ts.transform(sourceFile, [
     typescriptExtractIdentifiersTransformer(identifiers),
   ]);
-  
+
   const identifierMap = createIdentifierMap(identifiers, blacklistIdentifiers);
   // replace "default" with "_default" to avoid invalid identifiers
   Object.entries(defaultBlacklistIdentifiers).forEach(([key, value]) =>
@@ -192,7 +191,7 @@ function createTopLevelAwaitModuleNode(
   );
 
   const functionNode = createIIFENode([
-    ...transformed[0].statements,
+    ...(transformed[0] as ts.SourceFile).statements,
     createReturnNode(identifierMap, exportIdentifierMap, exportNamespaces),
   ]);
 
@@ -219,30 +218,29 @@ async function denoTranspile(
   });
   return files[`file://${name}.js`];
 }
-function tsTranspile(
-  source: string,
-  compilerOptions: ts.CompilerOptions,
-) {
-  return ts.transpile(source, {
-    target: ts.ScriptTarget.ESNext,
-    module: ts.ModuleKind.ESNext,
-    ...compilerOptions,
-  });
-}
+// function tsTranspile(
+//   source: string,
+//   compilerOptions: ts.CompilerOptions,
+// ) {
+//   return ts.transpile(source, {
+//     target: ts.ScriptTarget.ESNext,
+//     module: ts.ModuleKind.ESNext,
+//     ...compilerOptions,
+//   });
+// }
 async function transpile(
   source: string,
   compilerOptions: Deno.CompilerOptions,
 ) {
   return await denoTranspile(source, compilerOptions);
-  const tsCompilerOptions =
-    ts.convertCompilerOptionsFromJson({ compilerOptions }, Deno.cwd())
-      .options;
-  return await tsTranspile(source, {
-    jsx: ts.JsxEmit.React,
-    jsxFactory: "React.createElement",
-    jsxFragmentFactory: "React.Fragment",
-    ...tsCompilerOptions,
-  });
+  // const tsCompilerOptions =
+  //   ts.convertCompilerOptionsFromJson({ compilerOptions }, Deno.cwd())
+  //     .options;
+  // return await tsTranspile(source, {
+  //   jsxFactory: "React.createElement",
+  //   jsxFragmentFactory: "React.Fragment",
+  //   ...tsCompilerOptions,
+  // });
 }
 
 export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
@@ -658,8 +656,8 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
           checkedDependencyItems.add(dependencyInput);
 
           if (
-            checkInput === dependencyInput
-            && dependencyItem.format === Format.Script
+            checkInput === dependencyInput &&
+            dependencyItem.format === Format.Script
           ) {
             bundler.logger.debug(
               colors.dim("→"),

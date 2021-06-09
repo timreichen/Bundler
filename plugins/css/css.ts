@@ -74,8 +74,8 @@ export class CssPlugin extends Plugin {
     // TODO store AST to avoid re-parsing in other plugins
     try {
       await processor.process(source as string);
-    } catch(error) {
-      throw new Error(`${input}: ${error.message}`)
+    } catch (error) {
+      throw new Error(`${input}: ${error.message}`);
     }
 
     const extension = path.extname(input);

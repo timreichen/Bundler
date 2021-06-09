@@ -10,7 +10,7 @@ import { DependencyType, Item } from "../../plugin.ts";
 export function typescriptInjectDependenciesTranformer(
   item: Item,
   { graph, importMap }: { graph: Graph; importMap: Deno.ImportMap },
-): ts.TransformerFactory<ts.SourceFile> {
+) {
   const { history, type } = item;
   const rootInput = history[history.length - 1];
 
@@ -139,7 +139,7 @@ export function typescriptInjectDependenciesTranformer(
           if (ts.isStringLiteral(argument)) {
             const resolvedSpecifier = resolve(argument.text);
             // if is url, skip injection
-            if (!isURL(resolvedSpecifier)  && fs.existsSync(resolvedSpecifier)) {
+            if (!isURL(resolvedSpecifier) && fs.existsSync(resolvedSpecifier)) {
               const asset = getAsset(
                 graph,
                 resolvedSpecifier,
@@ -222,6 +222,7 @@ export function typescriptInjectDependenciesTranformer(
         return ts.visitEachChild(node, visitor(sourceFile), context);
       };
     };
-    return (node: ts.SourceFile) => ts.visitNode(node, visitor(node));
+    return (node: ts.Node) =>
+      ts.visitNode(node, visitor(node as ts.SourceFile));
   };
 }

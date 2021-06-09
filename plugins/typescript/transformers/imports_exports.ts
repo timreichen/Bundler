@@ -6,9 +6,7 @@ export function typescriptTransformImportsExportsTransformer(
   importMap: Deno.ImportMap,
   importIdentifierMap: Map<string, string>,
   identifierMap: Map<string, string>,
-): ts.TransformerFactory<
-  ts.SourceFile
-> {
+) {
   const usedImports: Record<string, Set<string>> = {};
 
   return (context: ts.TransformationContext) => {
@@ -210,7 +208,10 @@ export function typescriptTransformImportsExportsTransformer(
         return ts.visitEachChild(node, visitor(sourceFile), context);
       };
     };
-    return (node: ts.SourceFile) =>
-      ts.visitNode(node, (child: ts.Node) => visitor(node)(child));
+    return (node: ts.Node) =>
+      ts.visitNode(
+        node,
+        (child: ts.Node) => visitor(node as ts.SourceFile)(child),
+      );
   };
 }

@@ -1,4 +1,4 @@
-import { colors, fs, ts } from "../../../deps.ts";
+import { colors, fs, path, ts } from "../../../deps.ts";
 import { isURL } from "../../../_util.ts";
 import {
   Dependencies,
@@ -147,6 +147,7 @@ export function typescriptExtractDependenciesTransformer(
         } else if (ts.isExportAssignment(node)) {
           // export default "abc"
           addExportEntry(filePath);
+          exports[filePath].defaults.push("_default");
           return node;
         } else if (ts.isVariableStatement(node)) {
           if (
@@ -264,8 +265,13 @@ export function typescriptExtractDependenciesTransformer(
           if (ts.isStringLiteral(argument)) {
             const filePath = argument.text;
 
-            // if is url, do not add as dependency
-            if (!isURL(filePath) && fs.existsSync(filePath)) {
+            // if is external file, do not add as dependency
+            if (
+              !isURL(filePath) &&
+              fs.existsSync(
+                path.join(path.dirname(sourceFile.fileName), filePath),
+              )
+            ) {
               addImportEntry(filePath, DependencyType.Fetch);
             }
           }
@@ -309,8 +315,7 @@ export function typescriptExtractDependenciesTransformer(
       return visit;
     };
     return (node: ts.Node) => {
-      const sourceFile = node.getSourceFile();
-      return ts.visitNode(node, visitor(sourceFile));
+      return ts.visitNode(node, visitor(node as ts.SourceFile));
     };
   };
 }

@@ -38,7 +38,10 @@ function resolveDependencies(
 
   Object.keys(imports).forEach((dependencyPath) => {
     let resolvedDependencyPath;
-    if (!isURL(dependencyPath) && !path.isAbsolute(dependencyPath)) {
+    if (
+      isURL(input) ||
+      (!isURL(dependencyPath) && !path.isAbsolute(dependencyPath))
+    ) {
       resolvedDependencyPath = removeRelativePrefix(resolveDependency(
         input,
         dependencyPath,
@@ -51,7 +54,10 @@ function resolveDependencies(
   });
   Object.keys(exports).forEach((dependencyPath) => {
     let resolvedDependencyPath;
-    if (!isURL(dependencyPath) && !path.isAbsolute(dependencyPath)) {
+    if (
+      isURL(input) ||
+      (!isURL(dependencyPath) && !path.isAbsolute(dependencyPath))
+    ) {
       resolvedDependencyPath = removeRelativePrefix(resolveDependency(
         input,
         dependencyPath,

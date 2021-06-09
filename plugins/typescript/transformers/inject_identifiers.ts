@@ -8,7 +8,23 @@ export function typescriptInjectIdentifiersTransformer(
     const visitor = (sourceFile: ts.SourceFile) =>
       (identifierMap: Map<string, string>): ts.Visitor =>
         (node: ts.Node) => {
-          if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+          if (ts.isExportAssignment(node)) {
+            const identifier = identifierMap.get("default")!;
+            return ts.factory.createVariableStatement(
+              undefined,
+              ts.factory.createVariableDeclarationList(
+                [ts.factory.createVariableDeclaration(
+                  ts.factory.createIdentifier(identifier),
+                  undefined,
+                  undefined,
+                  node.expression,
+                )],
+                ts.NodeFlags.Const,
+              ),
+            );
+          } else if (
+            ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)
+          ) {
             // const x = "x"
             const text = node.name.text;
             const identifier = identifierMap.get(text) || text;
@@ -402,10 +418,11 @@ export function typescriptInjectIdentifiersTransformer(
             context,
           );
         };
-    return (node: ts.SourceFile) =>
+    return (node: ts.Node) =>
       ts.visitNode(
         node,
-        (child: ts.Node) => visitor(node)(identifierMap)(child),
+        (child: ts.Node) =>
+          visitor(node as ts.SourceFile)(identifierMap)(child),
       );
   };
 }

@@ -3,9 +3,7 @@ import { ts } from "../../../deps.ts";
 /**
  * inject `.then(async (data) => await data.default)` to load module async iife
  */
-export function typescriptTransformDynamicImportTransformer(): ts.TransformerFactory<
-  ts.SourceFile
-> {
+export function typescriptTransformDynamicImportTransformer() {
   return (context: ts.TransformationContext) => {
     const visitor = (sourceFile: ts.SourceFile): ts.Visitor =>
       (node: ts.Node) => {
@@ -48,7 +46,10 @@ export function typescriptTransformDynamicImportTransformer(): ts.TransformerFac
         }
         return ts.visitEachChild(node, visitor(sourceFile), context);
       };
-    return (node: ts.SourceFile) =>
-      ts.visitNode(node, (child: ts.Node) => visitor(node)(child));
+    return (node: ts.Node) =>
+      ts.visitNode(
+        node,
+        (child: ts.Node) => visitor(node as ts.SourceFile)(child),
+      );
   };
 }

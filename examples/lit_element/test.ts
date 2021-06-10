@@ -33,30 +33,32 @@ Deno.test({
     assertEquals(Object.keys(graph["examples/lit_element/src/element.ts"]), [
       DependencyType.Import,
     ]);
-    assertEquals(Object.keys(graph["https://jspm.dev/lit-element@2.4.0"]), [
+    assertEquals(Object.keys(graph["https://cdn.skypack.dev/lit"]), [
       DependencyType.Import,
     ]);
+
     assertEquals(Object.keys(graph), [
       input,
       "examples/lit_element/src/index.ts",
       "examples/lit_element/src/element.ts",
-      "https://jspm.dev/lit-element@2.4.0",
+      "https://cdn.skypack.dev/lit",
+      "https://cdn.skypack.dev/lit/decorators.js",
       "examples/lit_element/src/styles.css",
-      "https://jspm.dev/npm:lit-html@1/lib/shady-render.js",
-      "https://jspm.dev/npm:lit-element@2.4.0/lib/updating-element.js",
-      "https://jspm.dev/npm:lit-element@2.4.0/lib/decorators",
-      "https://jspm.dev/npm:lit-html@1/lit-html.js",
-      "https://jspm.dev/npm:lit-element@2.4.0/lib/css-tag",
-      "https://jspm.dev/npm:lit-element@2.4.0",
-      "https://jspm.dev/npm:lit-html@1.4.1/lib/dom.js",
-      "https://jspm.dev/npm:lit-html@1.4.1/lib/template.js",
-      "https://jspm.dev/npm:lit-html@1.4.1/lib/render.js",
-      "https://jspm.dev/npm:lit-html@1.4.1/lib/template-factory.js",
-      "https://jspm.dev/npm:lit-html@1.4.1/_/ff10d97f.js",
-      "https://jspm.dev/npm:lit-html@1.4.1",
-      "https://jspm.dev/npm:lit-html@1.4.1/lib/directive.js",
-      "https://jspm.dev/npm:lit-html@1.4.1/lib/part.js",
-      "https://jspm.dev/npm:lit-html@1.4.1/lib/shady-render.js",
+      "https://cdn.skypack.dev/-/lit@v2.0.0-rc.2-0IAqZvGziwqAJXQ3ixcb/dist=es2020,mode=imports/optimized/lit.js",
+      "https://cdn.skypack.dev/-/lit@v2.0.0-rc.2-0IAqZvGziwqAJXQ3ixcb/dist=es2020,mode=imports/optimized/lit/decorators.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element.js",
+      "https://cdn.skypack.dev/-/lit-html@v2.0.0-rc.3-mF2EKOQ7ge0WnKTCrvCT/dist=es2020,mode=imports/optimized/lit-html.js",
+      "https://cdn.skypack.dev/-/lit-element@v3.0.0-rc.2-etHLWyR5eQWAXCYS9lMl/dist=es2020,mode=imports/optimized/lit-element/lit-element.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element/decorators/custom-element.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element/decorators/property.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element/decorators/state.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element/decorators/event-options.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element/decorators/query.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element/decorators/query-all.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element/decorators/query-async.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element/decorators/query-assigned-nodes.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element/css-tag.js",
+      "https://cdn.skypack.dev/-/@lit/reactive-element@v1.0.0-rc.2-ShRizNL1oupWqpCIJ71j/dist=es2020,mode=imports/optimized/@lit/reactive-element/decorators/base.js",
     ]);
 
     const chunks = await bundler.createChunks(inputs, graph, { importMap });

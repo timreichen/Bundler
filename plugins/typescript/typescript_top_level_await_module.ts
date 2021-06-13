@@ -218,29 +218,11 @@ async function denoTranspile(
   });
   return files[`file://${name}.js`];
 }
-// function tsTranspile(
-//   source: string,
-//   compilerOptions: ts.CompilerOptions,
-// ) {
-//   return ts.transpile(source, {
-//     target: ts.ScriptTarget.ESNext,
-//     module: ts.ModuleKind.ESNext,
-//     ...compilerOptions,
-//   });
-// }
 async function transpile(
   source: string,
   compilerOptions: Deno.CompilerOptions,
 ) {
   return await denoTranspile(source, compilerOptions);
-  // const tsCompilerOptions =
-  //   ts.convertCompilerOptionsFromJson({ compilerOptions }, Deno.cwd())
-  //     .options;
-  // return await tsTranspile(source, {
-  //   jsxFactory: "React.createElement",
-  //   jsxFragmentFactory: "React.Fragment",
-  //   ...tsCompilerOptions,
-  // });
 }
 
 export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
@@ -294,13 +276,20 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
             `{ ${Format[dependencyItem.format]} }`,
           ),
         );
+        const chunkList: Item[] = [];
         const chunk = await bundler.createChunk(dependencyItem, {
           ...context,
           logger: new Logger({
             logLevel: logger.logLevel,
             quiet: true,
           }),
-        }, []);
+        }, chunkList);
+        const newChunks: Chunk[] = await Promise.all(
+          chunkList.map(
+            ((item) => bundler.createChunk(item, context, chunkList)),
+          ),
+        );
+        chunks.push(...newChunks);
         dependencyItems.push(...chunk.dependencyItems);
       }
     }
@@ -638,12 +627,6 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
         continue;
       }
 
-      bundler.logger.debug(
-        colors.dim("→"),
-        colors.dim("Check"),
-        colors.dim(checkInput),
-      );
-
       const checkedDependencyItems = new Set();
       // if for shared dependencies with other chunk dependencies
       for (const chunk of chunks) {
@@ -663,7 +646,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
               colors.dim("→"),
               colors.yellow("Split"),
               dependencyInput,
-              chunk.item.history,
+              colors.dim(chunk.item.history[0]),
             );
             const logger = new Logger({ logLevel: logLevels.debug });
             logger.quiet = true;
@@ -695,6 +678,12 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
           });
         }
       }
+
+      bundler.logger.debug(
+        colors.dim("→"),
+        colors.dim("Check"),
+        colors.dim(checkInput),
+      );
 
       // if no shared dependency is found, check sub dependencies
       const asset = getAsset(graph, checkInput, type);

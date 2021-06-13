@@ -87,7 +87,7 @@ export class Bundler {
           context.sources[input] = source;
 
           logger.debug(
-            "Read Source",
+            colors.cyan("Read Source"),
             input,
             colors.dim(plugin.constructor.name),
             colors.dim(colors.italic(`(${timestamp(time)})`)),
@@ -124,7 +124,7 @@ export class Bundler {
         if (newSource !== undefined) {
           source = newSource;
           logger.debug(
-            "Transform Source",
+            colors.cyan("Transform Source"),
             input,
             colors.dim(plugin.constructor.name),
             colors.dim(colors.italic(`(${timestamp(time)})`)),
@@ -147,7 +147,7 @@ export class Bundler {
         const asset = await plugin.createAsset(item, context);
         if (asset !== undefined) {
           logger.debug(
-            "Create Asset",
+            colors.cyan("Create Asset"),
             input,
             colors.dim(plugin.constructor.name),
             colors.dim(colors.italic(`(${timestamp(time)})`)),
@@ -335,7 +335,7 @@ export class Bundler {
         );
         if (chunk !== undefined) {
           logger.debug(
-            "Create Chunk",
+            colors.cyan("Create Chunk"),
             chunk.item.history[0],
             colors.dim(plugin.constructor.name),
             colors.dim(colors.italic(`(${timestamp(time)})`)),
@@ -650,7 +650,7 @@ export class Bundler {
       input,
       cacheDirPath,
     );
-    logger.debug(
+    logger.trace(
       "Cache",
       input,
     );
@@ -670,7 +670,7 @@ export class Bundler {
 
     if (cache[cacheFilePath]) return cache[cacheFilePath];
     const source = await readTextFile(cacheFilePath);
-    logger.debug(
+    logger.trace(
       "Read Cache",
       input,
       colors.dim(cacheFilePath),

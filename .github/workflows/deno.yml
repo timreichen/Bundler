@@ -33,14 +33,14 @@ jobs:
         with:
           deno-version: ${{ matrix.deno }} # tests across multiple Deno versions
 
-      # - name: Verify formatting
-      #   run: deno fmt --check
+      - name: Verify formatting
+        run: deno fmt --check
 
-      # - name: Run linter
-      #   run: deno lint
+      - name: Run linter
+        run: deno lint --ignore=examples,dist,testdata
 
       - name: Cache dependencies
-        run: deno cache --unstable deps.ts
+        run: deno cache --unstable deps.ts test_deps.ts
 
       - name: Run tests
         run: deno test -A --unstable

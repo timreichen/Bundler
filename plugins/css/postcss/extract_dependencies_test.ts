@@ -1,7 +1,6 @@
-import { postcss } from "../../../deps.ts";
 import { assertEquals, tests } from "../../../test_deps.ts";
-import { Dependencies, DependencyType, Format } from "../../plugin.ts";
-import { postcssExtractDependenciesPlugin } from "./extract_dependencies.ts";
+import { DependencyType } from "../../plugin.ts";
+import { extractDependencies } from "./extract_dependencies.ts";
 
 tests({
   name: "postcss plugin → extract dependencies",
@@ -9,34 +8,18 @@ tests({
     {
       name: "importMap",
       async fn() {
-        const importMap = {
-          imports: {
-            "path/": "custom/path/",
-          },
-        };
+        const importMap = { imports: { "path/": "custom/path/" } };
         const input = "styles.css";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = postcssExtractDependenciesPlugin(dependencies)(
-          input,
-          { importMap },
-        );
-        const processor = postcss.default([plugin]);
-
         const source = `@import "path/dependency.css";`;
-        await processor.process(source);
+        const moduleData = await extractDependencies(input, source, importMap);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "custom/path/dependency.css": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Style,
+              [DependencyType.Import]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },
@@ -46,28 +29,16 @@ tests({
       async fn() {
         const importMap = { imports: {} };
         const input = "styles.css";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = postcssExtractDependenciesPlugin(dependencies)(
-          input,
-          { importMap },
-        );
-        const processor = postcss.default([plugin]);
-
         const source = `@import "dependency.css";`;
-        await processor.process(source);
+        const moduleData = await extractDependencies(input, source, importMap);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "dependency.css": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Style,
+              [DependencyType.Import]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },
@@ -77,28 +48,16 @@ tests({
       async fn() {
         const importMap = { imports: {} };
         const input = "styles.css";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = postcssExtractDependenciesPlugin(dependencies)(
-          input,
-          { importMap },
-        );
-        const processor = postcss.default([plugin]);
-
         const source = `@import url("dependency.css");`;
-        await processor.process(source);
+        const moduleData = await extractDependencies(input, source, importMap);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "dependency.css": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Style,
+              [DependencyType.Import]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },
@@ -108,30 +67,16 @@ tests({
       async fn() {
         const importMap = { imports: {} };
         const input = "styles.css";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = postcssExtractDependenciesPlugin(dependencies)(
-          input,
-          { importMap },
-        );
-        const processor = postcss.default([plugin]);
+        const source = `div { background-image: url("image.png"); }`;
+        const moduleData = await extractDependencies(input, source, importMap);
 
-        const source = `div {
-          background-image: url("image.png");
-        }`;
-        await processor.process(source);
-
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "image.png": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Image,
+              [DependencyType.Import]: [],
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },

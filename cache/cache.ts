@@ -17,7 +17,6 @@ function typescriptExtractDependenciesTransformer(
 
         if (ts.isImportDeclaration(node)) {
           const importClause = node.importClause;
-          // if (importClause?.isTypeOnly) return node;
           const moduleSpecifier = node.moduleSpecifier;
           if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
             filePath = moduleSpecifier.text;
@@ -39,7 +38,6 @@ function typescriptExtractDependenciesTransformer(
           }
           return node;
         } else if (ts.isExportDeclaration(node)) {
-          // if (node.isTypeOnly) return node;
           const moduleSpecifier = node.moduleSpecifier;
           if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
             filePath = moduleSpecifier.text;

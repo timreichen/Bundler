@@ -1,6 +1,6 @@
 import { postcss, posthtml } from "../../../deps.ts";
 import { assertEquals, tests } from "../../../test_deps.ts";
-import { Dependencies, DependencyType, Format } from "../../plugin.ts";
+import { DependencyType, ModuleData } from "../../plugin.ts";
 import {
   posthtmlExtractImageDependencies,
   posthtmlExtractInlineStyleDependencies,
@@ -21,8 +21,8 @@ tests({
           },
         };
         const input = "a.html";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = posthtmlExtractImageDependencies(dependencies)(
+        const moduleData: ModuleData = { dependencies: {}, export: {} };
+        const plugin = posthtmlExtractImageDependencies(moduleData)(
           input,
           { importMap },
         );
@@ -31,18 +31,13 @@ tests({
         const source = `<html><body><img src="path/b.png"></body></html>`;
         await processor.process(source);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "custom/path/b.png": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Image,
+              [DependencyType.Import]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },
@@ -56,8 +51,8 @@ tests({
           },
         };
         const input = "a.html";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = posthtmlExtractImageDependencies(dependencies)(
+        const moduleData: ModuleData = { dependencies: {}, export: {} };
+        const plugin = posthtmlExtractImageDependencies(moduleData)(
           input,
           { importMap },
         );
@@ -68,18 +63,13 @@ tests({
         <body><img src="b.png"></body></html>`;
         await processor.process(source);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "custom/path/b.png": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Image,
+              [DependencyType.Import]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },
@@ -93,8 +83,8 @@ tests({
           },
         };
         const input = "a.html";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = posthtmlExtractImageDependencies(dependencies)(
+        const moduleData: ModuleData = { dependencies: {}, export: {} };
+        const plugin = posthtmlExtractImageDependencies(moduleData)(
           input,
           { importMap },
         );
@@ -105,18 +95,13 @@ tests({
         <body><img src="path/b.png"></body></html>`;
         await processor.process(source);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "custom/path/b.png": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Image,
+              [DependencyType.Import]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },
@@ -126,8 +111,8 @@ tests({
       async fn() {
         const importMap = { imports: {} };
         const input = "a.html";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = posthtmlExtractLinkDependencies(dependencies)(
+        const moduleData: ModuleData = { dependencies: {}, export: {} };
+        const plugin = posthtmlExtractLinkDependencies(moduleData)(
           input,
           { importMap },
         );
@@ -137,18 +122,13 @@ tests({
           `<html><head><link rel="stylesheet" href="b.css"></head></html>`;
         await processor.process(source);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "b.css": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Style,
+              [DependencyType.Import]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },
@@ -158,8 +138,8 @@ tests({
       async fn() {
         const importMap = { imports: {} };
         const input = "a.html";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = posthtmlExtractLinkDependencies(dependencies)(
+        const moduleData: ModuleData = { dependencies: {}, export: {} };
+        const plugin = posthtmlExtractLinkDependencies(moduleData)(
           input,
           { importMap },
         );
@@ -169,18 +149,13 @@ tests({
           `<html><head><link rel="manifest" href="webmanifest.json"></div></head></html>`;
         await processor.process(source);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "webmanifest.json": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.WebManifest,
+              [DependencyType.WebManifest]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },
@@ -190,8 +165,8 @@ tests({
       async fn() {
         const importMap = { imports: {} };
         const input = "a.html";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = posthtmlExtractScriptDependencies(dependencies)(
+        const moduleData: ModuleData = { dependencies: {}, export: {} };
+        const plugin = posthtmlExtractScriptDependencies(moduleData)(
           input,
           { importMap },
         );
@@ -200,18 +175,13 @@ tests({
         const source = `<html><body><script src="b.js"></script></body></html>`;
         await processor.process(source);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "b.js": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Script,
+              [DependencyType.Import]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },
@@ -222,8 +192,8 @@ tests({
         const use: postcss.AcceptedPlugin[] = [];
         const importMap = { imports: {} };
         const input = "a.html";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = posthtmlExtractStyleDependencies(dependencies)(
+        const moduleData: ModuleData = { dependencies: {}, export: {} };
+        const plugin = posthtmlExtractStyleDependencies(moduleData)(
           input,
           { importMap, use },
         );
@@ -233,18 +203,13 @@ tests({
           `<html><head><style>@import "b.css";</style></head></html>`;
         await processor.process(source);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "b.css": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Style,
+              [DependencyType.Import]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },
@@ -255,8 +220,8 @@ tests({
         const use: postcss.AcceptedPlugin[] = [];
         const importMap = { imports: {} };
         const input = "a.html";
-        const dependencies: Dependencies = { imports: {}, exports: {} };
-        const plugin = posthtmlExtractInlineStyleDependencies(dependencies)(
+        const moduleData: ModuleData = { dependencies: {}, export: {} };
+        const plugin = posthtmlExtractInlineStyleDependencies(moduleData)(
           input,
           { importMap, use },
         );
@@ -266,18 +231,13 @@ tests({
           `<html><body><div style="background: url('b.png')"></div></body></html>`;
         await processor.process(source);
 
-        assertEquals(dependencies, {
-          imports: {
+        assertEquals(moduleData, {
+          dependencies: {
             "b.png": {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Image,
+              [DependencyType.Import]: {},
             },
           },
-          exports: {},
+          export: {},
         });
       },
     },

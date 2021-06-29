@@ -4,6 +4,10 @@ import {
   sep,
 } from "https://deno.land/std@0.66.0/path/mod.ts";
 import { yellow } from "https://deno.land/std@0.66.0/fmt/colors.ts";
+import { LogLevel, logLevels } from "./logger.ts";
+import { Args, fs, path } from "./deps.ts";
+import { OutputMap } from "./plugins/plugin.ts";
+import { Graph } from "./graph.ts";
 
 /**
  * returns true if path can be parsed by URL and protocol starts with http
@@ -16,7 +20,9 @@ export function isURL(path: string) {
   try {
     new URL(path);
     return true;
-  } catch (error) {}
+    // deno-lint-ignore no-empty
+  } catch (_) {
+  }
   return false;
 }
 
@@ -87,4 +93,135 @@ export async function readTextFile(path: string | URL) {
     }
     throw error;
   }
+}
+
+export const logLevelNames = ["trace", "debug", "info"];
+export function getLogLevel(logLevelName: string): LogLevel {
+  if (!logLevelNames.includes(logLevelName)) {
+    throw Error(
+      `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: ${
+        logLevelNames.join(", ")
+      }]`,
+    );
+  }
+  return logLevels[logLevelName as keyof typeof logLevels];
+}
+
+export function parseEntries(_: string[]) {
+  const entries: {
+    output: string;
+    input: string;
+    options: Record<string, string>;
+  }[] = [];
+
+  for (const inp of _) {
+    const match =
+      /^(?<input>(?:[^\=]|[\w\/\\\.])+?)(?:\=(?<output>(?:[^\=]|[\w\/\\\.])+?))?(?:\{(?<options>.*?)\})?$/
+        .exec(inp);
+
+    const { input: inputString, output, options: optionString } = match
+      ?.groups!;
+    const input = removeRelativePrefix(inputString);
+
+    let options = {};
+    if (optionString) {
+      const optionStrings = optionString.split(",");
+      const optionPairs = optionStrings.map((string) => string.split("="));
+      options = Object.fromEntries(optionPairs);
+    }
+
+    entries.push({
+      output,
+      input,
+      options,
+    });
+  }
+  return entries;
+}
+
+export interface Options {
+  inputs: string[];
+  initialGraph: Graph;
+  compilerOptions: Deno.CompilerOptions;
+  importMap: Deno.ImportMap;
+  outputMap: OutputMap;
+  outDirPath: string;
+  depsDirPath: string;
+  cacheDirPath: string;
+  cacheFilePath: string;
+
+  logLevel: LogLevel;
+  reload: boolean;
+  optimize: boolean;
+  watch: boolean;
+  quiet: boolean;
+}
+
+const depsDirName = "deps";
+const cacheDirName = ".cache";
+const cacheFileName = "cache.json";
+
+export interface CacheData {
+  graph: Graph;
+}
+
+export async function createOptions({
+  _,
+  "out-dir": outDir = "dist",
+  "import-map": importMapPath,
+  config: configFilePath,
+  optimize,
+  reload,
+  watch,
+  "log-level": logLevelName,
+  quiet,
+}: Args): Promise<Options> {
+  const logLevel = (logLevelName ? getLogLevel(logLevelName) : logLevels.info);
+
+  const entries = parseEntries(_ as string[]);
+  const outputMap: OutputMap = {};
+  const inputs: string[] = [];
+  for (const { input, output } of entries) {
+    inputs.push(input);
+    if (output) {
+      outputMap[input] = path.join(outDir, output);
+    }
+  }
+
+  const outDirPath = outDir;
+  const depsDirPath = path.join(outDir, depsDirName);
+  const cacheDirPath = path.join(outDir, cacheDirName);
+  const cacheFilePath = path.join(cacheDirPath, cacheFileName);
+
+  const { graph: initialGraph }: CacheData = fs.existsSync(cacheFilePath)
+    ? JSON.parse(await readTextFile(cacheFilePath))
+    : { graph: {} };
+
+  const config = configFilePath && fs.existsSync(configFilePath)
+    ? JSON.parse(await readTextFile(configFilePath))
+    : {};
+  const compilerOptions = config.compilerOptions || {};
+
+  const importMap: Deno.ImportMap =
+    (importMapPath
+      ? JSON.parse(await readTextFile(importMapPath))
+      : { imports: {} });
+
+  return {
+    inputs,
+    initialGraph,
+    compilerOptions,
+    importMap,
+    outputMap,
+    outDirPath,
+    depsDirPath,
+    cacheDirPath,
+    cacheFilePath,
+
+    logLevel,
+    reload: typeof reload === "string" ? reload.split(",") : reload,
+    optimize,
+    watch,
+    quiet,
+  };
 }

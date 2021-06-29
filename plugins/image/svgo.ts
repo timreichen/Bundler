@@ -1,10 +1,11 @@
+// deno-lint-ignore-file no-explicit-any
 import { svgo } from "../../deps.ts";
-import { Context, Format, Item, Plugin } from "../plugin.ts";
+import { Context, Item, Plugin } from "../plugin.ts";
 
 export class SvgoPlugin extends Plugin {
-  async test(item: Item, context: Context) {
+  test(item: Item) {
     const input = item.history[0];
-    return item.format === Format.Image && input.endsWith(".svg");
+    return input.endsWith(".svg");
   }
   optimizeBundle(
     output: string,

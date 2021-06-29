@@ -1,5 +1,7 @@
 import { ts } from "../../../deps.ts";
 
+const { factory } = ts;
+
 function hasModifier(
   modifiers: ts.ModifiersArray,
   modifier: ts.SyntaxKind,
@@ -27,7 +29,18 @@ export function typescriptRemoveModifiersTransformer() {
     const visitor: ts.Visitor = (node: ts.Node) => {
       if (ts.isExportAssignment(node)) {
         // export default "abc"
-        return undefined;
+        return factory.createVariableStatement(
+          undefined,
+          factory.createVariableDeclarationList(
+            [factory.createVariableDeclaration(
+              factory.createIdentifier("_default"),
+              undefined,
+              undefined,
+              node.expression,
+            )],
+            ts.NodeFlags.Const,
+          ),
+        );
       } else if (ts.isVariableStatement(node)) {
         // export const x = "x"
         if (
@@ -82,7 +95,7 @@ export function typescriptRemoveModifiersTransformer() {
         ts.isEnumDeclaration(node) && node.modifiers &&
         hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
       ) {
-        node = ts.factory.updateEnumDeclaration(
+        node = factory.updateEnumDeclaration(
           node,
           node.decorators,
           removeModifiers(node.modifiers, [
@@ -95,7 +108,7 @@ export function typescriptRemoveModifiersTransformer() {
         ts.isInterfaceDeclaration(node) && node.modifiers &&
         hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
       ) {
-        node = ts.factory.updateInterfaceDeclaration(
+        node = factory.updateInterfaceDeclaration(
           node,
           node.decorators,
           removeModifiers(node.modifiers, [
@@ -110,7 +123,7 @@ export function typescriptRemoveModifiersTransformer() {
         ts.isTypeAliasDeclaration(node) && node.modifiers &&
         hasModifier(node.modifiers, ts.SyntaxKind.ExportKeyword)
       ) {
-        node = ts.factory.updateTypeAliasDeclaration(
+        node = factory.updateTypeAliasDeclaration(
           node,
           node.decorators,
           removeModifiers(node.modifiers, [

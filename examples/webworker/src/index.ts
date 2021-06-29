@@ -1,4 +1,4 @@
-const worker = new Worker("worker.ts");
+const worker = new Worker("worker.ts", { type: "module" });
 
 worker.addEventListener("message", (event) => {
   const message = event.data;

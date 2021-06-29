@@ -1,34 +1,45 @@
-import {
-  readTextFile,
-  removeRelativePrefix,
-  size,
-  timestamp,
-} from "./_util.ts";
 import { colors, path, Sha256 } from "./deps.ts";
 import { Asset, getAsset, Graph } from "./graph.ts";
+import { Logger, logLevels } from "./logger.ts";
 import {
   Bundles,
   Cache,
   Chunk,
-  ChunkList,
   Chunks,
   Context,
   DependencyType,
-  Format,
-  getFormat,
+  History,
   Item,
   OutputMap,
   Plugin,
   Source,
   Sources,
 } from "./plugins/plugin.ts";
+import {
+  readTextFile,
+  removeRelativePrefix,
+  size,
+  timestamp,
+} from "./_util.ts";
 import { resolve as resolveCache } from "./cache/cache.ts";
-import { Logger, logLevels } from "./logger.ts";
+
+function checkCircularDependency(history: History, dependency: string) {
+  const index = history.indexOf(dependency);
+  if (index > 0) {
+    const deps = [...history.slice(0, index + 1).reverse(), dependency];
+    console.error(
+      colors.red(`Circular Dependency`),
+      colors.dim(deps.join(` → `)),
+    );
+    throw new Error(`Circular Dependency`);
+  }
+}
 
 interface Options {
   importMap?: Deno.ImportMap;
   sources?: Sources;
   reload?: boolean | string[];
+  logger?: Logger;
 }
 
 export interface CreateGraphOptions extends Options {
@@ -59,16 +70,13 @@ export interface BundleOptions extends Options {
 }
 
 export class Bundler {
-  private plugins: Plugin[];
-  readonly logger: Logger;
+  plugins: Plugin[];
+  logger: Logger;
   constructor(
     plugins: Plugin[],
-    { logger = new Logger({ logLevel: logLevels.info }) }: {
-      logger?: Logger;
-    } = {},
   ) {
     this.plugins = plugins;
-    this.logger = logger;
+    this.logger = new Logger({ logLevel: logLevels.info });
   }
   async readSource(item: Item, context: Context): Promise<Source> {
     const { logger } = context;
@@ -152,20 +160,13 @@ export class Bundler {
             colors.dim(plugin.constructor.name),
             colors.dim(colors.italic(`(${timestamp(time)})`)),
           );
-          [
-            ...Object.entries(asset.dependencies.imports),
-            ...Object.entries(asset.dependencies.exports),
-          ].forEach((
-            [dependency, { format, type }],
-          ) =>
-            logger.debug(
-              colors.dim(`→`),
-              colors.dim(type),
-              colors.dim(dependency),
-              colors.dim(
-                `{ ${Format[format]} }`,
-              ),
-            )
+          Object.keys(asset.dependencies).forEach(
+            (dependency) => {
+              logger.debug(
+                colors.dim(`→`),
+                colors.dim(dependency),
+              );
+            },
           );
           return asset;
         }
@@ -209,27 +210,24 @@ export class Bundler {
       input,
     ) => ({
       history: [input],
-      type: DependencyType.Import, /* entry type */
-      format: getFormat(input) || Format.Unknown,
+      type: DependencyType.Import,
     }));
 
-    const checkedInputs: Record<string, DependencyType[]> = {};
+    const checkedInputs: Set<string> = new Set();
 
     for (const item of itemList) {
       const { history, type } = item;
       const input = removeRelativePrefix(history[0]);
 
-      checkedInputs[input] ||= [];
-      if (checkedInputs[input].includes(type)) continue;
-      checkedInputs[input].push(type);
-
-      let asset = context.graph[input]?.[type];
+      if (checkedInputs.has(input)) continue;
+      checkedInputs.add(input);
 
       const needsReload = context.reload === true ||
         Array.isArray(context.reload) && context.reload.includes(input);
 
       let needsUpdate = needsReload;
 
+      let asset = context.graph[input]?.find((asset) => asset.type === type);
       if (!asset) {
         needsUpdate = true;
       } else if (!needsReload) {
@@ -254,34 +252,24 @@ export class Bundler {
       }
 
       if (!asset) {
-        throw new Error(`asset not found: ${input} ${item.type}`);
+        throw new Error(
+          `asset not found: ${input} ${DependencyType[item.type]}`,
+        );
       }
 
-      const entry = graph[input] ||= {};
-      entry[type] = asset;
-
-      for (const dependencies of Object.values(asset.dependencies)) {
-        for (
-          const [dependency, { type, format }] of Object.entries(dependencies)
-        ) {
-          const index = history.indexOf(dependency);
-          if (index > 0) {
-            const deps = [...history.slice(0, index + 1).reverse(), dependency];
-            console.error(
-              colors.red(`Circular Dependency`),
-            );
-            console.error(colors.dim(deps.join(` → `)));
-            throw new Error(`Circular Dependency`);
-          }
-          if (input !== dependency) {
+      const entry = graph[input] ||= [];
+      entry.push(asset);
+      Object.entries(asset.dependencies).forEach(
+        ([dependency, types]) => {
+          Object.keys(types).forEach((type) => {
+            checkCircularDependency(history, dependency);
             itemList.push({
               history: [dependency, ...history],
-              type,
-              format,
+              type: type as DependencyType,
             });
-          }
-        }
-      }
+          });
+        },
+      );
     }
 
     const length = Object.keys(checkedInputs).length;
@@ -296,22 +284,18 @@ export class Bundler {
     );
 
     Object.entries(graph).forEach(([input, types]) => {
-      context.logger.debug(
-        colors.dim(`➞`),
-        colors.dim(input),
-      );
       Object.values(types).forEach((asset) => {
-        const dependencies = [
-          ...Object.entries(asset!.dependencies.imports),
-          ...Object.entries(asset!.dependencies.exports),
-        ];
-
-        dependencies.forEach(([dependency, { type, format }]) => {
+        const { type, dependencies } = asset!;
+        context.logger.debug(
+          colors.dim(`➞`),
+          colors.dim(input),
+          colors.dim(`{ ${DependencyType[type]} }`),
+        );
+        Object.keys(dependencies).forEach((dependency) => {
           context.logger.debug(
-            colors.dim(`  `),
-            colors.dim(type),
+            colors.dim(`   ➞`),
             colors.dim(dependency),
-            colors.dim(`{ ${Format[format]} }`),
+            colors.dim(`{ ${DependencyType[type]} }`),
           );
         });
       });
@@ -322,7 +306,7 @@ export class Bundler {
   async createChunk(
     item: Item,
     context: Context,
-    chunkList: ChunkList,
+    chunkList: Item[],
   ) {
     const { logger } = context;
     const time = performance.now();
@@ -334,21 +318,23 @@ export class Bundler {
           chunkList,
         );
         if (chunk !== undefined) {
+          const { history } = item;
+          const input = history[0];
+
           logger.debug(
             colors.cyan("Create Chunk"),
-            chunk.item.history[0],
+            input,
             colors.dim(plugin.constructor.name),
             colors.dim(colors.italic(`(${timestamp(time)})`)),
           );
-          const items = [item, ...chunk.dependencyItems];
-          items.forEach((item) => {
-            const input = item.history[0];
+          chunk.dependencyItems.forEach((dependencyItem) => {
+            const { history, type } = dependencyItem;
+            const input = history[0];
             logger.debug(
               colors.dim(`➞`),
-              colors.dim(item.type),
               colors.dim(input),
               colors.dim(
-                `{ ${Format[item.format]} }`,
+                `{ ${DependencyType[type]} }`,
               ),
             );
           });
@@ -396,20 +382,18 @@ export class Bundler {
     };
 
     const chunkList: Item[] = inputs.map((input) => {
-      const type = DependencyType.Import;
-      const asset = getAsset(graph, input, type);
       return {
-        asset,
         history: [input],
-        type,
-        format: getFormat(input) || Format.Unknown,
+        type: DependencyType.Import,
       };
     });
 
-    const chunks = context.chunks;
+    const { chunks } = context;
     const checkedChunks: Partial<
       Record<DependencyType, Record<string, Chunk>>
     > = {};
+
+    const allItems: Record<string, Set<DependencyType>> = {};
 
     for (const item of chunkList) {
       const { history, type } = item;
@@ -419,14 +403,7 @@ export class Bundler {
       checkedChunks[type] ||= {};
       checkedChunks[type]![input] = chunk;
       chunks.push(chunk);
-    }
-
-    for (const chunk of chunks) {
-      for (const plugin of this.plugins) {
-        if (plugin.splitChunks && await plugin.test(chunk.item, context)) {
-          await plugin.splitChunks(chunk, context);
-        }
-      }
+      await this.splitChunk(chunk, context, chunkList, allItems);
     }
 
     const length = chunks.length;
@@ -436,7 +413,73 @@ export class Bundler {
       colors.dim(`${length} file${length === 1 ? "" : "s"}`),
       colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
+
     return chunks;
+  }
+  private async splitChunk(
+    chunk: Chunk,
+    context: Context,
+    chunkList: Item[],
+    allItems: Record<string, Set<DependencyType>>,
+  ) {
+    const { logger, chunks } = context;
+
+    logger.debug(colors.cyan("Split Chunk"), chunk.item.history[0]);
+
+    const checked: Record<string, Set<DependencyType>> = {}; // cache outside loop for faster chunk splits
+
+    const items = [...chunk.dependencyItems];
+
+    function addItem(input: string, type: DependencyType) {
+      (allItems[input] ||= new Set()).add(type);
+    }
+    function hasItem(input: string, type: DependencyType) {
+      return allItems[input]?.has(type);
+    }
+    function addChunkItems({ item, dependencyItems }: Chunk) {
+      addItem(item.history[0], item.type);
+      dependencyItems.forEach((item) => addItem(item.history[0], item.type));
+    }
+
+    chunks.forEach((c) => {
+      if (c === chunk) return;
+      addChunkItems(c);
+    });
+
+    for (const item of items) {
+      const { history, type } = item;
+      const input = history[0];
+
+      if (
+        chunks.some(({ item }) =>
+          item.history[0] === input && item.type === type
+        )
+      ) {
+        continue;
+      }
+
+      const newChunk = await this.createChunk(item, {
+        ...context,
+        logger: new Logger({
+          logLevel: logger.logLevel,
+          quiet: true,
+        }),
+      }, chunkList);
+
+      if (hasItem(input, type)) {
+        logger.debug(colors.dim("→"), colors.yellow("Split"), input);
+        chunks.push(newChunk);
+        items.push(...newChunk.dependencyItems);
+      } else {
+        logger.debug(
+          colors.dim("→"),
+          colors.dim("Check"),
+          colors.dim(input),
+        );
+        (checked[input] ||= new Set()).add(type);
+        addChunkItems(newChunk);
+      }
+    }
   }
 
   async createBundle(
@@ -445,13 +488,14 @@ export class Bundler {
   ) {
     const { logger } = context;
     const item = chunk.item;
-    const input = item.history[0];
+    const { history, type } = item;
+    const input = history[0];
 
     const time = performance.now();
     for (const plugin of this.plugins) {
       if (plugin.createBundle && await plugin.test(item, context)) {
         const bundle = await plugin.createBundle(chunk, context) as string;
-        const asset = getAsset(context.graph, input, item.type);
+        const asset = getAsset(context.graph, input, type);
         if (bundle !== undefined) {
           const length = bundle.length;
           logger.info(
@@ -475,10 +519,10 @@ export class Bundler {
             input,
             colors.dim(colors.italic(`(${timestamp(time)})`)),
           );
-          logger.debug(
-            colors.dim(`➞`),
-            colors.dim(asset.output),
-          );
+          // logger.debug(
+          //   colors.dim(`➞`),
+          //   colors.dim(asset.output),
+          // );
           // exit
           return;
         }
@@ -502,7 +546,7 @@ export class Bundler {
           "Optimize Bundle",
           input,
           colors.dim(`➞`),
-          colors.dim((getAsset(context.graph, input, type).output)),
+          colors.dim((asset.output)),
           colors.dim(plugin.constructor.name),
           colors.dim(colors.italic(`(${timestamp(time)})`)),
         );
@@ -510,7 +554,6 @@ export class Bundler {
     }
     return bundle;
   }
-
   async createBundles(
     chunks: Chunks,
     graph: Graph,
@@ -546,7 +589,9 @@ export class Bundler {
       const bundle = await this.createBundle(chunk, context);
       if (bundle !== undefined) {
         const item = chunk.item;
-        const chunkAsset = getAsset(graph, item.history[0], item.type);
+        const { history, type } = item;
+        const input = history[0];
+        const chunkAsset = getAsset(graph, input, type);
         const output = chunkAsset.output;
         bundles[output] = bundle;
         if (context.optimize) {

@@ -1,5 +1,5 @@
 import { html, LitElement, unsafeCSS } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement } from "lit/decorators.js";
 
 import styles from "./styles.css";
 
@@ -8,13 +8,6 @@ export class MyElement extends LitElement {
   static styles = unsafeCSS(styles);
 
   render() {
-    return html`
-    <h1>Hello from LitElement!</h1>
-    <button @click="${this.clickHandler}">Click Me</button>
-    `;
-  }
-
-  clickHandler() {
-    alert("clicked");
+    return html`<h1>Hello from LitElement!</h1>`;
   }
 }

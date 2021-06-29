@@ -41,7 +41,7 @@ tests({
     {
       name: "cache failed",
       fn: async () => {
-        const input = "https://deno.land/x/bundler/file_does_not_exist.ts";
+        const input = "https://deno.land/x/bundler/404.ts";
         await assertThrowsAsync(async () => {
           await cache(input);
         }, Error);

@@ -1,7 +1,27 @@
 import { ts } from "../../../deps.ts";
 import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
-import { getIdentifier } from "./_util.ts";
+import { getIdentifier } from "../identifiers/_util.ts";
 
+const { factory } = ts;
+/**
+ * replace import statements with `await` statement.
+ *
+ * Example:
+ * ```
+ * // importIdentifierMap
+ * Map {
+ *   "./x.ts": "mod"
+ * }
+ * ```
+ * import statement
+ * ```ts
+ * import { x } from "./x.ts"
+ * ```
+ * will become
+ * ```ts
+ * const { x } = await mod
+ * ```
+ */
 export function typescriptTransformImportsExportsTransformer(
   importMap: Deno.ImportMap,
   importIdentifierMap: Map<string, string>,
@@ -36,15 +56,15 @@ export function typescriptTransformImportsExportsTransformer(
                   // import * as x from "./x.ts"
                   const text = importClause.namedBindings.name.text;
                   const name = identifierMap.get(text) || text;
-                  return ts.factory.createVariableStatement(
+                  return factory.createVariableStatement(
                     undefined,
-                    ts.factory.createVariableDeclarationList(
-                      [ts.factory.createVariableDeclaration(
-                        ts.factory.createIdentifier(name),
+                    factory.createVariableDeclarationList(
+                      [factory.createVariableDeclaration(
+                        factory.createIdentifier(name),
                         undefined,
                         undefined,
-                        ts.factory.createAwaitExpression(
-                          ts.factory.createIdentifier(identifier),
+                        factory.createAwaitExpression(
+                          factory.createIdentifier(identifier),
                         ),
                       )],
                       ts.NodeFlags.Const,
@@ -66,25 +86,26 @@ export function typescriptTransformImportsExportsTransformer(
                     if (usedImportSpecifiers.has(name)) return;
                     usedImportSpecifiers.add(name);
 
-                    const newElement = ts.factory.createBindingElement(
+                    const newElement = factory.createBindingElement(
                       undefined,
-                      propertyName,
-                      ts.factory.createIdentifier(name),
+                      propertyName === name ? undefined : propertyName,
+                      name,
                       undefined,
                     );
+
                     elements.push(newElement);
                   });
-                  return ts.factory.createVariableStatement(
+                  return factory.createVariableStatement(
                     undefined,
-                    ts.factory.createVariableDeclarationList(
-                      [ts.factory.createVariableDeclaration(
-                        ts.factory.createObjectBindingPattern(
+                    factory.createVariableDeclarationList(
+                      [factory.createVariableDeclaration(
+                        factory.createObjectBindingPattern(
                           elements,
                         ),
                         undefined,
                         undefined,
-                        ts.factory.createAwaitExpression(
-                          ts.factory.createIdentifier(identifier),
+                        factory.createAwaitExpression(
+                          factory.createIdentifier(identifier),
                         ),
                       )],
                       ts.NodeFlags.Const,
@@ -95,20 +116,20 @@ export function typescriptTransformImportsExportsTransformer(
               if (importClause.name) {
                 // import x from "./x.ts"
 
-                return ts.factory.createVariableStatement(
+                return factory.createVariableStatement(
                   undefined,
-                  ts.factory.createVariableDeclarationList(
-                    [ts.factory.createVariableDeclaration(
-                      ts.factory.createIdentifier(importClause.name.text),
+                  factory.createVariableDeclarationList(
+                    [factory.createVariableDeclaration(
+                      factory.createIdentifier(importClause.name.text),
                       undefined,
                       undefined,
-                      ts.factory.createPropertyAccessExpression(
-                        ts.factory.createParenthesizedExpression(
-                          ts.factory.createAwaitExpression(
-                            ts.factory.createIdentifier(identifier),
+                      factory.createPropertyAccessExpression(
+                        factory.createParenthesizedExpression(
+                          factory.createAwaitExpression(
+                            factory.createIdentifier(identifier),
                           ),
                         ),
-                        ts.factory.createIdentifier("default"),
+                        factory.createIdentifier("default"),
                       ),
                     )],
                     ts.NodeFlags.Const,
@@ -118,8 +139,8 @@ export function typescriptTransformImportsExportsTransformer(
             } else {
               // import "./x.ts"
 
-              node = ts.factory.createAwaitExpression(
-                ts.factory.createIdentifier(identifier),
+              node = factory.createAwaitExpression(
+                factory.createIdentifier(identifier),
               );
             }
           }
@@ -141,15 +162,15 @@ export function typescriptTransformImportsExportsTransformer(
                 // export * as x from "./x.ts"
                 const text = exportClause.name.text;
                 const name = identifierMap.get(text) || text;
-                return ts.factory.createVariableStatement(
+                return factory.createVariableStatement(
                   undefined,
-                  ts.factory.createVariableDeclarationList(
-                    [ts.factory.createVariableDeclaration(
-                      ts.factory.createIdentifier(name),
+                  factory.createVariableDeclarationList(
+                    [factory.createVariableDeclaration(
+                      factory.createIdentifier(name),
                       undefined,
                       undefined,
-                      ts.factory.createAwaitExpression(
-                        ts.factory.createIdentifier(identifier),
+                      factory.createAwaitExpression(
+                        factory.createIdentifier(identifier),
                       ),
                     )],
                     ts.NodeFlags.Const,
@@ -166,33 +187,36 @@ export function typescriptTransformImportsExportsTransformer(
                   const text = element.name.text;
                   let name = text;
                   let propertyName = element.propertyName?.text;
+
                   if (identifierMap.has(text)) {
                     name = identifierMap.get(text)!;
                     propertyName = text;
                   }
+
                   const usedImportSpecifiers = usedImports[identifier] =
                     usedImports[identifier] || new Set();
                   if (usedImportSpecifiers.has(name)) return;
                   usedImportSpecifiers.add(name);
-                  const newElement = ts.factory.createBindingElement(
+
+                  const newElement = factory.createBindingElement(
                     undefined,
-                    propertyName,
+                    propertyName === name ? undefined : propertyName,
                     name,
                     undefined,
                   );
                   elements.push(newElement);
                 });
-                return ts.factory.createVariableStatement(
+                return factory.createVariableStatement(
                   undefined,
-                  ts.factory.createVariableDeclarationList(
-                    [ts.factory.createVariableDeclaration(
-                      ts.factory.createObjectBindingPattern(
+                  factory.createVariableDeclarationList(
+                    [factory.createVariableDeclaration(
+                      factory.createObjectBindingPattern(
                         elements,
                       ),
                       undefined,
                       undefined,
-                      ts.factory.createAwaitExpression(
-                        ts.factory.createIdentifier(identifier),
+                      factory.createAwaitExpression(
+                        factory.createIdentifier(identifier),
                       ),
                     )],
                     ts.NodeFlags.Const,

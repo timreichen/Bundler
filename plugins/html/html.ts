@@ -1,13 +1,12 @@
 import { path, postcss, posthtml, Sha256 } from "../../deps.ts";
 import { getAsset } from "../../graph.ts";
-import { readTextFile, removeRelativePrefix } from "../../_util.ts";
+import { readTextFile } from "../../_util.ts";
 import {
   Chunk,
-  ChunkList,
   Context,
-  Dependencies,
-  Format,
+  DependencyType,
   Item,
+  ModuleData,
   Plugin,
 } from "../plugin.ts";
 import {
@@ -36,11 +35,11 @@ export class HtmlPlugin extends Plugin {
     super();
     this.use = use;
   }
-  async test(item: Item) {
+  test(item: Item) {
     const input = item.history[0];
     return input.endsWith(".html");
   }
-  async readSource(input: string) {
+  readSource(input: string) {
     return readTextFile(input);
   }
   async createAsset(
@@ -50,25 +49,25 @@ export class HtmlPlugin extends Plugin {
     const input = item.history[0];
     const { bundler, importMap, outputMap, depsDirPath } = context;
     const source = await bundler.readSource(item, context) as string;
-    const dependencies: Dependencies = { imports: {}, exports: {} };
+    const moduleData: ModuleData = { dependencies: {}, export: {} };
     const processor = posthtml([
-      posthtmlExtractScriptDependencies(dependencies)(
+      posthtmlExtractScriptDependencies(moduleData)(
         input,
         { importMap },
       ),
-      posthtmlExtractLinkDependencies(dependencies)(
+      posthtmlExtractLinkDependencies(moduleData)(
         input,
         { importMap },
       ),
-      posthtmlExtractImageDependencies(dependencies)(
+      posthtmlExtractImageDependencies(moduleData)(
         input,
         { importMap },
       ),
-      posthtmlExtractStyleDependencies(dependencies)(
+      posthtmlExtractStyleDependencies(moduleData)(
         input,
         { importMap, use: this.use },
       ),
-      posthtmlExtractInlineStyleDependencies(dependencies)(
+      posthtmlExtractInlineStyleDependencies(moduleData)(
         input,
         { importMap, use: this.use },
       ),
@@ -76,6 +75,7 @@ export class HtmlPlugin extends Plugin {
     await processor.process(source);
 
     const extension = path.extname(input);
+
     return {
       input,
       output: outputMap[input] ||
@@ -83,34 +83,30 @@ export class HtmlPlugin extends Plugin {
           depsDirPath,
           `${new Sha256().update(input).hex()}${extension}`,
         ),
-      dependencies,
-      format: Format.Html,
+      dependencies: moduleData.dependencies,
+      export: moduleData.export,
+      type: item.type,
     };
   }
-  async createChunk(
+  createChunk(
     item: Item,
     context: Context,
-    chunkList: ChunkList,
+    chunkList: Item[],
   ) {
     const dependencyItems: Item[] = [];
     const { history, type } = item;
     const chunkInput = history[0];
     const asset = getAsset(context.graph, chunkInput, type);
 
-    const dependencies = [
-      ...Object.entries(asset.dependencies.imports),
-      ...Object.entries(asset.dependencies.exports),
-    ];
-    for (const [input, dependency] of dependencies) {
-      if (input === chunkInput) continue;
-      const { type, format } = dependency;
-      const newItem: Item = {
-        history: [input, ...item.history],
-        type,
-        format,
-      };
-      chunkList.push(newItem);
-    }
+    Object.entries(asset.dependencies).forEach(([dependency, dependencies]) => {
+      Object.keys(dependencies).forEach((type) => {
+        const newItem: Item = {
+          history: [dependency, ...item.history],
+          type: type as DependencyType,
+        };
+        chunkList.push(newItem);
+      });
+    });
 
     return {
       item,
@@ -148,8 +144,11 @@ export class HtmlPlugin extends Plugin {
     ) as string;
 
     const bundleOutput = bundleAsset.output;
+    const outputDirPath = path.dirname(output);
 
-    let basePath = path.relative(context.outDirPath, path.dirname(output));
+    let basePath = path.isAbsolute(output)
+      ? outputDirPath
+      : path.relative(context.outDirPath, outputDirPath);
     if (!basePath.startsWith("/")) {
       basePath = "/" + basePath;
     }

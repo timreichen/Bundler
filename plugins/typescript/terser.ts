@@ -1,5 +1,5 @@
 import { terser } from "../../deps.ts";
-import { Context, Format, Item, Plugin } from "../plugin.ts";
+import { Context, Format, getFormat, Item, Plugin } from "../plugin.ts";
 
 export class TerserPlugin extends Plugin {
   options: terser.MinifyOptions;
@@ -11,8 +11,8 @@ export class TerserPlugin extends Plugin {
     super();
     this.options = options;
   }
-  async test(item: Item, context: Context) {
-    return item.format === Format.Script;
+  test(item: Item) {
+    return getFormat(item.history[0]) === Format.Script;
   }
   async optimizeBundle(
     output: string,

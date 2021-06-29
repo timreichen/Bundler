@@ -1,13 +1,14 @@
+// deno-lint-ignore-file no-explicit-any
 import { csso } from "../../deps.ts";
-import { Context, Format, Item, Plugin } from "../plugin.ts";
+import { Context, Format, getFormat, Item, Plugin } from "../plugin.ts";
 
 const syntax = csso.syntax;
 
 export class CssoPlugin extends Plugin {
-  async test(item: Item, context: Context) {
-    return item.format === Format.Style;
+  test(item: Item) {
+    return getFormat(item.history[0]) == Format.Style;
   }
-  async optimizeBundle(
+  optimizeBundle(
     output: string,
     context: Context,
   ) {

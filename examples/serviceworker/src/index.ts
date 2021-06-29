@@ -8,5 +8,4 @@ navigator.serviceWorker.register("./sw.ts").then((registration) => {
 }, (error) => {
   console.error("ServiceWorker registration failed:", error);
 });
-
 navigator.serviceWorker.controller.postMessage("Hello");

@@ -1,19 +1,20 @@
-import { fs, path, postcss, postcssPresetEnv, Sha256 } from "../../deps.ts";
+import { fs, path, postcss, Sha256 } from "../../deps.ts";
 
 import {
   Chunk,
-  ChunkList,
   Context,
-  Dependencies,
+  DependencyType,
   Format,
+  getFormat,
   Item,
+  ModuleData,
   Plugin,
 } from "../plugin.ts";
 import { postcssExtractDependenciesPlugin } from "./postcss/extract_dependencies.ts";
 import { resolve as resolveCache } from "../../cache/cache.ts";
 import { postcssInjectImportsPlugin } from "./postcss/inject_imports.ts";
 import { postcssInjectDependenciesPlugin } from "./postcss/inject_dependencies.ts";
-import { getAsset } from "../../graph.ts";
+import { Asset, getAsset } from "../../graph.ts";
 import { readTextFile } from "../../_util.ts";
 export class CssPlugin extends Plugin {
   use: postcss.AcceptedPlugin[];
@@ -25,7 +26,7 @@ export class CssPlugin extends Plugin {
     super();
     this.use = use;
   }
-  async test(item: Item) {
+  test(item: Item) {
     const input = item.history[0];
     return input.endsWith(".css");
   }
@@ -38,17 +39,25 @@ export class CssPlugin extends Plugin {
     const asset = getAsset(graph, bundleInput, item.type);
     const bundleOutput = asset.output;
 
-    const processor = postcss.default([
+    // replace necessary @import rules with content
+    const injectImportsProcessor = postcss.default([
       ...this.use,
       postcssInjectImportsPlugin(item, context, this.use),
+    ]);
+    const source = await bundler.readSource(item, context);
+    const { css: injectedImportsCss } = await injectImportsProcessor.process(
+      source as string,
+    );
+
+    // Replace all dependencies. Must be as a second step to avoid invalid asset paths
+    const injectDependenciesProcessor = await postcss.default([
       postcssInjectDependenciesPlugin(bundleInput, bundleOutput, context),
     ]);
-
-    const source = await bundler.readSource(item, context);
-
-    const { css } = await processor.process(source as string);
-
-    return css;
+    const { css: injectedDependenciesCss } = injectDependenciesProcessor
+      .process(
+        injectedImportsCss,
+      );
+    return injectedDependenciesCss;
   }
   async readSource(input: string) {
     return await readTextFile(input);
@@ -60,10 +69,10 @@ export class CssPlugin extends Plugin {
     const input = item.history[0];
 
     const { bundler, importMap, outputMap, depsDirPath } = context;
-    const dependencies: Dependencies = { imports: {}, exports: {} };
+    const moduleData: ModuleData = { dependencies: {}, export: {} };
     const use = [
       ...this.use,
-      postcssExtractDependenciesPlugin(dependencies)(
+      postcssExtractDependenciesPlugin(moduleData)(
         input,
         { importMap },
       ),
@@ -87,38 +96,33 @@ export class CssPlugin extends Plugin {
           depsDirPath,
           `${new Sha256().update(input).hex()}${extension}`,
         ),
-      dependencies,
-      format: Format.Style,
-    };
+      export: moduleData.export,
+      dependencies: moduleData.dependencies,
+      type: item.type,
+    } as Asset;
   }
-  async createChunk(
+  createChunk(
     item: Item,
     context: Context,
-    chunkList: ChunkList,
+    chunkList: Item[],
   ) {
     const dependencyItems: Item[] = [];
     const chunkInput = item.history[0];
     const asset = getAsset(context.graph, chunkInput, item.type);
 
-    const dependencies = [
-      ...Object.entries(asset.dependencies.imports),
-      ...Object.entries(asset.dependencies.exports),
-    ];
-
-    for (const [input, dependency] of dependencies) {
-      if (input === chunkInput) continue;
-      const { type, format } = dependency;
-      const newItem: Item = {
-        history: [input, ...item.history],
-        type,
-        format,
-      };
-
-      if (
-        input !== chunkInput && format !== Format.Style
-      ) {
-        chunkList.push(newItem);
-      }
+    for (const [input, types] of Object.entries(asset.dependencies)) {
+      Object.keys(types).forEach((type) => {
+        const newItem: Item = {
+          history: [input, ...item.history],
+          type: type as DependencyType,
+        };
+        dependencyItems.push(newItem);
+        if (
+          input !== chunkInput && getFormat(input) !== Format.Style
+        ) {
+          chunkList.push(newItem);
+        }
+      });
     }
 
     return {
@@ -174,7 +178,7 @@ export class CssPlugin extends Plugin {
       return;
     }
 
-    let source = await bundler.getCache(
+    const source = await bundler.getCache(
       bundleInput,
       bundleInput,
       context,

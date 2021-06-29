@@ -1,161 +1,31 @@
-import { Bundler } from "./bundler.ts";
-import { Args, colors, fs, path, ts } from "./deps.ts";
+#!/usr/bin/env -S deno run --unstable --allow-net --allow-read --allow-write
+
+import { Args, colors, fs } from "./deps.ts";
 import { invalidSubcommandError, Program } from "./deps.ts";
-import { Graph } from "./graph.ts";
-import { Logger, LogLevel, logLevels } from "./logger.ts";
-import { OutputMap, Plugin } from "./plugins/plugin.ts";
-import { readTextFile, removeRelativePrefix } from "./_util.ts";
-import { createDefaultPlugins } from "./defaults.ts";
+import { Logger } from "./logger.ts";
+import { createOptions, logLevelNames } from "./_util.ts";
 import { Watcher } from "./watcher.ts";
-
-type Options = {
-  inputs: string[];
-  initialGraph: Graph;
-  compilerOptions: Deno.CompilerOptions;
-  importMap: Deno.ImportMap;
-  outputMap: OutputMap;
-  outDirPath: string;
-  depsDirPath: string;
-  cacheDirPath: string;
-  cacheFilePath: string;
-
-  logLevel: LogLevel;
-  reload: boolean;
-  optimize: boolean;
-  watch: boolean;
-  quiet: boolean;
-};
-
-const depsDirName = "deps";
-const cacheDirName = ".cache";
-const cacheFileName = "cache.json";
-
-interface CacheData {
-  graph: Graph;
-}
-
-const logLevelNames = ["trace", "debug", "info"];
-function getLogLevel(logLevelName: string): LogLevel {
-  if (!logLevelNames.includes(logLevelName)) {
-    throw Error(
-      `'${logLevelName}' isn't a valid value for '--log-level <log-level>'\n[possible values: ${
-        logLevelNames.join(", ")
-      }]`,
-    );
-  }
-  return logLevels[logLevelName as keyof typeof logLevels];
-}
-
-function parseEntries(_: any, outDir: string) {
-  const entries: {
-    output: string;
-    input: string;
-    options: Record<string, any>;
-  }[] = [];
-
-  for (const inp of _) {
-    const match =
-      /^(?<input>(?:[^\=]|[\w\/\\\.])+?)(?:\=(?<output>(?:[^\=]|[\w\/\\\.])+?))?(?:\{(?<options>.*?)\})?$/
-        .exec(inp);
-
-    const { input: inputString, output, options: optionString } = match
-      ?.groups!;
-    const input = removeRelativePrefix(inputString);
-
-    let options = {};
-    if (optionString) {
-      const optionStrings = optionString.split(",");
-      const optionPairs = optionStrings.map((string) => string.split("="));
-      options = Object.fromEntries(optionPairs);
-    }
-    entries.push({
-      output,
-      input,
-      options,
-    });
-  }
-  return entries;
-}
-
-async function createOptions({
-  _,
-  "out-dir": outDir = "dist",
-  "import-map": importMapPath,
-  config: configFilePath,
-  optimize,
-  reload,
-  watch,
-  "log-level": logLevelName,
-  quiet,
-}: Args): Promise<Options> {
-  const logLevel = (logLevelName ? getLogLevel(logLevelName) : logLevels.info);
-
-  const entries = parseEntries(_, outDir);
-
-  const outputMap: OutputMap = {};
-  const inputs: string[] = [];
-  for (const { input, output } of entries) {
-    inputs.push(input);
-    if (output) {
-      outputMap[input] = path.join(outDir, output);
-    }
-  }
-
-  const outDirPath = outDir;
-  const depsDirPath = path.join(outDir, depsDirName);
-  const cacheDirPath = path.join(outDir, cacheDirName);
-  const cacheFilePath = path.join(cacheDirPath, cacheFileName);
-
-  const { graph: initialGraph }: CacheData = fs.existsSync(cacheFilePath)
-    ? JSON.parse(await readTextFile(cacheFilePath))
-    : { graph: {} };
-
-  const config = configFilePath && fs.existsSync(configFilePath)
-    ? JSON.parse(await readTextFile(configFilePath))
-    : {};
-  const compilerOptions = config.compilerOptions || {};
-
-  const importMap: Deno.ImportMap =
-    (importMapPath
-      ? JSON.parse(await readTextFile(importMapPath))
-      : { imports: {} });
-
-  return {
-    inputs,
-    initialGraph,
-    compilerOptions,
-    importMap,
-    outputMap,
-    outDirPath,
-    depsDirPath,
-    cacheDirPath,
-    cacheFilePath,
-
-    logLevel,
-    reload: typeof reload === "string" ? reload.split(",") : reload,
-    optimize,
-    watch,
-    quiet,
-  };
-}
+import { Bundler } from "./bundler.ts";
+import { defaultPlugins } from "./_bundler_utils.ts";
 
 async function bundleCommand(
   args: Args,
 ) {
   const options = await createOptions(args);
-
-  const plugins: Plugin[] = createDefaultPlugins({
-    typescriptCompilerOptions: {
-      // custom compiler options
-      ...options.compilerOptions,
-    },
-  });
-
   const logger = new Logger({
     logLevel: options.logLevel,
     quiet: options.quiet,
   });
-  const bundler = new Bundler(plugins, { logger });
+
+  const bundler = new Bundler(
+    defaultPlugins({
+      typescriptCompilerOptions: {
+        // custom compiler options
+        ...options.compilerOptions,
+      },
+    }),
+    { logger },
+  );
   const watcher = new Watcher();
 
   async function bundleFunction() {
@@ -214,14 +84,12 @@ async function bundleCommand(
         colors.brightBlue(`Watcher`),
         `Process terminated! Restarting on file change...`,
       );
-      watcher.addEventListener("change", async (event: any) => {
-        logger.info(
-          colors.brightBlue(`Watcher`),
-          `File change detected! Restarting!`,
-        );
-        bundleFunction();
-      }, { once: true });
-      watcher.watch(Object.keys(options.initialGraph));
+      await watcher.watch(Object.keys(options.initialGraph));
+      logger.info(
+        colors.brightBlue(`Watcher`),
+        `File change detected! Restarting!`,
+      );
+      await bundleFunction();
     }
   }
 
@@ -235,8 +103,7 @@ const program = new Program(
 program
   .command({
     name: "bundle",
-    description: "Bundle file to esm javsacript file",
-    // help: false,
+    description: `Bundle file(s)`,
     fn: bundleCommand,
   })
   .argument({
@@ -261,11 +128,11 @@ program
   .option({
     name: "import-map",
     args: [{ name: "FILE" }],
-    description: `UNSTABLE:
-Load import map file
-Docs: https://deno.land/manual/linking_to_external_code/import_maps
-Specification: https://wicg.github.io/import-maps/
-Examples: https://github.com/WICG/import-maps#the-import-map`,
+    description: `--import-map <FILE>            
+    Load import map file from local file or remote URL.
+    Docs: https://deno.land/manual/linking_to_external_code/import_maps
+    Specification: https://wicg.github.io/import-maps/
+    Examples: https://github.com/WICG/import-maps#the-import-map`,
   })
   .option({
     name: "log-level",
@@ -287,14 +154,11 @@ Examples: https://github.com/WICG/import-maps#the-import-map`,
     name: "reload",
     alias: "r",
     boolean: true,
-    description: `Reload source code`,
-    //     description: `Reload source code (recompile TypeScript)
-    // --reload
-    //   Reload everything
-    // --reload=https://deno.land/std
-    //   Reload only standard modules
-    // --reload=https://deno.land/std/fs/utils.ts,https://deno.land/std/fmt/colors.ts
-    //   Reloads specific modules`,
+    description: `Reload source code
+    --reload
+      Reload everything
+    --reload=src/index.html
+      Reload only individual files`,
   })
   .option({
     name: "watch",

@@ -1,24 +1,25 @@
-import { Dependencies, DependencyType, Format } from "./plugins/plugin.ts";
+import { Dependencies, DependencyType, Export } from "./plugins/plugin.ts";
 
 export interface Asset {
   input: string;
   output: string;
+  type: DependencyType;
   dependencies: Dependencies;
-  format: Format | null;
+  export: Export;
+  importSpecifier?: string;
 }
 
-export type GraphEntry = {
-  [key in DependencyType]?: Asset;
-};
-
-export type Graph = Record<string, GraphEntry>;
+export type Graph = Record<string, Asset[]>;
 
 export function getAsset(graph: Graph, input: string, type: DependencyType) {
-  const asset = graph[input]?.[type];
+  const entry = graph[input];
+  if (!entry) {
+    throw Error(`asset entry not found: ${input}`);
+  }
+
+  const asset = entry.find((asset) => asset.type === type);
   if (!asset) {
-    throw new Error(
-      `asset in graph not found: ${input} ${type}`,
-    );
+    throw Error(`asset type found: ${input} ${type}`);
   }
   return asset;
 }

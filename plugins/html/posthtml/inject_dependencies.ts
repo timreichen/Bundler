@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any no-async-promise-executor
 import { path, postcss } from "../../../deps.ts";
 import { addRelativePrefix, isURL } from "../../../_util.ts";
 import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
@@ -10,16 +11,17 @@ import { postcssInjectImportsPlugin } from "../../css/postcss/inject_imports.ts"
 export function posthtmlInjectScriptDependencies(
   bundleInput: string,
   bundleOutput: string,
-  { importMap, graph, outDirPath }: {
+  { importMap, graph }: {
     importMap: Deno.ImportMap;
     graph: Graph;
-    outDirPath: string;
   },
 ) {
-  const bundleDirPath = path.dirname(bundleOutput);
-
-  return async (tree: any) => {
+  return (tree: any) => {
     const base = getBase(tree);
+
+    const bundleDirPath = path.isAbsolute(bundleOutput)
+      ? "."
+      : path.dirname(bundleOutput);
 
     // let scriptIndex = 0;
     // const promises: Promise<any>[] = [];
@@ -37,7 +39,10 @@ export function posthtmlInjectScriptDependencies(
           const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
 
           node.attrs.src = addRelativePrefix(
-            path.relative(bundleDirPath, asset.output),
+            path.relative(
+              Deno.cwd(),
+              path.relative(bundleDirPath, asset.output),
+            ),
           );
           node.attrs.type = "module";
         } else if (node.content?.[0]) {
@@ -79,16 +84,17 @@ export function posthtmlInjectScriptDependencies(
 export function posthtmlInjectLinkDependencies(
   bundleInput: string,
   bundleOutput: string,
-  { graph, importMap, outDirPath }: {
+  { graph, importMap }: {
     graph: Graph;
     importMap: Deno.ImportMap;
-    outDirPath: string;
   },
 ) {
-  const bundleDirPath = path.dirname(bundleOutput);
-
   return (tree: any) => {
     const base = getBase(tree);
+
+    const bundleDirPath = path.isAbsolute(bundleOutput)
+      ? "."
+      : path.dirname(bundleOutput);
 
     tree.walk((node: any) => {
       if (node.tag === "link") {
@@ -100,9 +106,31 @@ export function posthtmlInjectLinkDependencies(
             href,
             importMap,
           );
-          const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
+
+          const rel = node.attrs?.rel;
+
+          let type: DependencyType;
+          switch (rel) {
+            case undefined:
+            case "stylesheet":
+            case "icon":
+              type = DependencyType.Import;
+              break;
+            case "manifest": {
+              type = DependencyType.WebManifest;
+              break;
+            }
+            default: {
+              throw new Error(`rel not supported: ${rel}`);
+            }
+          }
+
+          const asset = getAsset(graph, resolvedUrl, type);
           node.attrs.href = addRelativePrefix(
-            path.relative(bundleDirPath, asset.output),
+            path.relative(
+              Deno.cwd(),
+              path.relative(bundleDirPath, asset.output),
+            ),
           );
         }
       }
@@ -114,16 +142,17 @@ export function posthtmlInjectLinkDependencies(
 export function posthtmlInjectImageDependencies(
   bundleInput: string,
   bundleOutput: string,
-  { graph, importMap, outDirPath }: {
+  { graph, importMap }: {
     graph: Graph;
     importMap: Deno.ImportMap;
-    outDirPath: string;
   },
 ) {
-  const bundleDirPath = path.dirname(bundleOutput);
-
   return (tree: any) => {
     const base = getBase(tree);
+
+    const bundleDirPath = path.isAbsolute(bundleOutput)
+      ? "."
+      : path.dirname(bundleOutput);
 
     tree.walk((node: any) => {
       if (node.tag === "img") {
@@ -138,7 +167,10 @@ export function posthtmlInjectImageDependencies(
           const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
 
           node.attrs.src = addRelativePrefix(
-            path.relative(bundleDirPath, asset.output),
+            path.relative(
+              Deno.cwd(),
+              path.relative(bundleDirPath, asset.output),
+            ),
           );
         }
       }
@@ -153,7 +185,7 @@ export function posthtmlInjectStyleDependencies(
   use: postcss.AcceptedPlugin[],
 ) {
   const bundleInput = item.history[0];
-  const { graph, outDirPath } = context;
+  const { graph } = context;
   const asset = getAsset(graph, bundleInput, item.type);
   const processor = postcss.default([
     ...use,

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { path, postcss, postcssValueParser } from "../../../deps.ts";
 import { addRelativePrefix, isURL } from "../../../_util.ts";
 import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
@@ -10,6 +11,7 @@ export const postcssInjectDependenciesPlugin = (
   { graph }: { graph: Graph },
 ): any => {
   const bundleDirPath = path.dirname(bundleOutput);
+
   return (root: any) => {
     root.walkDecls((declaration: postcss.Declaration) => {
       const params = postcssValueParser(declaration.value);
@@ -29,3 +31,20 @@ export const postcssInjectDependenciesPlugin = (
     });
   };
 };
+
+export async function injectDependencies(
+  bundleInput: string,
+  bundleOutput: string,
+  source: string,
+  { graph }: { graph: Graph },
+) {
+  const plugin = postcssInjectDependenciesPlugin(
+    bundleInput,
+    bundleOutput,
+    { graph },
+  );
+  const processor = postcss.default([plugin]);
+
+  const { css } = await processor.process(source);
+  return css;
+}

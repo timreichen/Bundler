@@ -1,12 +1,24 @@
 import { ts } from "../../../deps.ts";
 import {
-  assertEquals,
-  assertStringIncludes,
+  assertStringIncludesIgnoreWhitespace,
   tests,
 } from "../../../test_deps.ts";
 import { typescriptRemoveModifiersTransformer } from "./remove_modifiers.ts";
 
 const printer: ts.Printer = ts.createPrinter({ removeComments: false });
+
+function removeModifiers(fileName: string, sourceText: string) {
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    sourceText,
+    ts.ScriptTarget.Latest,
+  );
+  const { transformed } = ts.transform(
+    sourceFile,
+    [typescriptRemoveModifiersTransformer()],
+  );
+  return printer.printFile(transformed[0] as ts.SourceFile);
+}
 
 tests({
   name: "typescript transfomer → remove modifiers",
@@ -16,18 +28,11 @@ tests({
       fn() {
         const fileName = "src/a.ts";
         const sourceText = `export const a = "a"`;
-        const sourceFile = ts.createSourceFile(
-          fileName,
-          sourceText,
-          ts.ScriptTarget.Latest,
+        const transformedSource = removeModifiers(fileName, sourceText);
+        assertStringIncludesIgnoreWhitespace(
+          transformedSource,
+          `const a = "a"`,
         );
-        const { transformed, diagnostics } = ts.transform(
-          sourceFile,
-          [typescriptRemoveModifiersTransformer()],
-        );
-        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
-        assertEquals(diagnostics, []);
-        assertStringIncludes(outputText, `const a = "a"`);
       },
     },
 
@@ -36,18 +41,11 @@ tests({
       fn() {
         const fileName = "src/a.ts";
         const sourceText = `export function x() {}`;
-        const sourceFile = ts.createSourceFile(
-          fileName,
-          sourceText,
-          ts.ScriptTarget.Latest,
+        const transformedSource = removeModifiers(fileName, sourceText);
+        assertStringIncludesIgnoreWhitespace(
+          transformedSource,
+          `function x() { }`,
         );
-        const { transformed, diagnostics } = ts.transform(
-          sourceFile,
-          [typescriptRemoveModifiersTransformer()],
-        );
-        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
-        assertEquals(diagnostics, []);
-        assertStringIncludes(outputText, `function x() { }`);
       },
     },
 
@@ -56,18 +54,11 @@ tests({
       fn() {
         const fileName = "src/a.ts";
         const sourceText = `export default function x() {}`;
-        const sourceFile = ts.createSourceFile(
-          fileName,
-          sourceText,
-          ts.ScriptTarget.Latest,
+        const transformedSource = removeModifiers(fileName, sourceText);
+        assertStringIncludesIgnoreWhitespace(
+          transformedSource,
+          `function x() { }`,
         );
-        const { transformed, diagnostics } = ts.transform(
-          sourceFile,
-          [typescriptRemoveModifiersTransformer()],
-        );
-        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
-        assertEquals(diagnostics, []);
-        assertStringIncludes(outputText, `function x() { }`);
       },
     },
 
@@ -76,18 +67,8 @@ tests({
       fn() {
         const fileName = "src/a.ts";
         const sourceText = `export class X {}`;
-        const sourceFile = ts.createSourceFile(
-          fileName,
-          sourceText,
-          ts.ScriptTarget.Latest,
-        );
-        const { transformed, diagnostics } = ts.transform(
-          sourceFile,
-          [typescriptRemoveModifiersTransformer()],
-        );
-        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
-        assertEquals(diagnostics, []);
-        assertStringIncludes(outputText, `class X {\r\n}`);
+        const transformedSource = removeModifiers(fileName, sourceText);
+        assertStringIncludesIgnoreWhitespace(transformedSource, `class X { }`);
       },
     },
 
@@ -96,18 +77,8 @@ tests({
       fn() {
         const fileName = "src/a.ts";
         const sourceText = `export default class X {}`;
-        const sourceFile = ts.createSourceFile(
-          fileName,
-          sourceText,
-          ts.ScriptTarget.Latest,
-        );
-        const { transformed, diagnostics } = ts.transform(
-          sourceFile,
-          [typescriptRemoveModifiersTransformer()],
-        );
-        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
-        assertEquals(diagnostics, []);
-        assertStringIncludes(outputText, `class X {\r\n}`);
+        const transformedSource = removeModifiers(fileName, sourceText);
+        assertStringIncludesIgnoreWhitespace(transformedSource, `class X { }`);
       },
     },
     {
@@ -115,18 +86,13 @@ tests({
       fn() {
         const fileName = "src/a.ts";
         const sourceText = `console.log("OK"); export enum X {}`;
-        const sourceFile = ts.createSourceFile(
-          fileName,
-          sourceText,
-          ts.ScriptTarget.Latest,
+        const transformedSource = removeModifiers(fileName, sourceText);
+
+        assertStringIncludesIgnoreWhitespace(
+          transformedSource,
+          `console.log("OK");
+            enum X { }`,
         );
-        const { transformed, diagnostics } = ts.transform(
-          sourceFile,
-          [typescriptRemoveModifiersTransformer()],
-        );
-        const outputText = printer.printFile(transformed[0] as ts.SourceFile);
-        assertEquals(diagnostics, []);
-        assertStringIncludes(outputText, `console.log("OK");\r\nenum X {`);
       },
     },
   ],

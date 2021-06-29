@@ -1,7 +1,15 @@
 import { ts } from "../../../deps.ts";
 
 /**
- * inject `.then(async (data) => await data.default)` to load module async iife
+ * append `.then(async (mod) => await mod.default)` on dynamic `import()` statements
+ * Example
+ * ```ts
+ * import(…)
+ * ```
+ * becomes
+ * ```ts
+ * import(…).then(async (mod) => await mod.default)
+ * ```
  */
 export function typescriptTransformDynamicImportTransformer() {
   return (context: ts.TransformationContext) => {
@@ -27,7 +35,7 @@ export function typescriptTransformDynamicImportTransformer() {
                   undefined,
                   undefined,
                   undefined,
-                  ts.factory.createIdentifier("data"),
+                  ts.factory.createIdentifier("mod"),
                   undefined,
                   undefined,
                   undefined,
@@ -36,7 +44,7 @@ export function typescriptTransformDynamicImportTransformer() {
                 ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
                 ts.factory.createAwaitExpression(
                   ts.factory.createPropertyAccessExpression(
-                    ts.factory.createIdentifier("data"),
+                    ts.factory.createIdentifier("mod"),
                     ts.factory.createIdentifier("default"),
                   ),
                 ),

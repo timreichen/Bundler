@@ -3,7 +3,7 @@ import { postcss, posthtml } from "../../../deps.ts";
 import { Graph } from "../../../graph.ts";
 import { Logger, logLevels } from "../../../logger.ts";
 import { assertStringIncludes, tests } from "../../../test_deps.ts";
-import { Chunk, Context, DependencyType, Format } from "../../plugin.ts";
+import { Chunk, Context, DependencyType } from "../../plugin.ts";
 import {
   posthtmlInjectImageDependencies,
   posthtmlInjectInlineStyleDependencies,
@@ -22,45 +22,35 @@ tests({
             "path/": "custom/path/",
           },
         };
-        const input = "src/a.html";
-        const inputOutput = "dist/a.html";
-        const dependency = "custom/path/b.png";
-        const dependencyOutput = "b.png";
-        const outDirPath = "dist";
+        const inputA = "src/a.html";
+        const outputA = "dist/a.html";
+        const inputB = "custom/path/b.png";
+        const outputB = "b.png";
+
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Image,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: outputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Image,
-            },
-          },
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [{
+            input: inputB,
+            output: outputB,
+            dependencies: {},
+            export: {},
+            type: DependencyType.Import,
+          }],
         };
         const plugin = posthtmlInjectImageDependencies(
-          input,
-          dependencyOutput,
-          { importMap, graph, outDirPath },
+          inputA,
+          outputB,
+          { importMap, graph },
         );
         const processor = posthtml([plugin]);
 
@@ -78,45 +68,36 @@ tests({
       name: "base",
       async fn() {
         const importMap = { imports: {} };
-        const input = "a.html";
-        const inputOutput = "dist/a.html";
-        const dependency = "custom/path/b.png";
-        const dependencyOutput = "dist/b.png";
-        const outDirPath = "dist";
+        const inputA = "a.html";
+        const ounputA = "dist/a.html";
+        const inputB = "custom/path/b.png";
+        const outputB = "dist/b.png";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Image,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: ounputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Image,
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [
+            {
+              input: inputB,
+              output: outputB,
+              dependencies: {},
+              export: {},
+              type: DependencyType.Import,
             },
-          },
+          ],
         };
         const plugin = posthtmlInjectImageDependencies(
-          input,
-          inputOutput,
-          { importMap, graph, outDirPath },
+          inputA,
+          ounputA,
+          { importMap, graph },
         );
         const processor = posthtml([plugin]);
 
@@ -135,45 +116,36 @@ tests({
       name: "base and importMap",
       async fn() {
         const importMap = { imports: {} };
-        const input = "a.html";
-        const inputOutput = "dist/a.html";
-        const dependency = "custom/path/b.png";
-        const dependencyOutput = "dist/b.png";
-        const outDirPath = "dist";
+        const inputA = "a.html";
+        const ounputA = "dist/a.html";
+        const inputB = "custom/path/b.png";
+        const outputB = "dist/b.png";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Image,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: ounputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Image,
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [
+            {
+              input: inputB,
+              output: outputB,
+              dependencies: {},
+              export: {},
+              type: DependencyType.Import,
             },
-          },
+          ],
         };
         const plugin = posthtmlInjectImageDependencies(
-          input,
-          inputOutput,
-          { importMap, graph, outDirPath },
+          inputA,
+          ounputA,
+          { importMap, graph },
         );
         const processor = posthtml([plugin]);
 
@@ -192,45 +164,36 @@ tests({
       name: "link",
       async fn() {
         const importMap = { imports: {} };
-        const input = "src/a.html";
-        const inputOutput = "dist/a.html";
-        const dependency = "src/b.css";
-        const dependencyOutput = "dist/b.css";
-        const outDirPath = "dist";
+        const inputA = "src/a.html";
+        const ounputA = "dist/a.html";
+        const inputB = "src/b.css";
+        const outputB = "dist/b.css";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Style,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: ounputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Style,
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [
+            {
+              input: inputB,
+              output: outputB,
+              dependencies: {},
+              export: {},
+              type: DependencyType.Import,
             },
-          },
+          ],
         };
         const plugin = posthtmlInjectLinkDependencies(
-          input,
-          inputOutput,
-          { importMap, graph, outDirPath },
+          inputA,
+          ounputA,
+          { importMap, graph },
         );
         const processor = posthtml([plugin]);
 
@@ -249,45 +212,36 @@ tests({
       name: "link level down",
       async fn() {
         const importMap = { imports: {} };
-        const input = "src/a.html";
-        const inputOutput = "a.html";
-        const dependency = "src/b.css";
-        const dependencyOutput = "dist/b.css";
-        const outDirPath = "dist";
+        const inputA = "src/a.html";
+        const ounputA = "a.html";
+        const inputB = "src/b.css";
+        const outputB = "dist/b.css";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Style,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: ounputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Style,
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [
+            {
+              input: inputB,
+              output: outputB,
+              dependencies: {},
+              export: {},
+              type: DependencyType.Import,
             },
-          },
+          ],
         };
         const plugin = posthtmlInjectLinkDependencies(
-          input,
-          inputOutput,
-          { importMap, graph, outDirPath },
+          inputA,
+          ounputA,
+          { importMap, graph },
         );
         const processor = posthtml([plugin]);
 
@@ -306,45 +260,36 @@ tests({
       name: "link level up",
       async fn() {
         const importMap = { imports: {} };
-        const input = "src/a.html";
-        const inputOutput = "dist/a.html";
-        const dependency = "src/b.css";
-        const dependencyOutput = "b.css";
-        const outDirPath = "dist";
+        const inputA = "src/a.html";
+        const ounputA = "dist/a.html";
+        const inputB = "src/b.css";
+        const outputB = "b.css";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Style,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: ounputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Style,
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [
+            {
+              input: inputB,
+              output: outputB,
+              dependencies: {},
+              export: {},
+              type: DependencyType.Import,
             },
-          },
+          ],
         };
         const plugin = posthtmlInjectLinkDependencies(
-          input,
-          inputOutput,
-          { importMap, graph, outDirPath },
+          inputA,
+          ounputA,
+          { importMap, graph },
         );
         const processor = posthtml([plugin]);
 
@@ -363,45 +308,36 @@ tests({
       name: "webmanifest",
       async fn() {
         const importMap = { imports: {} };
-        const input = "src/a.html";
-        const inputOutput = "dist/a.html";
-        const dependency = "src/webmanifest.json";
-        const dependencyOutput = "dist/webmanifest.json";
-        const outDirPath = "dist";
+        const inputA = "src/a.html";
+        const ounputA = "dist/a.html";
+        const inputB = "src/webmanifest.json";
+        const outputB = "dist/webmanifest.json";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Json,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: ounputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Json,
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [
+            {
+              input: inputB,
+              output: outputB,
+              dependencies: {},
+              export: {},
+              type: DependencyType.WebManifest,
             },
-          },
+          ],
         };
         const plugin = posthtmlInjectLinkDependencies(
-          input,
-          inputOutput,
-          { importMap, graph, outDirPath },
+          inputA,
+          ounputA,
+          { importMap, graph },
         );
         const processor = posthtml([plugin]);
 
@@ -420,45 +356,36 @@ tests({
       name: "script",
       async fn() {
         const importMap = { imports: {} };
-        const input = "src/a.html";
-        const inputOutput = "dist/a.html";
-        const dependency = "src/b.js";
-        const dependencyOutput = "dist/b.js";
-        const outDirPath = "dist";
+        const inputA = "src/a.html";
+        const ounputA = "dist/a.html";
+        const inputB = "src/b.js";
+        const outputB = "dist/b.js";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Script,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: ounputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Script,
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [
+            {
+              input: inputB,
+              output: outputB,
+              dependencies: {},
+              export: {},
+              type: DependencyType.Import,
             },
-          },
+          ],
         };
         const plugin = posthtmlInjectScriptDependencies(
-          input,
-          inputOutput,
-          { importMap, graph, outDirPath },
+          inputA,
+          ounputA,
+          { importMap, graph },
         );
         const processor = posthtml([plugin]);
 
@@ -476,51 +403,41 @@ tests({
       name: "style",
       async fn() {
         const use: postcss.AcceptedPlugin[] = [];
-        const input = "src/a.html";
-        const inputOutput = "dist/a.html";
-        const dependency = "src/b.css";
-        const dependencyOutput = "dist/b.css";
+        const inputA = "src/a.html";
+        const ounputA = "dist/a.html";
+        const inputB = "src/b.css";
+        const outputB = "dist/b.css";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Style,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: ounputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Style,
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [
+            {
+              input: inputB,
+              output: outputB,
+              dependencies: {},
+              export: {},
+              type: DependencyType.Import,
             },
-          },
+          ],
         };
         const chunk: Chunk = {
           item: {
-            history: [input],
+            history: [inputA],
             type: DependencyType.Import,
-            format: Format.Html,
           },
           dependencyItems: [
             {
-              history: [dependency, input],
+              history: [inputB, inputA],
               type: DependencyType.Import,
-              format: Format.Style,
             },
           ],
         };
@@ -568,51 +485,39 @@ tests({
       name: "inline style",
       async fn() {
         const use: postcss.AcceptedPlugin[] = [];
-        const input = "src/a.html";
-        const inputOutput = "dist/a.html";
-        const dependency = "src/b.png";
-        const dependencyOutput = "dist/b.png";
+        const inputA = "src/a.html";
+        const ounputA = "dist/a.html";
+        const inputB = "src/b.png";
+        const outputB = "dist/b.png";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Image,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: ounputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Image,
-            },
-          },
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [{
+            input: inputB,
+            output: outputB,
+            dependencies: {},
+            export: {},
+            type: DependencyType.Import,
+          }],
         };
         const chunk: Chunk = {
           item: {
-            history: [input],
+            history: [inputA],
             type: DependencyType.Import,
-            format: Format.Html,
           },
           dependencyItems: [
             {
-              history: [dependency, input],
+              history: [inputB, inputA],
               type: DependencyType.Import,
-              format: Format.Image,
             },
           ],
         };

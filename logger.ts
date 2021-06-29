@@ -18,29 +18,30 @@ export const logLevels = {
 export class Logger {
   quiet: boolean;
   logLevel: LogLevel;
+  logLevels = logLevels;
   constructor(
     { logLevel, quiet = false }: { logLevel: LogLevel; quiet?: boolean },
   ) {
     this.logLevel = logLevel;
     this.quiet = quiet;
   }
-  trace(...data: any[]) {
+  trace(...data: unknown[]) {
     if (this.quiet || this.logLevel.level > logLevels.trace.level) return;
     console.log(...data);
   }
-  debug(...data: any[]) {
+  debug(...data: unknown[]) {
     if (this.quiet || this.logLevel.level > logLevels.debug.level) return;
     console.debug(...data);
   }
-  info(...data: any[]) {
+  info(...data: unknown[]) {
     if (this.quiet || this.logLevel.level > logLevels.info.level) return;
     console.info(...data);
   }
-  warn(...data: any[]) {
+  warn(...data: unknown[]) {
     if (this.quiet || this.logLevel.level > logLevels.warn.level) return;
     console.warn(...data);
   }
-  error(...data: any[]) {
+  error(...data: unknown[]) {
     if (this.quiet || this.logLevel.level > logLevels.error.level) return;
     console.error(...data);
   }

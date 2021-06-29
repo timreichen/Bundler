@@ -4,11 +4,11 @@ import { FilePlugin } from "../file.ts";
 import { Context, Format, Item } from "../plugin.ts";
 
 export class SvgPlugin extends FilePlugin {
-  async test(item: Item) {
+  test(item: Item) {
     const input = item.history[0];
     return input.endsWith(".svg");
   }
-  async readSource(input: string, context: Context) {
+  async readSource(input: string) {
     return await readTextFile(input);
   }
   async createAsset(

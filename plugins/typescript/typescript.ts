@@ -1,90 +1,28 @@
-import { path, resolveWithImportMap, Sha256, ts } from "../../deps.ts";
+// deno-lint-ignore-file require-await
+import { cache, resolve as resolveCache } from "../../cache/cache.ts";
+import { path, Sha256, ts } from "../../deps.ts";
+import { getAsset } from "../../graph.ts";
+import { isURL, readTextFile } from "../../_util.ts";
 import {
-  ChunkList,
   Context,
-  Dependencies,
   DependencyType,
   Format,
+  getFormat,
   Item,
   Plugin,
 } from "../plugin.ts";
-import { resolve as resolveDependency } from "../../dependency/dependency.ts";
-import { typescriptExtractDependenciesTransformer } from "./transformers/extract_dependencies.ts";
-import { cache, resolve as resolveCache } from "../../cache/cache.ts";
-import { getAsset } from "../../graph.ts";
-import { isURL, readTextFile, removeRelativePrefix } from "../../_util.ts";
-
-function extractDependencies(
-  sourceFile: ts.SourceFile,
-  compilerOptions?: ts.CompilerOptions,
-) {
-  const dependencies: Dependencies = { imports: {}, exports: {} };
-  ts.transform(
-    sourceFile,
-    [typescriptExtractDependenciesTransformer(dependencies)],
-    compilerOptions,
-  );
-  return dependencies;
-}
-function resolveDependencies(
-  input: string,
-  { imports, exports }: Dependencies,
-  { importMap = { imports: {} } }: { importMap: Deno.ImportMap },
-) {
-  const dependencies: Dependencies = {
-    imports: {},
-    exports: {},
-  };
-
-  Object.keys(imports).forEach((dependencyPath) => {
-    let resolvedDependencyPath;
-    if (
-      isURL(input) ||
-      (!isURL(dependencyPath) && !path.isAbsolute(dependencyPath))
-    ) {
-      resolvedDependencyPath = removeRelativePrefix(resolveDependency(
-        input,
-        dependencyPath,
-        importMap,
-      ));
-    } else {
-      resolvedDependencyPath = resolveWithImportMap(dependencyPath, importMap);
-    }
-    dependencies.imports[resolvedDependencyPath] = imports[dependencyPath];
-  });
-  Object.keys(exports).forEach((dependencyPath) => {
-    let resolvedDependencyPath;
-    if (
-      isURL(input) ||
-      (!isURL(dependencyPath) && !path.isAbsolute(dependencyPath))
-    ) {
-      resolvedDependencyPath = removeRelativePrefix(resolveDependency(
-        input,
-        dependencyPath,
-        importMap,
-      ));
-    } else {
-      resolvedDependencyPath = resolveWithImportMap(dependencyPath, importMap);
-    }
-    dependencies.exports[resolvedDependencyPath] = exports[dependencyPath];
-  });
-
-  return dependencies;
-}
+import { extractDependenciesFromSourceFile } from "./dependencies/extract_dependencies.ts";
+import { resolveDependencies } from "./dependencies/_util.ts";
 
 export class TypescriptPlugin extends Plugin {
-  protected compilerOptions: Deno.CompilerOptions;
+  compilerOptions: Deno.CompilerOptions;
   constructor(
-    {
-      compilerOptions = {},
-    }: {
-      compilerOptions?: Deno.CompilerOptions;
-    } = {},
+    { compilerOptions = {} }: { compilerOptions?: Deno.CompilerOptions } = {},
   ) {
     super();
     this.compilerOptions = compilerOptions;
   }
-  async test(item: Item, context: Context) {
+  async test(item: Item, _context: Context) {
     const input = item.history[0];
     return /\.(t|j)sx?$/.test(input) ||
       (isURL(input) &&
@@ -92,12 +30,14 @@ export class TypescriptPlugin extends Plugin {
           input,
         )); /* handle url without extension as script files */
   }
-  async readSource(input: string, context: Context) {
+  async readSource(input: string) {
     let filePath = input;
+
     if (isURL(filePath)) {
       await cache(filePath);
       filePath = resolveCache(filePath);
     }
+
     const source = await readTextFile(filePath);
     const sourceFile = ts.createSourceFile(
       input,
@@ -106,20 +46,20 @@ export class TypescriptPlugin extends Plugin {
     );
     return sourceFile;
   }
-
   async createAsset(
     item: Item,
     context: Context,
   ) {
-    const input = item.history[0];
+    const { history, type } = item;
+    const input = history[0];
 
     const { bundler, outputMap, depsDirPath, importMap } = context;
 
     const sourceFile = await bundler.readSource(item, context) as ts.SourceFile;
 
-    const dependencies = extractDependencies(sourceFile);
+    const dependencies = extractDependenciesFromSourceFile(sourceFile);
 
-    const resolvedDependencies = resolveDependencies(
+    const resolvedModuleData = resolveDependencies(
       input,
       dependencies,
       { importMap },
@@ -132,81 +72,89 @@ export class TypescriptPlugin extends Plugin {
         depsDirPath,
         `${new Sha256().update(input).hex()}${extension}`,
       ),
-      dependencies: resolvedDependencies,
-      format: Format.Script,
+      dependencies: resolvedModuleData.dependencies,
+      export: resolvedModuleData.export,
+      type,
     };
   }
-  async createChunk(
+  createChunk(
     item: Item,
     context: Context,
-    chunkList: ChunkList,
+    chunkList: Item[],
   ) {
     const { graph } = context;
     const dependencyItems: Item[] = [];
     const { history, type } = item;
-    const chunkInput = history[0];
-    const asset = getAsset(graph, chunkInput, type);
+    const input = history[0];
 
-    const dependencies = [
-      ...Object.entries(asset.dependencies.imports),
-      ...Object.entries(asset.dependencies.exports),
-    ];
-    for (const [input, dependency] of dependencies) {
-      if (input === chunkInput) continue;
-      const { type, format } = dependency;
+    const asset = getAsset(graph, input, type);
+    Object.entries(asset.dependencies).forEach(([dependency, dependencies]) => {
+      Object.keys(dependencies).forEach((type) => {
+        const newItem: Item = {
+          history: [dependency, ...history],
+          type: type as DependencyType,
+        };
 
-      const newItem: Item = {
-        history: [input, ...item.history],
-        type,
-        format,
-      };
-      switch (format) {
-        case Format.Script: {
-          switch (type) {
-            case DependencyType.Import:
-            case DependencyType.Export:
-              dependencyItems.push(newItem);
-              break;
-            case DependencyType.DynamicImport:
-            case DependencyType.ServiceWorker:
-            case DependencyType.WebWorker:
-              chunkList.push(newItem);
-              break;
+        const format = getFormat(dependency);
+
+        switch (format) {
+          case Format.Script: {
+            switch (type) {
+              case DependencyType.Import:
+                break;
+              case DependencyType.Fetch:
+              case DependencyType.DynamicImport:
+              case DependencyType.ServiceWorker:
+              case DependencyType.WebWorker:
+                chunkList.push(newItem);
+                break;
+              default: {
+                throw Error(`dependency type not supported: ${type}`);
+              }
+            }
+            break;
           }
-          break;
-        }
-        case Format.Json: {
-          switch (type) {
-            case DependencyType.Import: {
-              dependencyItems.push(newItem);
-              break;
+          case Format.Json: {
+            switch (type) {
+              case DependencyType.Import: {
+                break;
+              }
+              case DependencyType.Fetch:
+              case DependencyType.DynamicImport: {
+                chunkList.push(newItem);
+                break;
+              }
+              default: {
+                throw Error(`dependency type not supported: ${type}`);
+              }
             }
-            default: {
-              chunkList.push(newItem);
-              break;
-            }
+            break;
           }
-          break;
-        }
-        case Format.Style: {
-          switch (type) {
-            case DependencyType.Import: {
-              dependencyItems.push(newItem);
-              break;
+          case Format.Style: {
+            switch (type) {
+              case DependencyType.Import: {
+                break;
+              }
+              case DependencyType.Fetch:
+              case DependencyType.DynamicImport: {
+                chunkList.push(newItem);
+                break;
+              }
+              default: {
+                throw Error(`dependency type not supported: ${type}`);
+              }
             }
-            default: {
-              chunkList.push(newItem);
-              break;
-            }
+            break;
           }
-          break;
+          default: {
+            chunkList.push(newItem);
+            break;
+          }
         }
-        default: {
-          chunkList.push(newItem);
-          break;
-        }
-      }
-    }
+
+        dependencyItems.push(newItem);
+      });
+    });
     return {
       item,
       dependencyItems,

@@ -1,12 +1,13 @@
+// deno-lint-ignore-file no-explicit-any
 import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
 import { isURL } from "../../../_util.ts";
 import { postcss } from "../../../deps.ts";
 import { postcssExtractDependenciesPlugin } from "../../css/postcss/extract_dependencies.ts";
 import { getBase, resolveBase } from "../_util.ts";
-import { Dependencies, DependencyType, Format } from "../../plugin.ts";
+import { DependencyType, ModuleData } from "../../plugin.ts";
 
 export function posthtmlExtractImageDependencies(
-  { imports }: Dependencies,
+  moduleData: ModuleData,
 ) {
   return (
     input: string,
@@ -26,13 +27,8 @@ export function posthtmlExtractImageDependencies(
               src,
               importMap,
             );
-            imports[resolvedUrl] = {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Image,
+            moduleData.dependencies[resolvedUrl] = {
+              [DependencyType.Import]: {},
             };
           }
         }
@@ -44,7 +40,7 @@ export function posthtmlExtractImageDependencies(
 }
 
 export function posthtmlExtractLinkDependencies(
-  { imports }: Dependencies,
+  moduleData: ModuleData,
 ) {
   return (
     input: string,
@@ -64,31 +60,23 @@ export function posthtmlExtractLinkDependencies(
             );
             const rel = node.attrs?.rel;
 
-            let format: Format;
+            let type: DependencyType;
             switch (rel) {
-              case "stylesheet": {
-                format = Format.Style;
+              case undefined:
+              case "stylesheet":
+              case "icon":
+                type = DependencyType.Import;
                 break;
-              }
-              case "icon": {
-                format = Format.Image;
-                break;
-              }
               case "manifest": {
-                format = Format.WebManifest;
+                type = DependencyType.WebManifest;
                 break;
               }
               default: {
                 throw new Error(`rel not supported: ${rel}`);
               }
             }
-            imports[resolvedUrl] = {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format,
+            moduleData.dependencies[resolvedUrl] = {
+              [type]: {},
             };
           }
         }
@@ -99,7 +87,7 @@ export function posthtmlExtractLinkDependencies(
 }
 
 export function posthtmlExtractScriptDependencies(
-  { imports }: Dependencies,
+  moduleData: ModuleData,
 ) {
   return (
     input: string,
@@ -119,13 +107,8 @@ export function posthtmlExtractScriptDependencies(
               src,
               importMap,
             );
-            imports[resolvedUrl] = {
-              specifiers: {},
-              defaults: [],
-              namespaces: [],
-              types: {},
-              type: DependencyType.Import,
-              format: Format.Script,
+            moduleData.dependencies[resolvedUrl] = {
+              [DependencyType.Import]: {},
             };
           }
         }
@@ -136,7 +119,7 @@ export function posthtmlExtractScriptDependencies(
 }
 
 export function posthtmlExtractStyleDependencies(
-  dependencies: Dependencies,
+  moduleData: ModuleData,
 ) {
   return (
     input: string,
@@ -145,7 +128,7 @@ export function posthtmlExtractStyleDependencies(
       use: postcss.AcceptedPlugin[];
     },
   ) => {
-    const postcssPlugin = postcssExtractDependenciesPlugin(dependencies);
+    const postcssPlugin = postcssExtractDependenciesPlugin(moduleData);
     const processor = postcss.default([
       ...use,
       postcssPlugin(input, { importMap }),
@@ -165,7 +148,7 @@ export function posthtmlExtractStyleDependencies(
 }
 
 export function posthtmlExtractInlineStyleDependencies(
-  dependencies: Dependencies,
+  moduleData: ModuleData,
 ) {
   return (
     input: string,
@@ -174,7 +157,7 @@ export function posthtmlExtractInlineStyleDependencies(
       use: postcss.AcceptedPlugin[];
     },
   ) => {
-    const postcssPlugin = postcssExtractDependenciesPlugin(dependencies);
+    const postcssPlugin = postcssExtractDependenciesPlugin(moduleData);
     const processor = postcss.default([
       ...use,
       postcssPlugin(input, { importMap }),

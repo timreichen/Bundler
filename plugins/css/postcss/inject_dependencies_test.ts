@@ -1,8 +1,7 @@
-import { assertStringIncludes, tests } from "../../../test_deps.ts";
-import { postcss } from "../../../deps.ts";
+import { assertEqualsIgnoreWhitespace, tests } from "../../../test_deps.ts";
 import { Graph } from "../../../graph.ts";
-import { DependencyType, Format } from "../../plugin.ts";
-import { postcssInjectDependenciesPlugin } from "./inject_dependencies.ts";
+import { DependencyType } from "../../plugin.ts";
+import { injectDependencies } from "./inject_dependencies.ts";
 
 tests({
   name: "postcss plugin → inject dependencies",
@@ -10,51 +9,40 @@ tests({
     {
       name: "url()",
       async fn() {
-        const input = "src/a.css";
-        const inputOutput = "dist/a.css";
-        const dependency = "src/image.png";
-        const outDirPath = "dist";
+        const inputA = "src/a.css";
+        const outputA = "dist/a.css";
+        const inputB = "src/image.png";
+        const outputB = "dist/image.png";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Style,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: outputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: "dist/image.png",
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Image,
-            },
-          },
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [{
+            input: inputB,
+            output: outputB,
+            dependencies: {},
+            export: {},
+            type: DependencyType.Import,
+          }],
         };
-        const plugin = postcssInjectDependenciesPlugin(
-          input,
-          "dist/a.css",
-          { graph },
-        );
-        const processor = postcss.default([plugin]);
 
         const source = `div { background-image: url("image.png"); }`;
-        const { css } = await processor.process(source);
-        assertStringIncludes(
-          css,
+        const transformedSource = await injectDependencies(
+          inputA,
+          outputA,
+          source,
+          { graph },
+        );
+        assertEqualsIgnoreWhitespace(
+          transformedSource,
           `div { background-image: url("./image.png"); }`,
         );
       },
@@ -63,52 +51,39 @@ tests({
     {
       name: "url() level up",
       async fn() {
-        const input = "src/a.css";
-        const inputOutput = "dist/a.css";
-        const dependency = "src/image.png";
-        const dependencyOutput = "image.png";
-        const outDirPath = "dist";
+        const inputA = "src/a.css";
+        const outputA = "dist/a.css";
+        const inputB = "src/image.png";
+        const outputB = "image.png";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Style,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: outputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Style,
-            },
-          },
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [{
+            input: inputB,
+            output: outputB,
+            dependencies: {},
+            export: {},
+            type: DependencyType.Import,
+          }],
         };
-        const plugin = postcssInjectDependenciesPlugin(
-          input,
-          inputOutput,
+        const source = `div { background-image: url("image.png"); }`;
+        const transformedSource = await injectDependencies(
+          inputA,
+          outputA,
+          source,
           { graph },
         );
-        const processor = postcss.default([plugin]);
-
-        const source = `div { background-image: url("image.png"); }`;
-        const { css } = await processor.process(source);
-        assertStringIncludes(
-          css,
+        assertEqualsIgnoreWhitespace(
+          transformedSource,
           `div { background-image: url("../image.png"); }`,
         );
       },
@@ -117,149 +92,42 @@ tests({
     {
       name: "url() level down",
       async fn() {
-        const input = "src/a.css";
-        const inputOutput = "a.css";
-        const dependency = "src/image.png";
-        const dependencyOutput = "dist/image.png";
-        const outDirPath = "dist";
+        const inputA = "src/a.css";
+        const outputA = "a.css";
+        const inputB = "src/image.png";
+        const outputB = "dist/image.png";
         const graph: Graph = {
-          [input]: {
-            [DependencyType.Import]: {
-              input: input,
-              output: inputOutput,
-              dependencies: {
-                imports: {
-                  [dependency]: {
-                    specifiers: {},
-                    defaults: [],
-                    namespaces: [],
-                    types: {},
-                    type: DependencyType.Import,
-                    format: Format.Style,
-                  },
-                },
-                exports: {},
+          [inputA]: [{
+            input: inputA,
+            output: outputA,
+            dependencies: {
+              [inputB]: {
+                [DependencyType.Import]: {},
               },
-              format: Format.Style,
             },
-          },
-          [dependency]: {
-            [DependencyType.Import]: {
-              input: dependency,
-              output: dependencyOutput,
-              dependencies: { imports: {}, exports: {} },
-              format: Format.Style,
-            },
-          },
+            export: {},
+            type: DependencyType.Import,
+          }],
+          [inputB]: [{
+            input: inputB,
+            output: outputB,
+            dependencies: {},
+            export: {},
+            type: DependencyType.Import,
+          }],
         };
-        const plugin = postcssInjectDependenciesPlugin(
-          input,
-          inputOutput,
+        const source = `div { background-image: url("image.png"); }`;
+        const transformedSource = await injectDependencies(
+          inputA,
+          outputA,
+          source,
           { graph },
         );
-        const processor = postcss.default([plugin]);
-
-        const source = `div { background-image: url("image.png"); }`;
-        const { css } = await processor.process(source);
-        assertStringIncludes(
-          css,
+        assertEqualsIgnoreWhitespace(
+          transformedSource,
           `div { background-image: url("./dist/image.png"); }`,
         );
       },
     },
   ],
 });
-
-// Deno.test({
-//   name: "@import",
-//   async fn() {
-//     const input = "src/a.css";
-//     const inputOutput = "dist/a.css";
-//     const dependency = "src/b.css";
-//     const graph: Graph = {
-//       [input]: {
-//         [DependencyType.Import]: {
-//           input: input,
-//           output: inputOutput,
-//           dependencies: {
-//             imports: {
-//               [dependency]: {
-//                 specifiers: {},
-//                 defaults: [],
-//                 namespaces: [],
-//                 types: {},
-//                 type: DependencyType.Import,
-//                 format: Format.Style,
-//               },
-//             },
-//             exports: {},
-//           },
-//           format: Format.Style,
-//         },
-//       },
-//       [dependency]: {
-//         [DependencyType.Import]: {
-//           input: dependency,
-//           output: "dist/out.css",
-//           dependencies: { imports: {}, exports: {} },
-//           format: Format.Style,
-//         },
-//       },
-//     };
-//     const plugin = postcssInjectDependenciesPlugin(input, inputOutput, {
-//       graph,
-//     });
-//     const processor = postcss.default([plugin, oudoutDirPath]);
-
-//     const source = `@import "./b.css";`;
-//     const { css } = await processor.process(source);
-//     assertStringIncludes(css, `@import "./out.css";`);
-//   },
-// });
-
-// Deno.test({
-//   name: "@import url()",
-//   async fn() {
-//     const input = "src/a.css";
-//     const inputOutput = "dist/a.css";
-//     const dependency = "src/b.css";
-//     const graph: Graph = {
-//       [input]: {
-//         [DependencyType.Import]: {
-//           input: input,
-//           output: inputOutput,
-//           dependencies: {
-//             imports: {
-//               [dependency]: {
-//                 specifiers: {},
-//                 defaults: [],
-//                 namespaces: [],
-//                 types: {},
-//                 type: DependencyType.Import,
-//                 format: Format.Style,
-//               },
-//             },
-//             exports: {},
-//           },
-//           format: Format.Style,
-//         },
-//       },
-//       [dependency]: {
-//         [DependencyType.Import]: {
-//           input: dependency,
-//           output: "dist/out.css",
-//           dependencies: { imports: {}, exports: {} },
-//           format: Format.Style,
-//         },
-//       },
-//     };
-//     const plugin = postcssInjectDependenciesPlugin(input, inputOutput, {
-//       graph,
-//     });
-//     const processor = postcss.default([plugin, oudoutDirPath]);
-
-//     const source = `@import url("./b.css");`;
-//     const { css } = await processor.process(source);
-//     assertStringIncludes(css, `@import url("./out.css");`);
-//   },
-// });

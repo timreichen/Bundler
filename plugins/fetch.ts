@@ -1,8 +1,8 @@
 import { FilePlugin } from "./file.ts";
-import { Context, DependencyType, Item } from "./plugin.ts";
+import { DependencyType, Item } from "./plugin.ts";
 
 export class FetchPlugin extends FilePlugin {
-  async test(item: Item, context: Context) {
+  test(item: Item) {
     return item.type === DependencyType.Fetch;
   }
 }

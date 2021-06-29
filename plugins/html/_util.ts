@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { path } from "../../deps.ts";
 import { isURL } from "../../_util.ts";
 
@@ -39,10 +40,10 @@ export function setBase(tree: any, href: string) {
   }
   head.content ||= [];
 
-  let index = head.content.findIndex((item: any) =>
+  const index = head.content.findIndex((item: any) =>
     item instanceof Object && item.tag === "base"
   );
-  let base = { tag: "base", attrs: { href } };
+  const base = { tag: "base", attrs: { href } };
   if (index !== -1) {
     const baseItem = head.content.splice(index, 1);
     if (baseItem.attrs) {

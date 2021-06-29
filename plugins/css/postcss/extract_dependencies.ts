@@ -1,10 +1,10 @@
 import { postcss, postcssValueParser } from "../../../deps.ts";
 import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
 import { isURL } from "../../../_util.ts";
-import { Dependencies, DependencyType, Format } from "../../plugin.ts";
+import { DependencyType, ModuleData } from "../../plugin.ts";
 
 export function postcssExtractDependenciesPlugin(
-  { imports }: Dependencies,
+  moduleData: ModuleData,
 ) {
   return (
     input: string,
@@ -26,13 +26,8 @@ export function postcssExtractDependenciesPlugin(
           }
           if (!url || isURL(url)) return;
           const resolvedUrl = resolveDependency(input, url, importMap);
-          imports[resolvedUrl] = {
-            specifiers: {},
-            defaults: [],
-            namespaces: [],
-            types: {},
-            type: DependencyType.Import,
-            format: Format.Style,
+          moduleData.dependencies[resolvedUrl] = {
+            [DependencyType.Import]: {},
           };
         },
       },
@@ -43,16 +38,26 @@ export function postcssExtractDependenciesPlugin(
           const url = node.nodes[0].value;
           if (!url || isURL(url)) continue;
           const resolvedUrl = resolveDependency(input, url, importMap);
-          imports[resolvedUrl] = {
-            specifiers: {},
-            defaults: [],
-            namespaces: [],
-            types: {},
-            type: DependencyType.Import,
-            format: Format.Image,
+          moduleData.dependencies[resolvedUrl] = {
+            [DependencyType.Import]: {},
           };
         }
       },
     };
   };
+}
+
+export async function extractDependencies(
+  input: string,
+  source: string,
+  importMap: Deno.ImportMap,
+) {
+  const moduleData: ModuleData = { dependencies: {}, export: {} };
+  const plugin = postcssExtractDependenciesPlugin(moduleData)(
+    input,
+    { importMap },
+  );
+  const processor = postcss.default([plugin]);
+  await processor.process(source);
+  return moduleData;
 }

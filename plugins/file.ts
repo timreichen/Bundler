@@ -1,26 +1,20 @@
+// deno-lint-ignore-file require-await
 import { path, Sha256 } from "../deps.ts";
-import { Asset, getAsset } from "../graph.ts";
+import { getAsset } from "../graph.ts";
 import { readFile } from "../_util.ts";
-import {
-  Chunk,
-  ChunkList,
-  Context,
-  getFormat,
-  Item,
-  Plugin,
-  Source,
-} from "./plugin.ts";
+import { Chunk, Context, Item, Plugin, Source } from "./plugin.ts";
 
 export class FilePlugin extends Plugin {
-  async readSource(input: string, context: Context): Promise<Source> {
-    return await readFile(input);
+  readSource(input: string): Promise<Source> {
+    return readFile(input);
   }
   async createAsset(
     item: Item,
     context: Context,
-  ): Promise<Asset> {
+  ) {
     const { outputMap, depsDirPath } = context;
-    const input = item.history[0];
+    const { history, type } = item;
+    const input = history[0];
     const extension = path.extname(input);
 
     return {
@@ -30,15 +24,16 @@ export class FilePlugin extends Plugin {
           depsDirPath,
           `${new Sha256().update(input).hex()}${extension}`,
         ),
-      dependencies: { imports: {}, exports: {} },
-      format: getFormat(input) || null,
+      dependencies: {},
+      export: {},
+      type,
     };
   }
-  async createChunk(
+  createChunk(
     item: Item,
-    context: Context,
-    chunkList: ChunkList,
-  ): Promise<Chunk> {
+    _context: Context,
+    _chunkList: Item[],
+  ) {
     return {
       item,
       dependencyItems: [],

@@ -369,16 +369,16 @@ Deno.test({
         const { customElement, html, LitElement, unsafeCSS } = await mod1;
         const styles = (await mod2).default;
         let MyElement = class MyElement extends LitElement {
-            render() {
-                return html \`<h1>Hello from LitElement!</h1>\`;
-            }
+          static styles = unsafeCSS(styles);
+          render() { return html \`<h1>Hello from LitElement!</h1>\`; }
         };
-        MyElement.styles = unsafeCSS(styles);
-        MyElement = __decorate([
-            customElement("my-element")
-        ], MyElement);
+        MyElement = __decorate([ customElement("my-element") ], MyElement);
         return { MyElement };
-    })();`,
+      })();
+      export default (async () => {
+        await mod;
+        return {};
+      })();`,
     );
   },
 });

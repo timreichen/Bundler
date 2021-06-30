@@ -2,7 +2,7 @@
 import { csso } from "../../deps.ts";
 import { Context, Format, getFormat, Item, Plugin } from "../plugin.ts";
 
-const syntax = csso.syntax;
+const { syntax } = csso;
 
 export class CssoPlugin extends Plugin {
   test(item: Item) {
@@ -14,7 +14,7 @@ export class CssoPlugin extends Plugin {
   ) {
     const bundle = context.bundles[output] as string;
     const ast = syntax.parse(bundle);
-    const compressedAst = (syntax as any).compress(ast).ast;
+    const compressedAst = (csso as any).compress(ast).ast;
     const code = syntax.generate(compressedAst);
 
     if (code === undefined) {

@@ -210,7 +210,6 @@ export async function cache(
         source,
         { compilerOptions },
       );
-
       dependencies.forEach((dependencyFilePath) =>
         filePaths.add(
           resolveDependency(filePath, dependencyFilePath),

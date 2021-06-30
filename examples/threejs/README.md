@@ -13,5 +13,5 @@ bundler bundle src/index.html=index.html src/image.png=image.png
 serve `dist` as root
 
 ```sh
-deno run --allow-net --allow-read https://deno.land/std@0.97.0/http/file_server.ts dist
+deno run --allow-net --allow-read https://deno.land/std@0.100.0/http/file_server.ts dist
 ```

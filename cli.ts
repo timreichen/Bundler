@@ -2,7 +2,6 @@
 
 import { Args, colors, fs } from "./deps.ts";
 import { invalidSubcommandError, Program } from "./deps.ts";
-import { Logger } from "./logger.ts";
 import { createOptions, logLevelNames } from "./_util.ts";
 import { Watcher } from "./watcher.ts";
 import { Bundler } from "./bundler.ts";
@@ -12,20 +11,13 @@ async function bundleCommand(
   args: Args,
 ) {
   const options = await createOptions(args);
-  const logger = new Logger({
-    logLevel: options.logLevel,
-    quiet: options.quiet,
-  });
-
   const bundler = new Bundler(
     defaultPlugins({
-      typescriptCompilerOptions: {
-        // custom compiler options
-        ...options.compilerOptions,
-      },
+      typescriptCompilerOptions: options.compilerOptions,
     }),
-    { logger },
   );
+  bundler.logger.logLevel = options.logLevel;
+  bundler.logger.quiet = options.quiet;
   const watcher = new Watcher();
 
   async function bundleFunction() {
@@ -80,12 +72,12 @@ async function bundleCommand(
 
     if (options.watch) {
       options.reload = false;
-      logger.info(
+      bundler.logger.info(
         colors.brightBlue(`Watcher`),
         `Process terminated! Restarting on file change...`,
       );
       await watcher.watch(Object.keys(options.initialGraph));
-      logger.info(
+      bundler.logger.info(
         colors.brightBlue(`Watcher`),
         `File change detected! Restarting!`,
       );

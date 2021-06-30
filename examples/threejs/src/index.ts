@@ -6,7 +6,7 @@ import {
   Scene,
   TextureLoader,
   WebGLRenderer,
-} from "https://cdn.skypack.dev/three";
+} from "https://cdn.skypack.dev/three@0.130.0";
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(

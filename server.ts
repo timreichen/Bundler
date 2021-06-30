@@ -1,3 +1,4 @@
+// deno-lint-ignore-file require-await
 import { BundleOptions, Bundler } from "./bundler.ts";
 import { path } from "./deps.ts";
 import { Watcher } from "./watcher.ts";
@@ -5,12 +6,12 @@ import { Watcher } from "./watcher.ts";
 import {
   serve,
   ServerRequest,
-} from "https://deno.land/std@0.99.0/http/server.ts";
+} from "https://deno.land/std@0.100.0/http/server.ts";
 import {
   acceptWebSocket,
   isWebSocketCloseEvent,
   WebSocket,
-} from "https://deno.land/std@0.99.0/ws/mod.ts";
+} from "https://deno.land/std@0.100.0/ws/mod.ts";
 import { contentType } from "https://deno.land/x/media_types@v2.9.0/mod.ts";
 import { defaultPlugins } from "./_bundler_utils.ts";
 
@@ -123,7 +124,7 @@ export class Server {
       })();
     }
   }
-  handle(request: Request) {
+  async handle(request: Request) {
     try {
       const url = request.url;
       let filePath = new URL(url).pathname;
@@ -136,7 +137,7 @@ export class Server {
         if (filePath.startsWith("/")) {
           filePath = filePath.substring(1);
         }
-        let body = this.#bundles[filePath];
+        let body = this.#bundles[filePath] as string;
         if (!body) {
           return new Response(null, { status: 404 });
         } else {

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --unstable --allow-net --allow-read --allow-write
 
-import { parse } from "https://deno.land/std@0.99.0/flags/mod.ts";
+import { parse } from "https://deno.land/std@0.100.0/flags/mod.ts";
 import { Server } from "./server.ts";
 import { createOptions } from "./_util.ts";
 

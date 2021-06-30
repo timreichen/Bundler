@@ -149,6 +149,10 @@ export class HtmlPlugin extends Plugin {
     let basePath = path.isAbsolute(output)
       ? outputDirPath
       : path.relative(context.outDirPath, outputDirPath);
+
+    if (basePath.startsWith(".")) {
+      basePath = path.resolve(basePath, "/");
+    }
     if (!basePath.startsWith("/")) {
       basePath = "/" + basePath;
     }

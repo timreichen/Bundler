@@ -892,7 +892,7 @@ tests({
               "testdata/typescript/import_url/a.ts": [
                 {
                   dependencies: {
-                    "https://deno.land/std/version.ts": {
+                    "https://deno.land/std@0.100.0/version.ts": {
                       Import: {
                         specifiers: {
                           VERSION: "VERSION",
@@ -906,7 +906,7 @@ tests({
                   type: "Import",
                 },
               ],
-              "https://deno.land/std/version.ts": [
+              "https://deno.land/std@0.100.0/version.ts": [
                 {
                   dependencies: {},
                   export: {
@@ -914,9 +914,9 @@ tests({
                       VERSION: "VERSION",
                     },
                   },
-                  input: "https://deno.land/std/version.ts",
+                  input: "https://deno.land/std@0.100.0/version.ts",
                   output:
-                    "dist/deps/c948f3172a90c33c62e13311880fc39ef6934df89a46863131b2845d736bb407.js",
+                    "dist/deps/fc57e3786bc903ba35245f12f3fc0b8ca3910fe8444e619d3c6365d5b9d43248.js",
                   type: "Import",
                 },
               ],
@@ -931,7 +931,7 @@ tests({
                 dependencyItems: [
                   {
                     history: [
-                      "https://deno.land/std/version.ts",
+                      "https://deno.land/std@0.100.0/version.ts",
                       "testdata/typescript/import_url/a.ts",
                     ],
                     type: "Import",
@@ -944,9 +944,9 @@ tests({
             const bundle = bundles[output] as string;
             assertEqualsIgnoreWhitespace(
               bundle,
-              `/* https://deno.land/std/version.ts */
+              `/* https://deno.land/std@0.100.0/version.ts */
               const mod = (async () => {
-                const VERSION = "0.99.0";
+                const VERSION = "0.100.0";
                 return { VERSION };
               })();
               export default (async () => {
@@ -961,14 +961,13 @@ tests({
           name: "url",
           async fn() {
             const inputs = [
-              "https://deno.land/std/version.ts",
+              "https://deno.land/std@0.100.0/version.ts",
             ];
             const output =
-              "dist/deps/c948f3172a90c33c62e13311880fc39ef6934df89a46863131b2845d736bb407.js";
-
+              "dist/deps/fc57e3786bc903ba35245f12f3fc0b8ca3910fe8444e619d3c6365d5b9d43248.js";
             const graph = await bundler.createGraph(inputs);
             assertEquals(graph, {
-              "https://deno.land/std/version.ts": [
+              "https://deno.land/std@0.100.0/version.ts": [
                 {
                   dependencies: {},
                   export: {
@@ -976,7 +975,7 @@ tests({
                       VERSION: "VERSION",
                     },
                   },
-                  input: "https://deno.land/std/version.ts",
+                  input: "https://deno.land/std@0.100.0/version.ts",
                   output,
                   type: "Import",
                 },
@@ -986,7 +985,7 @@ tests({
             assertEquals(chunks, [
               {
                 item: {
-                  history: ["https://deno.land/std/version.ts"],
+                  history: ["https://deno.land/std@0.100.0/version.ts"],
                   type: "Import",
                 },
                 dependencyItems: [],
@@ -997,9 +996,9 @@ tests({
             const bundle = bundles[output] as string;
             assertEqualsIgnoreWhitespace(
               bundle,
-              `/* https://deno.land/std/version.ts */
+              `/* https://deno.land/std@0.100.0/version.ts */
               export default (async () => {
-                const VERSION = "0.99.0";
+                const VERSION = "0.100.0";
                 return { VERSION };
               })();`,
             );

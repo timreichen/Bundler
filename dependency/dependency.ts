@@ -33,12 +33,11 @@ export function resolve(
       resolvedPath = resolveWithImportMap(filePath, importMap);
     } else if (parentIsUrl) {
       const fileUrl = new URL(filePath);
-      fileUrl.pathname = path.posix.join(path.dirname(fileUrl.pathname));
+      fileUrl.pathname = path.posix.join(fileUrl.pathname);
       resolvedPath = fileUrl.href;
     } else {
       resolvedPath = path.join(path.dirname(filePath), resolvedImportPath);
     }
   }
-
   return ensureExtension(resolvedPath, ".ts");
 }

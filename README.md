@@ -110,8 +110,8 @@ const bundles = await bundler.createBundles(chunks, graph);
 
 #### Bundler Server  <!-- omit in toc -->
 ```ts
-import { BundlerServer } from "https//deno.land/x/bundler/mod.ts";
-const server = new BundlerServer();
+import { Server } from "https//deno.land/x/bundler/mod.ts";
+const server = new Server();
 await server.listen({ port: 8000 });
 ```
 

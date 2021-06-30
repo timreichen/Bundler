@@ -39,8 +39,8 @@ jobs:
       - name: Run linter
         run: deno lint --ignore=examples,dist,testdata
 
-      - name: Cache dependencies
-        run: deno cache --unstable deps.ts test_deps.ts
+      #- name: Cache dependencies
+      #  run: deno cache --unstable deps.ts test_deps.ts
 
       - name: Run tests
         run: deno test -A --unstable

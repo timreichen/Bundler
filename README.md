@@ -114,8 +114,7 @@ const bundles = await bundler.createBundles(chunks, graph);
 import { Server } from "https://deno.land/x/bundler/mod.ts";
 
 const input = "src/index.html";
-const index = "index.html";
-const outputMap = { [input]: index };
+const outputMap = { [input]: "index.html" };
 
 const server = new Server();
 await server.bundle([input], { outputMap });

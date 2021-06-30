@@ -84,8 +84,9 @@ deno run --unstable --allow-read --allow-write --allow-net --allow-env https://d
 
 #### Bundler Example  <!-- omit in toc -->
 ```ts
-import { createBundler } from "https//deno.land/x/bundler/mod.ts";
-const bundler = createBundler(); // create bundler instance with default plugins
+import { Bundler, defaultPlugins } from "https://deno.land/x/bundler/mod.ts";
+const plugins = defaultPlugins();
+const bundler = new Bundler(plugins); // create bundler instance with default plugins
 
 const input = "src/index.html";
 const outputMap = { [input]: "index.html" };
@@ -95,7 +96,7 @@ const { bundles } = await bundler.bundle([inputs], { outputMap });
 
 #### Advanced Bundler Example  <!-- omit in toc -->
 ```ts
-import { Bundler } from "https//deno.land/x/bundler/mod.ts";
+import { Bundler } from "https://deno.land/x/bundler/mod.ts";
 
 const input = "src/index.html";
 const outputMap = { [input]: "index.html" };
@@ -110,7 +111,7 @@ const bundles = await bundler.createBundles(chunks, graph);
 
 #### Bundler Server  <!-- omit in toc -->
 ```ts
-import { Server } from "https//deno.land/x/bundler/mod.ts";
+import { Server } from "https://deno.land/x/bundler/mod.ts";
 const server = new Server();
 await server.listen({ port: 8000 });
 ```

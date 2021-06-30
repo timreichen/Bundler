@@ -91,7 +91,7 @@ const bundler = new Bundler(plugins); // create bundler instance with default pl
 const input = "src/index.html";
 const outputMap = { [input]: "index.html" };
 
-const { bundles } = await bundler.bundle([inputs], { outputMap });
+const { bundles } = await bundler.bundle([input], { outputMap });
 ```
 
 #### Advanced Bundler Example  <!-- omit in toc -->
@@ -112,7 +112,13 @@ const bundles = await bundler.createBundles(chunks, graph);
 #### Bundler Server  <!-- omit in toc -->
 ```ts
 import { Server } from "https://deno.land/x/bundler/mod.ts";
+
+const input = "src/index.html";
+const index = "index.html";
+const outputMap = { [input]: index };
+
 const server = new Server();
+await server.bundle([input], { outputMap });
 await server.listen({ port: 8000 });
 ```
 

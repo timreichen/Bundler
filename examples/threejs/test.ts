@@ -66,7 +66,7 @@ Deno.test({
             "output":
               "dist/deps/26cc44bd654dd9c6696bb9675a3875bd9299c61bcb4c30f07497d1a3a42587ff.js",
             "dependencies": {
-              "https://cdn.skypack.dev/-/three@v0.130.0-WI96Ec9p8dZb5AMcOcgD/dist=es2020,mode=imports/optimized/three.js":
+              "https://cdn.skypack.dev/-/three@v0.130.0-tRS2zGZSAezE0B1845w6/dist=es2020,mode=imports/optimized/three.js":
                 {
                   "Import": {
                     "namespaces": [
@@ -80,7 +80,7 @@ Deno.test({
             },
             "export": {
               "namespaces": [
-                "https://cdn.skypack.dev/-/three@v0.130.0-WI96Ec9p8dZb5AMcOcgD/dist=es2020,mode=imports/optimized/three.js",
+                "https://cdn.skypack.dev/-/three@v0.130.0-tRS2zGZSAezE0B1845w6/dist=es2020,mode=imports/optimized/three.js",
               ],
               "specifiers": {
                 "default": "default",
@@ -89,13 +89,13 @@ Deno.test({
             "type": "Import",
           },
         ],
-        "https://cdn.skypack.dev/-/three@v0.130.0-WI96Ec9p8dZb5AMcOcgD/dist=es2020,mode=imports/optimized/three.js":
+        "https://cdn.skypack.dev/-/three@v0.130.0-tRS2zGZSAezE0B1845w6/dist=es2020,mode=imports/optimized/three.js":
           [
             {
               "input":
-                "https://cdn.skypack.dev/-/three@v0.130.0-WI96Ec9p8dZb5AMcOcgD/dist=es2020,mode=imports/optimized/three.js",
+                "https://cdn.skypack.dev/-/three@v0.130.0-tRS2zGZSAezE0B1845w6/dist=es2020,mode=imports/optimized/three.js",
               "output":
-                "dist/deps/8ae118fe4753e8561027f39a91ef485e9823f7fcd6d5a3f6d84117d6df005fdd.js",
+                "dist/deps/c53f1e0b13dde873c2d9faac2122bb46c8b45594e555a6eb756ca0fb3938a674.js",
               "dependencies": {},
               "export": {
                 "specifiers": {

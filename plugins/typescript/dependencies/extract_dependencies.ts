@@ -1,6 +1,7 @@
 import { colors, fs, path, ts } from "../../../deps.ts";
 import { isURL } from "../../../_util.ts";
-import { DependencyType, Import, ModuleData } from "../../plugin.ts";
+import { DependencyType, ModuleData } from "../../plugin.ts";
+import type { Import } from "../../plugin.ts"
 
 function hasModifier(
   modifiers: ts.ModifiersArray,

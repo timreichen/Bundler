@@ -25,11 +25,13 @@ export class Server {
   #bundles: Record<string, unknown>;
   #webSockets: Set<WebSocket>;
   protected liveReloadOptions: LiveReloadOptions;
+  index: string;
 
   constructor(
     {
       bundler = new Bundler(defaultPlugins()),
       liveReloadOptions = {},
+      index = "index.html",
     }: {
       bundler?: Bundler;
       liveReloadOptions?: {
@@ -37,10 +39,12 @@ export class Server {
         hostname?: string;
         port?: number;
       };
+      index?: string;
     } = {},
   ) {
     this.#bundler = bundler;
     this.#bundler.logger.logLevel = this.#bundler.logger.logLevels.info;
+    this.index = index;
 
     this.#watcher = new Watcher();
     this.#bundles = {};
@@ -55,7 +59,7 @@ export class Server {
   async bundle(inputs: string[], options: BundleOptions) {
     let { graph = {} } = options;
     try {
-      const { bundles, graph: newGraph } = await this.#bundler.bundle(
+      const { bundles, graph: newGraph, chunks } = await this.#bundler.bundle(
         inputs,
         options,
       );
@@ -128,6 +132,7 @@ export class Server {
     try {
       const url = request.url;
       let filePath = new URL(url).pathname;
+      if (filePath === "/") filePath = this.index;
       this.#bundler.logger.debug(request.method, url, filePath);
       if (filePath === this.liveReloadOptions.filename) {
         const body =

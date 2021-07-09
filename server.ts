@@ -59,7 +59,7 @@ export class Server {
   async bundle(inputs: string[], options: BundleOptions) {
     let { graph = {} } = options;
     try {
-      const { bundles, graph: newGraph, chunks } = await this.#bundler.bundle(
+      const { bundles, graph: newGraph } = await this.#bundler.bundle(
         inputs,
         options,
       );

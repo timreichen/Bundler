@@ -8,7 +8,7 @@ const args = parse(Deno.args);
 const { port = 8000 } = args;
 const { inputs, ...options } = await createOptions({
   ...args,
-  "out-dir": ""
+  "out-dir": "",
 });
 const input = inputs[0];
 const index = options.outputMap[input] || "index.html";

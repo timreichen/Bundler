@@ -6,20 +6,36 @@
 ![Bundler](https://github.com/timreichen/Bundler/blob/master/static/Icon.svg)
 
 - [About](#about)
-- [Installation](#installation)
-  - [Bundler CLI](#bundler-cli)
-- [Usage](#usage)
-  - [Bundler CLI](#bundler-cli-1)
-  - [Dev Server CLI](#dev-server-cli)
-  - [SPA Dev Server CLI](#spa-dev-server-cli)
-  - [API](#api)
+  - [Goals](#goals)
+  - [Features](#features)
 - [Smart Splitting](#smart-splitting)
+- [Installation](#installation)
+  - [Bundler](#bundler)
+  - [Dev Server](#dev-server)
+  - [SPA Dev Server](#spa-dev-server)
+- [Usage](#usage)
+  - [Bundler](#bundler-1)
+    - [CLI](#cli)
+    - [API](#api)
+  - [Dev Server](#dev-server-1)
+    - [CLI](#cli-1)
+    - [API](#api-1)
+  - [SPA Dev Server](#spa-dev-server-1)
+    - [CLI](#cli-2)
 - [Examples](#examples)
 - [Unstable](#unstable)
 
 ## About
 Bundler is a zero configuration bundler with the web in mind. 
 
+### Goals
+- Webplatform and Deno are the source of truth
+- Embracement the webplatform and typescript
+- Embrace the future (no legacy feature support)
+- No configuration setup
+- Allow flexible and modular usage of bundler API and CLI
+
+### Features
 - [smart splits](#smart-splitting) dependencies
 - handles `top level await`
 - typescript and javascript
@@ -35,27 +51,44 @@ Bundler is a zero configuration bundler with the web in mind.
 - css
   - handles `css` `@import` statements
   - supports [postcss-preset-env](https://preset-env.cssdb.org) **stage 2** and **nesting-rules** by default
-- CLI
+- dev tools
   - built in code optimization and minification with `--optimize` option
   - built in file watcher with `--watch` option
+  - Separate dev server CLI
+  - Separate spa dev server CLI
+
+## Smart Splitting
+
+Bundler automatically analyzes the dependency graph and splits dependencies into separate files, if the code is used in different entry points. This prevents code duplication and allows multiple bundle files to share code.
 
 ## Installation
 
-### Bundler CLI
+### Bundler
 ```sh
 deno install --unstable --allow-read --allow-write --allow-net --allow-env --name bundler https://deno.land/x/bundler/cli.ts
+```
+### Dev Server
+```sh
+deno install --unstable --allow-read --allow-write --allow-net --allow-env --name server https://deno.land/x/bundler/server_cli.ts
+```
+### SPA Dev Server
+```sh
+deno install --unstable --allow-read --allow-write --allow-net --allow-env --name spa_server https://deno.land/x/bundler/spa_server_cli.ts
 ```
 
 **Info**: You might need to specify `--root /usr/local`.
 
 ## Usage
 
-### Bundler CLI
+### Bundler
+#### CLI
 
 ```sh
 bundler bundle index.html=index.html
 ```
+This will analyze the entry file `index.html` and its dependencies, generate bundles and write the output files into an directory (default `dist`).
 
+##### Options <!-- omit in toc -->
 |               Option | Description                                                                                                                                                      | Default |
 | -------------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | -c, --config \<FILE> | Load tsconfig.json configuration file                                                                                                                            | {}      |
@@ -68,25 +101,12 @@ bundler bundle index.html=index.html
 |         -r, --reload | Reload source code<br>--reload&emsp;Reload everything<br>--reload=index.ts&emsp;Reload only standard modules<br>--reload=a.ts,b.ts&emsp;Reloads specific modules | false   |
 |              --watch | Watch files and re-bundle on change                                                                                                                              | false   |
 
-### Dev Server CLI
+#### API
 
-```sh
-deno run --unstable --allow-read --allow-write --allow-net --allow-env https://deno.land/x/bundler/server_cli.ts
-```
-
-### SPA Dev Server CLI
-
-```sh
-deno run --unstable --allow-read --allow-write --allow-net --allow-env https://deno.land/x/bundler/spa_server_cli.ts
-```
-
-### API
-
-#### Bundler Example  <!-- omit in toc -->
 ```ts
 import { Bundler, defaultPlugins } from "https://deno.land/x/bundler/mod.ts";
-const plugins = defaultPlugins();
-const bundler = new Bundler(plugins); // create bundler instance with default plugins
+const plugins = defaultPlugins(); // default plugins
+const bundler = new Bundler(plugins);
 
 const input = "src/index.html";
 const outputMap = { [input]: "index.html" };
@@ -94,22 +114,29 @@ const outputMap = { [input]: "index.html" };
 const { bundles } = await bundler.bundle([input], { outputMap });
 ```
 
-#### Advanced Bundler Example  <!-- omit in toc -->
+##### Advanced Example  <!-- omit in toc -->
 ```ts
 import { Bundler } from "https://deno.land/x/bundler/mod.ts";
 
 const input = "src/index.html";
 const outputMap = { [input]: "index.html" };
 
-const plugins = [ … ];
-const bundler = new Bundler(plugins); // create bundler instance with custom plugins
+const plugins = [ … ]; // custom plugins
+const bundler = new Bundler(plugins);
 
 const graph = await bundler.createGraph([input], { outputMap });
 const chunks = await bundler.createChunks(inputs, graph);
 const bundles = await bundler.createBundles(chunks, graph);
 ```
 
-#### Bundler Server  <!-- omit in toc -->
+### Dev Server
+#### CLI
+```sh
+deno run --unstable --allow-read --allow-write --allow-net --allow-env https://deno.land/x/bundler/server_cli.ts index.html
+```
+This will analyze the entry file `index.html` and its dependencies, generate bundles and start a server that serves the bundled project.
+
+#### API
 ```ts
 import { Server } from "https://deno.land/x/bundler/mod.ts";
 
@@ -121,12 +148,18 @@ await server.bundle([input], { outputMap });
 await server.listen({ port: 8000 });
 ```
 
-## Smart Splitting
+### SPA Dev Server
+#### CLI
+```sh
+deno run --unstable --allow-read --allow-write --allow-net --allow-env https://deno.land/x/bundler/spa_server_cli.ts index.html
+```
+This will analyze the entry file `index.html` and its dependencies, generate bundles and start a server that serves the bundled project.
+It will serve the entry file `index.html` if a file for a `GET` request does not exist.
 
-Bundler automatically analyzes the dependency graph and splits dependencies into separate files, if the code is used in different entry points. This prevents code duplication and allows multiple bundle files to share code.
 
 ## Examples
-### Bundler CLI  <!-- omit in toc -->
+
+### Bundler API  <!-- omit in toc -->
 - [hello world](https://github.com/timreichen/Bundler/tree/master/examples/hello_world)
 - [lit-element](https://github.com/timreichen/Bundler/tree/master/examples/lit_element)
 - [react](https://github.com/timreichen/Bundler/tree/master/examples/react)
@@ -136,11 +169,12 @@ Bundler automatically analyzes the dependency graph and splits dependencies into
 - [threejs](https://github.com/timreichen/Bundler/tree/master/examples/threejs)
 - [wasm](https://github.com/timreichen/Bundler/tree/master/examples/wasm)
 
-### Bundler API  <!-- omit in toc -->
-
+### Server CLI  <!-- omit in toc -->
 - [server](https://github.com/timreichen/Bundler/tree/master/examples/server)
 
-## Unstable
+### SPA Server CLI  <!-- omit in toc -->
+- [spa server](https://github.com/timreichen/Bundler/tree/master/examples/spa_server)
 
+## Unstable
 This module requires deno to run with the `--unstable` flag. It is likely to
 change in the future.

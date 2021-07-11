@@ -5,9 +5,9 @@
 Run
 
 ```sh
-deno run --unstable -A '/Users/timreichen/Sites/Bundler/spa_server_cli.ts' src/index.html
+deno run --unstable -A 'https://deno.land/x/bundler/spa_server_cli.ts' src/index.html
 ```
 
 ## 2. Serve
 
-files are served to `http://localhost:8000`
+files are served to `http://0.0.0.0:8000`

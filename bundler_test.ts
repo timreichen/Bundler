@@ -1886,7 +1886,7 @@ tests({
                 return { default: b };
               })();
               export default (async () => {
-                const b = (await mod).default;
+                const { default: b } = await mod;
                 return { b };
               })();`,
             );

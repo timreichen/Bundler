@@ -487,7 +487,10 @@ function createReturnStatement(
   const propertySpecifierEntries: [string, string][] = [];
 
   if (_export.default) {
-    propertySpecifierEntries.push([defaultKeyword, defaultIdentifier]);
+    const identifier = typeof _export.default === "string"
+      ? _export.default
+      : defaultIdentifier;
+    propertySpecifierEntries.push([defaultKeyword, identifier]);
   }
   if (specifiers) {
     propertySpecifierEntries.push(...Object.entries(specifiers));

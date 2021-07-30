@@ -1778,7 +1778,7 @@ tests({
               `/* testdata/typescript/export_default_class/b.ts */
               const mod = (async () => {
                 class b { static value = "b"; }
-                return { default: _default };
+                return { default: b };
               })();
               export default (async () => {
                 const { b } = await mod;

@@ -190,7 +190,7 @@ export function typescriptTransformImportsExportsTransformer(
 
                   if (identifierMap.has(text)) {
                     name = identifierMap.get(text)!;
-                    propertyName = text;
+                    propertyName ??= text;
                   }
 
                   const usedImportSpecifiers = usedImports[identifier] =

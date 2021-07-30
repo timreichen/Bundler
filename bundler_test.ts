@@ -1464,6 +1464,111 @@ tests({
           },
         },
         {
+          name: "export as specifier",
+          async fn() {
+            const inputs = [
+              "testdata/typescript/export_as_specifier/a.ts",
+            ];
+            const output =
+              "dist/deps/1d1f6b887bfb53e584d715b91cddce3ce8c17d9229491d09a9e09a3be0e22e7b.js";
+
+            const graph = await bundler.createGraph(inputs);
+            assertEquals(graph, {
+              "testdata/typescript/export_as_specifier/a.ts": [
+                {
+                  dependencies: {
+                    "testdata/typescript/export_as_specifier/b.ts": {
+                      Import: {
+                        specifiers: {
+                          c2: "c2",
+                        },
+                      },
+                    },
+                  },
+                  export: {},
+                  input: "testdata/typescript/export_as_specifier/a.ts",
+                  output,
+                  type: "Import",
+                },
+              ],
+              "testdata/typescript/export_as_specifier/b.ts": [
+                {
+                  dependencies: {
+                    "testdata/typescript/export_as_specifier/c.ts": {
+                      Import: {
+                        specifiers: {
+                          c2: "c",
+                        },
+                      },
+                    },
+                  },
+                  export: {
+                    specifiers: {
+                      c2: "c2",
+                    },
+                  },
+                  input: "testdata/typescript/export_as_specifier/b.ts",
+                  output:
+                    "dist/deps/b300c81b43a658cdf137b357fbd9e001e52dc28e60e922d5e65d13202ed352a6.js",
+                  type: "Import",
+                },
+              ],
+              "testdata/typescript/export_as_specifier/c.ts": [
+                {
+                  dependencies: {},
+                  export: {
+                    specifiers: {
+                      c: "c",
+                    },
+                  },
+                  input: "testdata/typescript/export_as_specifier/c.ts",
+                  output:
+                    "dist/deps/3ecfd13c6cfd02dc184823a49b6a32e8396afc3917021e635afa8105d1ec1246.js",
+                  type: "Import",
+                },
+              ],
+            });
+            const chunks = await bundler.createChunks(inputs, graph);
+            assertEquals(chunks, [
+              {
+                item: {
+                  history: ["testdata/typescript/export_as_specifier/a.ts"],
+                  type: "Import",
+                },
+                dependencyItems: [
+                  {
+                    history: [
+                      "testdata/typescript/export_as_specifier/b.ts",
+                      "testdata/typescript/export_as_specifier/a.ts",
+                    ],
+                    type: "Import",
+                  },
+                ],
+              },
+            ]);
+            const bundles = await bundler.createBundles(chunks, graph);
+            assertEquals(Object.keys(bundles).length, 1);
+            const bundle = bundles[output] as string;
+            assertEqualsIgnoreWhitespace(
+              bundle,
+              `/* testdata/typescript/export_as_specifier/c.ts */
+              const mod1 = (async () => {
+                const c = "c";
+                return { c };
+              })();
+              const mod = (async () => {
+                const { c2 } = await mod1;
+                return { c2 };
+              })();
+              export default (async () => {
+                const { c2 } = await mod;
+                console.log(c2);
+                return {};
+              })();`,
+            );
+          },
+        },
+        {
           name: "export namespace specifier",
           async fn() {
             const inputs = [
@@ -1781,7 +1886,7 @@ tests({
                 return { default: b };
               })();
               export default (async () => {
-                const { b } = await mod;
+                const b = (await mod).default;
                 return { b };
               })();`,
             );

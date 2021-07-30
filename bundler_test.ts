@@ -2057,6 +2057,7 @@ tests({
 
         {
           name: "export default type",
+          ignore: true,
           async fn() {
             const inputs = [
               "testdata/typescript/export_default_type/a.ts",
@@ -2123,12 +2124,27 @@ tests({
             const bundles = await bundler.createBundles(chunks, graph);
             assertEquals(Object.keys(bundles).length, 1);
             const bundle = bundles[output] as string;
+
+            /* Current incorrect output:
+
+              const mod = (async () => {
+                const _default = b; // <-- wrong: b doesn't exist
+                                    // also, _default is unused?
+                return { default: b };
+              })();
+              export default (async () => {
+                const b = (await mod).default;
+                return {};
+              })();
+
+            */
+
             assertEqualsIgnoreWhitespace(
               bundle,
               `/* testdata/typescript/export_default_type/b.ts */
               const mod = (async () => {
-                const _default = b;
-                return { default: b };
+                const _default = undefined;
+                return { default: _default };
               })();
               export default (async () => {
                 const b = (await mod).default;

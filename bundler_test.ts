@@ -1,4 +1,3 @@
-// deno-lint-ignore-file
 import { defaultPlugins } from "./_bundler_utils.ts";
 
 import {

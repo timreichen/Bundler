@@ -1708,19 +1708,18 @@ tests({
         {
           name: "export default class",
           async fn() {
-            throw new Error("TODO");
             const inputs = [
-              "testdata/typescript/export_default/a.ts",
+              "testdata/typescript/export_default_class/a.ts",
             ];
             const output =
-              "dist/deps/6ff2f43df916e1866ff3f687dde57cc6a5950126905560de2ef2db6fd648cceb.js";
+              "dist/deps/8fb15a7ad25e3c2486ed30cf0a6ed27fa97c8a176d10ce11704dbb6482ed0895.js";
 
             const graph = await bundler.createGraph(inputs);
             assertEquals(graph, {
-              "testdata/typescript/export_default/a.ts": [
+              "testdata/typescript/export_default_class/a.ts": [
                 {
                   dependencies: {
-                    "testdata/typescript/export_default/b.ts": {
+                    "testdata/typescript/export_default_class/b.ts": {
                       Import: {
                         specifiers: {
                           b: "default",
@@ -1733,20 +1732,20 @@ tests({
                       b: "b",
                     },
                   },
-                  input: "testdata/typescript/export_default/a.ts",
+                  input: "testdata/typescript/export_default_class/a.ts",
                   output,
                   type: "Import",
                 },
               ],
-              "testdata/typescript/export_default/b.ts": [
+              "testdata/typescript/export_default_class/b.ts": [
                 {
                   dependencies: {},
                   export: {
-                    default: true,
+                    default: "b",
                   },
-                  input: "testdata/typescript/export_default/b.ts",
+                  input: "testdata/typescript/export_default_class/b.ts",
                   output:
-                    "dist/deps/fce9005f06acca1dcf725f2fe883a580169f1eb2d7adb83162ae249f53f7add5.js",
+                    "dist/deps/9a7abf52380486f522eaff375bb2bc553e8111f68974e69d99d335a16f27eff4.js",
                   type: "Import",
                 },
               ],
@@ -1756,15 +1755,15 @@ tests({
               {
                 item: {
                   history: [
-                    "testdata/typescript/export_default/a.ts",
+                    "testdata/typescript/export_default_class/a.ts",
                   ],
                   type: "Import",
                 },
                 dependencyItems: [
                   {
                     history: [
-                      "testdata/typescript/export_default/b.ts",
-                      "testdata/typescript/export_default/a.ts",
+                      "testdata/typescript/export_default_class/b.ts",
+                      "testdata/typescript/export_default_class/a.ts",
                     ],
                     type: "Import",
                   },
@@ -1776,13 +1775,13 @@ tests({
             const bundle = bundles[output] as string;
             assertEqualsIgnoreWhitespace(
               bundle,
-              `/* testdata/typescript/export_default/b.ts */
+              `/* testdata/typescript/export_default_class/b.ts */
               const mod = (async () => {
-                const _default = "b";
+                class b { static value = "b"; }
                 return { default: _default };
               })();
               export default (async () => {
-                const { default: b } = await mod;
+                const { b } = await mod;
                 return { b };
               })();`,
             );

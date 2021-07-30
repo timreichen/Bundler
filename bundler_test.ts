@@ -1557,7 +1557,7 @@ tests({
                 return { c };
               })();
               const mod = (async () => {
-                const { c2 } = await mod1;
+                const { c: c2 } = await mod1;
                 return { c2 };
               })();
               export default (async () => {

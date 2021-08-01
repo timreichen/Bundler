@@ -32,6 +32,10 @@ export function typescriptExtractDependenciesTransformer(
           const moduleSpecifier = node.moduleSpecifier;
           const isTypeOnly = importClause?.isTypeOnly;
 
+          if (isTypeOnly) {
+            return undefined;
+          }
+
           if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
             filePath = moduleSpecifier.text;
           }
@@ -42,15 +46,10 @@ export function typescriptExtractDependenciesTransformer(
             if (importClause.namedBindings) {
               if (ts.isNamespaceImport(importClause.namedBindings)) {
                 // import * as x from "./x.ts"
-                if (isTypeOnly) {
-                  entry.types ||= {};
-                  entry.types["*"] = importClause.namedBindings.name.text;
-                } else {
-                  entry.namespaces ||= [];
-                  entry.namespaces.push(
-                    importClause.namedBindings.name.text,
-                  );
-                }
+                entry.namespaces ||= [];
+                entry.namespaces.push(
+                  importClause.namedBindings.name.text,
+                );
               }
               if (ts.isNamedImports(importClause.namedBindings)) {
                 // import { x } from "./x.ts"
@@ -59,32 +58,26 @@ export function typescriptExtractDependenciesTransformer(
                   const identifier = (element.propertyName?.text ||
                     element.name.text) as string;
                   const name = element.name.text;
-                  if (isTypeOnly) {
-                    entry.types ||= {};
-                    entry.types[name] = identifier;
-                  } else {
-                    entry.specifiers ||= {};
-                    entry.specifiers[name] = identifier;
-                  }
+                  entry.specifiers ||= {};
+                  entry.specifiers[name] = identifier;
                 });
               }
             } else if (importClause.name) {
               // import x from "./x.ts"
               const name = importClause.name.text;
-              if (isTypeOnly) {
-                entry.types ||= {};
-                entry.types[name] = name;
-              } else {
-                entry.defaults ||= [];
-                entry.defaults.push(
-                  name,
-                );
-              }
+              entry.defaults ||= [];
+              entry.defaults.push(
+                name,
+              );
             }
           }
           return node;
         } else if (ts.isExportDeclaration(node)) {
           const isTypeOnly = node.isTypeOnly;
+
+          if (isTypeOnly) {
+            return undefined;
+          }
 
           const moduleSpecifier = node.moduleSpecifier;
           if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
@@ -102,47 +95,30 @@ export function typescriptExtractDependenciesTransformer(
             if (ts.isNamespaceExport(exportClause)) {
               // export * as x from "./x.ts"
               const name = exportClause.name.text;
-              if (isTypeOnly) {
-                entry.types ||= {};
-                entry.types["*"] = name;
-              } else {
-                entry.namespaces ||= [];
-                entry.namespaces.push(name);
-                moduleData.export.specifiers ||= {};
-                moduleData.export.specifiers[name] = name;
-              }
+              entry.namespaces ||= [];
+              entry.namespaces.push(name);
+              moduleData.export.specifiers ||= {};
+              moduleData.export.specifiers[name] = name;
             } else if (ts.isNamedExports(exportClause)) {
               exportClause.elements.forEach((element) => {
                 const propertyName = (element.propertyName?.text ||
                   element.name.text) as string;
                 const name = element.name.text;
-                if (isTypeOnly) {
-                  // export type { x } from "./x.ts" or export type { x as y } from "./x.ts"
-                  entry.types ||= {};
-                  entry.types[name] = propertyName;
-                  moduleData.export.types ||= {};
-                  moduleData.export.types[name] = passthrough
-                    ? name
-                    : propertyName;
-                } else {
-                  // export { x } from "./x.ts" or export { x as y } from "./x.ts"
-                  entry.specifiers ||= {};
-                  entry.specifiers[name] = propertyName;
-                  moduleData.export.specifiers ||= {};
-                  moduleData.export.specifiers[name] = passthrough
-                    ? name
-                    : propertyName;
-                }
+                // export { x } from "./x.ts" or export { x as y } from "./x.ts"
+                entry.specifiers ||= {};
+                entry.specifiers[name] = propertyName;
+                moduleData.export.specifiers ||= {};
+                moduleData.export.specifiers[name] = passthrough
+                  ? name
+                  : propertyName;
               });
             }
           } else {
             // export * from "./x.ts"
-            if (!isTypeOnly) {
-              entry.namespaces ||= [];
-              entry.namespaces.push("*"); // has no alias for namespace, therefore undefined as value
-              moduleData.export.namespaces ||= [];
-              moduleData.export.namespaces.push(filePath);
-            }
+            entry.namespaces ||= [];
+            entry.namespaces.push("*"); // has no alias for namespace, therefore undefined as value
+            moduleData.export.namespaces ||= [];
+            moduleData.export.namespaces.push(filePath);
           }
           return node;
         } else if (ts.isExportAssignment(node)) {

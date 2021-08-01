@@ -1317,29 +1317,9 @@ tests({
             assertEquals(graph, {
               "testdata/typescript/import_type/a.ts": [{
                 export: {},
-                dependencies: {
-                  "testdata/typescript/import_type/b.ts": {
-                    Import: {
-                      types: {
-                        B: "B",
-                      },
-                    },
-                  },
-                },
+                dependencies: {},
                 input: "testdata/typescript/import_type/a.ts",
                 output,
-                type: "Import",
-              }],
-              "testdata/typescript/import_type/b.ts": [{
-                export: {
-                  types: {
-                    B: "B",
-                  },
-                },
-                dependencies: {},
-                input: "testdata/typescript/import_type/b.ts",
-                output:
-                  "dist/deps/e62c2b1ec2459e538fee02be73f94fdb515c86e30513f0128d0462e34d4bfb3b.js",
                 type: "Import",
               }],
             });
@@ -1350,15 +1330,7 @@ tests({
                   history: ["testdata/typescript/import_type/a.ts"],
                   type: "Import",
                 },
-                dependencyItems: [
-                  {
-                    history: [
-                      "testdata/typescript/import_type/b.ts",
-                      "testdata/typescript/import_type/a.ts",
-                    ],
-                    type: "Import",
-                  },
-                ],
+                dependencyItems: [],
               },
             ]);
             const bundles = await bundler.createBundles(chunks, graph);
@@ -1366,12 +1338,8 @@ tests({
             const bundle = bundles[output] as string;
             assertEqualsIgnoreWhitespace(
               bundle,
-              `/* testdata/typescript/import_type/b.ts */
-              const mod = (async () => {
-                return {};
-              })();
+              `/* testdata/typescript/import_type/a.ts */
               export default (async () => {
-                const { B } = await mod;
                 const a = "a";
                 console.log(a);
                 return {};

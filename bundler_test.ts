@@ -31,6 +31,22 @@ tests({
       },
     },
     {
+      name: "circular dependency subtle",
+      ignore: true,
+      async fn() {
+        const inputs = [
+          "testdata/circular_subtle/a.ts",
+        ];
+        await assertThrowsAsync(
+          async () => {
+            await bundler.createGraph(inputs);
+          },
+          Error,
+          "Circular Dependency",
+        );
+      },
+    },
+    {
       name: "typescript",
       tests: () => [
         {

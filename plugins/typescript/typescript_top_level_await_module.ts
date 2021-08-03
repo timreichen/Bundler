@@ -558,6 +558,7 @@ function createIIFEExpression(
 function transpile(
   source: string,
   compilerOptions: Deno.CompilerOptions,
+  { logger }: Context,
 ) {
   // const name = "/x.tsx";
   // const { files, diagnostics } = await Deno.emit(name, {
@@ -577,15 +578,22 @@ function transpile(
   // }
   // return files[`file://${name}.js`];
 
-  const tsCompilerOptions =
-    ts.convertCompilerOptionsFromJson({ compilerOptions }, Deno.cwd()).options;
+  const tsCompilerOptionsConversion = ts.convertCompilerOptionsFromJson(
+    compilerOptions,
+    Deno.cwd(),
+  );
+
+  for (const error of tsCompilerOptionsConversion.errors) {
+    logger.error("ts.convertCompilerOptionsFromJson:", error.messageText);
+  }
+
   return ts.transpile(source, {
     jsxFactory: "React.createElement",
     jsxFragmentFactory: "React.Fragment",
     jsx: ts.JsxEmit.React,
     target: ts.ScriptTarget.ESNext,
     module: ts.ModuleKind.ESNext,
-    ...tsCompilerOptions,
+    ...tsCompilerOptionsConversion.options,
   });
 }
 
@@ -677,6 +685,7 @@ export class TypescriptTopLevelAwaitModulePlugin extends TypescriptPlugin {
     const transpiledSource = await transpile(
       moduleString,
       this.compilerOptions,
+      context,
     );
 
     logger.trace(

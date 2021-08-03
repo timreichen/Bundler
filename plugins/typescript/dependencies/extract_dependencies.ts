@@ -3,6 +3,10 @@ import { isURL } from "../../../_util.ts";
 import { DependencyType, ModuleData } from "../../plugin.ts";
 import type { Import } from "../../plugin.ts";
 
+type DependencyOptions = {
+  includeTypeOnly: boolean;
+};
+
 function hasModifier(
   modifiers: ts.ModifiersArray,
   modifier: ts.SyntaxKind,
@@ -17,6 +21,7 @@ function hasModifier(
  */
 export function typescriptExtractDependenciesTransformer(
   moduleData: ModuleData,
+  dependencyOptions: DependencyOptions,
 ) {
   function addImport(filePath: string, type: DependencyType): Import {
     const imports = moduleData.dependencies[filePath] ||= {};
@@ -32,7 +37,7 @@ export function typescriptExtractDependenciesTransformer(
           const moduleSpecifier = node.moduleSpecifier;
           const isTypeOnly = importClause?.isTypeOnly;
 
-          if (isTypeOnly) {
+          if (isTypeOnly && !dependencyOptions.includeTypeOnly) {
             return undefined;
           }
 
@@ -46,10 +51,15 @@ export function typescriptExtractDependenciesTransformer(
             if (importClause.namedBindings) {
               if (ts.isNamespaceImport(importClause.namedBindings)) {
                 // import * as x from "./x.ts"
-                entry.namespaces ||= [];
-                entry.namespaces.push(
-                  importClause.namedBindings.name.text,
-                );
+                if (isTypeOnly) {
+                  entry.types ||= {};
+                  entry.types["*"] = importClause.namedBindings.name.text;
+                } else {
+                  entry.namespaces ||= [];
+                  entry.namespaces.push(
+                    importClause.namedBindings.name.text,
+                  );
+                }
               }
               if (ts.isNamedImports(importClause.namedBindings)) {
                 // import { x } from "./x.ts"
@@ -58,24 +68,34 @@ export function typescriptExtractDependenciesTransformer(
                   const identifier = (element.propertyName?.text ||
                     element.name.text) as string;
                   const name = element.name.text;
-                  entry.specifiers ||= {};
-                  entry.specifiers[name] = identifier;
+                  if (isTypeOnly) {
+                    entry.types ||= {};
+                    entry.types[name] = identifier;
+                  } else {
+                    entry.specifiers ||= {};
+                    entry.specifiers[name] = identifier;
+                  }
                 });
               }
             } else if (importClause.name) {
               // import x from "./x.ts"
               const name = importClause.name.text;
-              entry.defaults ||= [];
-              entry.defaults.push(
-                name,
-              );
+              if (isTypeOnly) {
+                entry.types ||= {};
+                entry.types[name] = name;
+              } else {
+                entry.defaults ||= [];
+                entry.defaults.push(
+                  name,
+                );
+              }
             }
           }
           return node;
         } else if (ts.isExportDeclaration(node)) {
           const isTypeOnly = node.isTypeOnly;
 
-          if (isTypeOnly) {
+          if (isTypeOnly && !dependencyOptions.includeTypeOnly) {
             return undefined;
           }
 
@@ -95,30 +115,47 @@ export function typescriptExtractDependenciesTransformer(
             if (ts.isNamespaceExport(exportClause)) {
               // export * as x from "./x.ts"
               const name = exportClause.name.text;
-              entry.namespaces ||= [];
-              entry.namespaces.push(name);
-              moduleData.export.specifiers ||= {};
-              moduleData.export.specifiers[name] = name;
+              if (isTypeOnly) {
+                entry.types ||= {};
+                entry.types["*"] = name;
+              } else {
+                entry.namespaces ||= [];
+                entry.namespaces.push(name);
+                moduleData.export.specifiers ||= {};
+                moduleData.export.specifiers[name] = name;
+              }
             } else if (ts.isNamedExports(exportClause)) {
               exportClause.elements.forEach((element) => {
                 const propertyName = (element.propertyName?.text ||
                   element.name.text) as string;
                 const name = element.name.text;
-                // export { x } from "./x.ts" or export { x as y } from "./x.ts"
-                entry.specifiers ||= {};
-                entry.specifiers[name] = propertyName;
-                moduleData.export.specifiers ||= {};
-                moduleData.export.specifiers[name] = passthrough
-                  ? name
-                  : propertyName;
+                if (isTypeOnly) {
+                  // export type { x } from "./x.ts" or export type { x as y } from "./x.ts"
+                  entry.types ||= {};
+                  entry.types[name] = propertyName;
+                  moduleData.export.types ||= {};
+                  moduleData.export.types[name] = passthrough
+                    ? name
+                    : propertyName;
+                } else {
+                  // export { x } from "./x.ts" or export { x as y } from "./x.ts"
+                  entry.specifiers ||= {};
+                  entry.specifiers[name] = propertyName;
+                  moduleData.export.specifiers ||= {};
+                  moduleData.export.specifiers[name] = passthrough
+                    ? name
+                    : propertyName;
+                }
               });
             }
           } else {
             // export * from "./x.ts"
-            entry.namespaces ||= [];
-            entry.namespaces.push("*"); // has no alias for namespace, therefore undefined as value
-            moduleData.export.namespaces ||= [];
-            moduleData.export.namespaces.push(filePath);
+            if (!isTypeOnly) {
+              entry.namespaces ||= [];
+              entry.namespaces.push("*"); // has no alias for namespace, therefore undefined as value
+              moduleData.export.namespaces ||= [];
+              moduleData.export.namespaces.push(filePath);
+            }
           }
           return node;
         } else if (ts.isExportAssignment(node)) {
@@ -308,7 +345,8 @@ export function typescriptExtractDependenciesTransformer(
 
 export function extractDependenciesFromSourceFile(
   sourceFile: ts.SourceFile,
-  compilerOptions?: ts.CompilerOptions,
+  compilerOptions: ts.CompilerOptions,
+  dependencyOptions: DependencyOptions,
 ) {
   const moduleData: ModuleData = {
     dependencies: {},
@@ -316,7 +354,7 @@ export function extractDependenciesFromSourceFile(
   };
   ts.transform(
     sourceFile,
-    [typescriptExtractDependenciesTransformer(moduleData)],
+    [typescriptExtractDependenciesTransformer(moduleData, dependencyOptions)],
     compilerOptions,
   );
   return moduleData;

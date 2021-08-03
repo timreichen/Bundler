@@ -53,11 +53,21 @@ export class TypescriptPlugin extends Plugin {
     const { history, type } = item;
     const input = history[0];
 
-    const { bundler, outputMap, depsDirPath, importMap } = context;
+    const {
+      bundler,
+      outputMap,
+      depsDirPath,
+      importMap,
+      includeTypeOnly = false,
+    } = context;
 
     const sourceFile = await bundler.readSource(item, context) as ts.SourceFile;
 
-    const dependencies = extractDependenciesFromSourceFile(sourceFile);
+    const dependencies = extractDependenciesFromSourceFile(
+      sourceFile,
+      {},
+      { includeTypeOnly },
+    );
 
     const resolvedModuleData = resolveDependencies(
       input,

@@ -105,6 +105,7 @@ export type Context = {
   optimize: boolean;
   quiet: boolean;
   outputMap: OutputMap;
+  includeTypeOnly?: boolean;
 
   graph: Graph;
   chunks: Chunks;

@@ -1305,7 +1305,7 @@ tests({
           },
         },
         {
-          name: "import type",
+          name: "import type { includeTypeOnly: false }",
           async fn() {
             const inputs = [
               "testdata/typescript/import_type/a.ts",
@@ -1313,7 +1313,9 @@ tests({
             const output =
               "dist/deps/20b81bf7c10416fe8eea4a295de5afb4d3608cf24cb6bc67c4e13f4045828d28.js";
 
-            const graph = await bundler.createGraph(inputs);
+            const graph = await bundler.createGraph(inputs, {
+              includeTypeOnly: false,
+            });
             assertEquals(graph, {
               "testdata/typescript/import_type/a.ts": [{
                 export: {},
@@ -1339,6 +1341,82 @@ tests({
             assertEqualsIgnoreWhitespace(
               bundle,
               `/* testdata/typescript/import_type/a.ts */
+              export default (async () => {
+                const a = "a";
+                console.log(a);
+                return {};
+              })();`,
+            );
+          },
+        },
+        {
+          name: "import type { includeTypeOnly: true }",
+          async fn() {
+            const inputs = [
+              "testdata/typescript/import_type/a.ts",
+            ];
+            const output =
+              "dist/deps/20b81bf7c10416fe8eea4a295de5afb4d3608cf24cb6bc67c4e13f4045828d28.js";
+
+            const graph = await bundler.createGraph(inputs, {
+              includeTypeOnly: true,
+            });
+            assertEquals(graph, {
+              "testdata/typescript/import_type/a.ts": [{
+                export: {},
+                dependencies: {
+                  "testdata/typescript/import_type/b.ts": {
+                    Import: {
+                      types: {
+                        B: "B",
+                      },
+                    },
+                  },
+                },
+                input: "testdata/typescript/import_type/a.ts",
+                output,
+                type: "Import",
+              }],
+              "testdata/typescript/import_type/b.ts": [{
+                export: {
+                  types: {
+                    B: "B",
+                  },
+                },
+                dependencies: {},
+                input: "testdata/typescript/import_type/b.ts",
+                output:
+                  "dist/deps/e62c2b1ec2459e538fee02be73f94fdb515c86e30513f0128d0462e34d4bfb3b.js",
+                type: "Import",
+              }],
+            });
+            const chunks = await bundler.createChunks(inputs, graph);
+            assertEquals(chunks, [
+              {
+                item: {
+                  history: ["testdata/typescript/import_type/a.ts"],
+                  type: "Import",
+                },
+                dependencyItems: [
+                  {
+                    history: [
+                      "testdata/typescript/import_type/b.ts",
+                      "testdata/typescript/import_type/a.ts",
+                    ],
+                    type: "Import",
+                  },
+                ],
+              },
+            ]);
+            const bundles = await bundler.createBundles(chunks, graph);
+            assertEquals(Object.keys(bundles).length, 1);
+            const bundle = bundles[output] as string;
+            assertEqualsIgnoreWhitespace(
+              bundle,
+              `/* testdata/typescript/import_type/b.ts */
+              const mod = (async () => {
+                return {};
+              })();
               export default (async () => {
                 const a = "a";
                 console.log(a);

@@ -46,6 +46,7 @@ export interface CreateGraphOptions extends Options {
   graph?: Graph;
   outDirPath?: string;
   outputMap?: OutputMap;
+  includeTypeOnly?: boolean;
 }
 
 export interface CreateChunkOptions extends Options {
@@ -200,6 +201,7 @@ export class Bundler {
       }),
 
       ...options,
+      includeTypeOnly: options.includeTypeOnly ?? true,
 
       bundler: this,
     };
@@ -620,7 +622,7 @@ export class Bundler {
 
     const graph = await this.createGraph(
       inputs,
-      { ...options },
+      { ...options, includeTypeOnly: false },
     );
     const chunks = await this.createChunks(
       inputs,

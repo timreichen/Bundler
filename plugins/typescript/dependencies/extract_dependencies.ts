@@ -321,16 +321,3 @@ export function extractDependenciesFromSourceFile(
   );
   return moduleData;
 }
-
-export function extractDependencies(
-  fileName: string,
-  sourceText: string,
-  compilerOptions?: ts.CompilerOptions,
-) {
-  const sourceFile = ts.createSourceFile(
-    fileName,
-    sourceText,
-    ts.ScriptTarget.Latest,
-  );
-  return extractDependenciesFromSourceFile(sourceFile, compilerOptions);
-}

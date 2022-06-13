@@ -1,245 +1,251 @@
-import { postcss, posthtml } from "../../../deps.ts";
-import { assertEquals, tests } from "../../../test_deps.ts";
-import { DependencyType, ModuleData } from "../../plugin.ts";
-import {
-  posthtmlExtractImageDependencies,
-  posthtmlExtractInlineStyleDependencies,
-  posthtmlExtractLinkDependencies,
-  posthtmlExtractScriptDependencies,
-  posthtmlExtractStyleDependencies,
-} from "./extract_dependencies.ts";
+import { assertEquals } from "../../../test_deps.ts";
+import { DependencyFormat, DependencyType } from "../../plugin.ts";
+import { extractDependencies } from "./extract_dependencies.ts";
 
-tests({
-  name: "posthtml plugin → extract dependencies",
-  tests: () => [
-    {
-      name: "importMap",
-      async fn() {
-        const importMap = {
-          imports: {
-            "path/": "custom/path/",
-          },
-        };
-        const input = "a.html";
-        const moduleData: ModuleData = { dependencies: {}, export: {} };
-        const plugin = posthtmlExtractImageDependencies(moduleData)(
-          input,
-          { importMap },
-        );
-        const processor = posthtml([plugin]);
-
-        const source = `<html><body><img src="path/b.png"></body></html>`;
-        await processor.process(source);
-
-        assertEquals(moduleData, {
-          dependencies: {
-            "custom/path/b.png": {
-              [DependencyType.Import]: {},
-            },
-          },
-          export: {},
-        });
+Deno.test({
+  name: "importMap",
+  async fn() {
+    const importMap = {
+      imports: {
+        "file:///path/": "file:///custom/path/",
       },
-    },
+    };
+    const input = "a.html";
+    const source = `<html><body><img src="path/b.png"></body></html>`;
+    const dependencies = await extractDependencies(input, source, {
+      importMap,
+    });
 
-    {
-      name: "base",
-      async fn() {
-        const importMap = {
-          imports: {
-            "path/": "custom/path/",
-          },
-        };
-        const input = "a.html";
-        const moduleData: ModuleData = { dependencies: {}, export: {} };
-        const plugin = posthtmlExtractImageDependencies(moduleData)(
-          input,
-          { importMap },
-        );
-        const processor = posthtml([plugin]);
+    assertEquals(dependencies, [
+      {
+        input: "file:///custom/path/b.png",
+        type: DependencyType.ImportExport,
+        format: DependencyFormat.Binary,
+      },
+    ]);
+  },
+});
 
-        const source = `<html>
+Deno.test({
+  name: "base",
+  async fn() {
+    const importMap = {
+      imports: {
+        "file:///path/": "file:///custom/path/",
+      },
+    };
+
+    const input = "a.html";
+    const source = `<html>
         <head><base href="custom/path/"></head>
         <body><img src="b.png"></body></html>`;
-        await processor.process(source);
+    const dependencies = await extractDependencies(input, source, {
+      importMap,
+    });
 
-        assertEquals(moduleData, {
-          dependencies: {
-            "custom/path/b.png": {
-              [DependencyType.Import]: {},
-            },
-          },
-          export: {},
-        });
+    assertEquals(dependencies, [
+      {
+        input: "file:///custom/path/b.png",
+        type: DependencyType.ImportExport,
+        format: DependencyFormat.Binary,
       },
-    },
+    ]);
+  },
+});
 
-    {
-      name: "base and importMap",
-      async fn() {
-        const importMap = {
-          imports: {
-            "path/": "custom/path/",
-          },
-        };
-        const input = "a.html";
-        const moduleData: ModuleData = { dependencies: {}, export: {} };
-        const plugin = posthtmlExtractImageDependencies(moduleData)(
-          input,
-          { importMap },
-        );
-        const processor = posthtml([plugin]);
-
-        const source = `<html>
+Deno.test({
+  name: "base and importMap",
+  async fn() {
+    const importMap = {
+      imports: {
+        "file:///path/": "file:///custom/path/",
+      },
+    };
+    const input = "a.html";
+    const source = `<html>
         <head><base href="custom/"></head>
         <body><img src="path/b.png"></body></html>`;
-        await processor.process(source);
+    const dependencies = await extractDependencies(input, source, {
+      importMap,
+    });
 
-        assertEquals(moduleData, {
-          dependencies: {
-            "custom/path/b.png": {
-              [DependencyType.Import]: {},
-            },
-          },
-          export: {},
-        });
+    assertEquals(dependencies, [
+      {
+        input: "file:///custom/path/b.png",
+        type: DependencyType.ImportExport,
+        format: DependencyFormat.Binary,
       },
-    },
+    ]);
+  },
+});
 
-    {
-      name: "link",
+Deno.test({
+  name: "img",
+  async fn(t) {
+    await t.step({
+      name: "src",
       async fn() {
-        const importMap = { imports: {} };
         const input = "a.html";
-        const moduleData: ModuleData = { dependencies: {}, export: {} };
-        const plugin = posthtmlExtractLinkDependencies(moduleData)(
-          input,
-          { importMap },
-        );
-        const processor = posthtml([plugin]);
+        const source = `<html><head><img src="b.png"></head></html>`;
+        const dependencies = await extractDependencies(input, source);
 
+        assertEquals(dependencies, [
+          {
+            input: "file:///b.png",
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Binary,
+          },
+        ]);
+      },
+    });
+
+    await t.step({
+      name: "srcset",
+      async fn() {
+        const input = "a.html";
+        const source = `<html><head><img srcset="b.png"></head></html>`;
+        const dependencies = await extractDependencies(input, source);
+
+        assertEquals(dependencies, [
+          {
+            input: "file:///b.png",
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Binary,
+          },
+        ]);
+      },
+    });
+
+    await t.step({
+      name: "img multiple srcset",
+      async fn() {
+        const input = "a.html";
         const source =
-          `<html><head><link rel="stylesheet" href="b.css"></head></html>`;
-        await processor.process(source);
+          `<html><head><img srcset=" b.png 480w, c.png 800w "></head></html>`;
+        const dependencies = await extractDependencies(input, source);
 
-        assertEquals(moduleData, {
-          dependencies: {
-            "b.css": {
-              [DependencyType.Import]: {},
-            },
+        assertEquals(dependencies, [
+          {
+            input: "file:///b.png",
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Binary,
           },
-          export: {},
-        });
-      },
-    },
-
-    {
-      name: "webmanifest",
-      async fn() {
-        const importMap = { imports: {} };
-        const input = "a.html";
-        const moduleData: ModuleData = { dependencies: {}, export: {} };
-        const plugin = posthtmlExtractLinkDependencies(moduleData)(
-          input,
-          { importMap },
-        );
-        const processor = posthtml([plugin]);
-
-        const source =
-          `<html><head><link rel="manifest" href="webmanifest.json"></div></head></html>`;
-        await processor.process(source);
-
-        assertEquals(moduleData, {
-          dependencies: {
-            "webmanifest.json": {
-              [DependencyType.WebManifest]: {},
-            },
+          {
+            input: "file:///c.png",
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Binary,
           },
-          export: {},
-        });
+        ]);
       },
-    },
+    });
+  },
+});
 
-    {
-      name: "script",
-      async fn() {
-        const importMap = { imports: {} };
-        const input = "a.html";
-        const moduleData: ModuleData = { dependencies: {}, export: {} };
-        const plugin = posthtmlExtractScriptDependencies(moduleData)(
-          input,
-          { importMap },
-        );
-        const processor = posthtml([plugin]);
+Deno.test({
+  name: "source",
+  async fn() {
+    const input = "a.html";
+    const source =
+      `<html><head><video><source src="b.mp4"></video></head></html>`;
+    const dependencies = await extractDependencies(input, source);
 
-        const source = `<html><body><script src="b.js"></script></body></html>`;
-        await processor.process(source);
-
-        assertEquals(moduleData, {
-          dependencies: {
-            "b.js": {
-              [DependencyType.Import]: {},
-            },
-          },
-          export: {},
-        });
+    assertEquals(dependencies, [
+      {
+        input: "file:///b.mp4",
+        type: DependencyType.ImportExport,
+        format: DependencyFormat.Binary,
       },
-    },
+    ]);
+  },
+});
 
-    {
-      name: "style",
-      async fn() {
-        const use: postcss.AcceptedPlugin[] = [];
-        const importMap = { imports: {} };
-        const input = "a.html";
-        const moduleData: ModuleData = { dependencies: {}, export: {} };
-        const plugin = posthtmlExtractStyleDependencies(moduleData)(
-          input,
-          { importMap, use },
-        );
-        const processor = posthtml([plugin]);
+Deno.test({
+  name: "link",
+  async fn() {
+    const input = "a.html";
 
-        const source =
-          `<html><head><style>@import "b.css";</style></head></html>`;
-        await processor.process(source);
+    const source =
+      `<html><head><link rel="stylesheet" href="b.css"></head></html>`;
+    const dependencies = await extractDependencies(input, source);
 
-        assertEquals(moduleData, {
-          dependencies: {
-            "b.css": {
-              [DependencyType.Import]: {},
-            },
-          },
-          export: {},
-        });
+    assertEquals(dependencies, [
+      {
+        input: "file:///b.css",
+        type: DependencyType.ImportExport,
+        format: DependencyFormat.Style,
       },
-    },
+    ]);
+  },
+});
 
-    {
-      name: "inline style",
-      async fn() {
-        const use: postcss.AcceptedPlugin[] = [];
-        const importMap = { imports: {} };
-        const input = "a.html";
-        const moduleData: ModuleData = { dependencies: {}, export: {} };
-        const plugin = posthtmlExtractInlineStyleDependencies(moduleData)(
-          input,
-          { importMap, use },
-        );
-        const processor = posthtml([plugin]);
+Deno.test({
+  name: "webmanifest",
+  async fn() {
+    const input = "a.html";
 
-        const source =
-          `<html><body><div style="background: url('b.png')"></div></body></html>`;
-        await processor.process(source);
+    const source =
+      `<html><head><link rel="manifest" href="webmanifest.json"></div></head></html>`;
+    const dependencies = await extractDependencies(input, source);
 
-        assertEquals(moduleData, {
-          dependencies: {
-            "b.png": {
-              [DependencyType.Import]: {},
-            },
-          },
-          export: {},
-        });
+    assertEquals(dependencies, [
+      {
+        input: "file:///webmanifest.json",
+        type: DependencyType.WebManifest,
+        format: DependencyFormat.Json,
       },
-    },
-  ],
+    ]);
+  },
+});
+
+Deno.test({
+  name: "script",
+  async fn() {
+    const input = "a.html";
+
+    const source = `<html><body><script src="b.js"></script></body></html>`;
+    const dependencies = await extractDependencies(input, source);
+
+    assertEquals(dependencies, [
+      {
+        input: "file:///b.js",
+        type: DependencyType.ImportExport,
+        format: DependencyFormat.Script,
+      },
+    ]);
+  },
+});
+
+Deno.test({
+  name: "style",
+  async fn() {
+    const input = "a.html";
+    const source = `<html><head><style>@import "b.css";</style></head></html>`;
+    const dependencies = await extractDependencies(input, source);
+
+    assertEquals(dependencies, [
+      {
+        input: "file:///b.css",
+        type: DependencyType.ImportExport,
+        format: DependencyFormat.Style,
+      },
+    ]);
+  },
+});
+
+Deno.test({
+  name: "inline style",
+  async fn() {
+    const input = "a.html";
+    const source =
+      `<html><body><div style="background: url('b.png')"></div></body></html>`;
+    const dependencies = await extractDependencies(input, source);
+
+    assertEquals(dependencies, [
+      {
+        input: "file:///b.png",
+        type: DependencyType.ImportExport,
+        format: DependencyFormat.Binary,
+      },
+    ]);
+  },
 });

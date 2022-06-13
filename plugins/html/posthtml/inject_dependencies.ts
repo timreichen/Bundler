@@ -1,248 +1,162 @@
-// deno-lint-ignore-file no-explicit-any no-async-promise-executor
-import { path, postcss } from "../../../deps.ts";
-import { addRelativePrefix, isURL } from "../../../_util.ts";
-import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
+import { isURL } from "../../../_util.ts";
 import { getBase, resolveBase } from "../_util.ts";
+import { Chunk, DependencyFormat, DependencyType } from "../../plugin.ts";
+import { ImportMap, postcss, posthtml } from "../../../deps.ts";
 import { postcssInjectDependenciesPlugin } from "../../css/postcss/inject_dependencies.ts";
-import { getAsset, Graph } from "../../../graph.ts";
-import { Context, DependencyType, Item } from "../../plugin.ts";
-import { postcssInjectImportsPlugin } from "../../css/postcss/inject_imports.ts";
+import {
+  createRelativeOutput,
+  getChunk,
+  resolveDependency,
+} from "../../_util.ts";
 
-export function posthtmlInjectScriptDependencies(
-  bundleInput: string,
-  bundleOutput: string,
-  { importMap, graph }: {
-    importMap: Deno.ImportMap;
-    graph: Graph;
+function posthtmlInjectDependencies(
+  input: string,
+  { use = [], root, chunks, importMap }: {
+    root: string;
+    chunks: Chunk[];
+    importMap?: ImportMap;
+    use?: postcss.Plugin[];
   },
 ) {
-  return (tree: any) => {
-    const base = getBase(tree);
-
-    const bundleDirPath = path.isAbsolute(bundleOutput)
-      ? "."
-      : path.dirname(bundleOutput);
-
-    // let scriptIndex = 0;
-    // const promises: Promise<any>[] = [];
-
-    tree.walk((node: any) => {
-      if (node.tag === "script") {
-        let src = node.attrs?.src;
-        src = resolveBase(src, base);
-        if (src && !isURL(src)) {
-          const resolvedUrl = resolveDependency(
-            bundleInput,
-            src,
-            importMap,
-          );
-          const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
-
-          node.attrs.src = addRelativePrefix(
-            path.relative(
-              Deno.cwd(),
-              path.relative(bundleDirPath, asset.output),
-            ),
-          );
-          node.attrs.type = "module";
-        } else if (node.content?.[0]) {
-          // const promise = new Promise(async (resolve) => {
-          //   // const source = node.content[0];
-          //   // const identifier = `_${scriptIndex++}.ts`;
-          //   // const dependency = path.join(bundleInput, identifier);
-          //   // bundler.sources[dependency] = source;
-          //   // const dependencyAsset = await bundler.createAsset(
-          //   //   dependency,
-          //   //   DependencyType.Import,
-          //   //   context,
-          //   // );
-          //   // graph.set(dependency, dependencyAsset);
-          //   // const dependencyChunk = await bundler.createChunk(
-          //   //   dependency,
-          //   //   [dependency, ...chunk.history],
-          //   //   [],
-          //   //   context,
-          //   // );
-          //   // const bundle = await bundler.createBundle(
-          //   //   input,
-          //   //   dependencyChunk,
-          //   //   context,
-          //   // );
-          //   // node.content[0] = bundle;
-          //   resolve(undefined);
-          // });
-          // promises.push(promise);
-        }
+  return (tree: posthtml.Node) => {
+    const base = getBase(tree as unknown as posthtml.RawNode[]);
+    const processor = postcss.default([
+      ...use,
+      postcssInjectDependenciesPlugin(input, { root, chunks, importMap }),
+    ]);
+    tree.walk((node) => {
+      const style = node.attrs?.style;
+      if (style != null) {
+        const { css } = processor.process(style);
+        const attrs = node.attrs as Record<string, string>;
+        attrs.style = css;
       }
 
-      return node;
-    });
-    // await Promise.all(promises);
-    return tree;
-  };
-}
-export function posthtmlInjectLinkDependencies(
-  bundleInput: string,
-  bundleOutput: string,
-  { graph, importMap }: {
-    graph: Graph;
-    importMap: Deno.ImportMap;
-  },
-) {
-  return (tree: any) => {
-    const base = getBase(tree);
+      switch (node.tag) {
+        case "script": {
+          let src = node.attrs?.src;
+          if (src) {
+            src = resolveBase(src, base);
+            if (!isURL(src)) src = resolveDependency(input, src, importMap);
+            const chunk = getChunk(
+              chunks,
+              src,
+              DependencyType.ImportExport,
+              DependencyFormat.Script,
+            );
+            if (!root.endsWith("/")) root = `${root}/`;
 
-    const bundleDirPath = path.isAbsolute(bundleOutput)
-      ? "."
-      : path.dirname(bundleOutput);
+            const attrs = node.attrs as Record<string, string>;
+            attrs.src = createRelativeOutput(chunk.output, root);
+          }
+          break;
+        }
+        case "img":
+        case "source": {
+          let src = node.attrs?.src;
+          if (src) {
+            src = resolveBase(src, base);
+            if (!isURL(src)) src = resolveDependency(input, src, importMap);
+            const chunk = getChunk(
+              chunks,
+              src,
+              DependencyType.ImportExport,
+              DependencyFormat.Binary,
+            );
 
-    tree.walk((node: any) => {
-      if (node.tag === "link") {
-        let href = node.attrs?.href;
-        href = resolveBase(href, base);
-        if (href && !isURL(href)) {
-          const resolvedUrl = resolveDependency(
-            bundleInput,
-            href,
-            importMap,
-          );
-
-          const rel = node.attrs?.rel;
-
-          let type: DependencyType;
-          switch (rel) {
-            case undefined:
-            case "stylesheet":
-            case "icon":
-              type = DependencyType.Import;
-              break;
-            case "manifest": {
-              type = DependencyType.WebManifest;
-              break;
-            }
-            default: {
-              throw new Error(`rel not supported: ${rel}`);
-            }
+            const attrs = node.attrs as Record<string, string>;
+            attrs.src = createRelativeOutput(chunk.output, root);
+          }
+          const srcset = node.attrs?.srcset;
+          if (srcset) {
+            const set = srcset.split(",");
+            const string = set.map((string) => {
+              const [src, ...fragments] = string.trim().split(/\s+/);
+              const resolvedUrl = resolveDependency(input, src, importMap);
+              const chunk = getChunk(
+                chunks,
+                resolvedUrl,
+                DependencyType.ImportExport,
+                DependencyFormat.Binary,
+              );
+              return [createRelativeOutput(chunk.output, root), ...fragments]
+                .join(" ");
+            }).join(", ");
+            const attrs = node.attrs as Record<string, string>;
+            attrs.srcset = string;
           }
 
-          const asset = getAsset(graph, resolvedUrl, type);
-          node.attrs.href = addRelativePrefix(
-            path.relative(
-              Deno.cwd(),
-              path.relative(bundleDirPath, asset.output),
-            ),
-          );
+          break;
+        }
+        case "link": {
+          let href = node.attrs?.href;
+          if (href) {
+            href = resolveBase(href, base);
+            if (!isURL(href)) {
+              href = resolveDependency(input, href, importMap);
+            }
+            const rel = node.attrs?.rel;
+            let type = DependencyType.ImportExport;
+            let format = DependencyFormat.Binary;
+            switch (rel) {
+              case "manifest": {
+                type = DependencyType.WebManifest;
+                format = DependencyFormat.Json;
+                break;
+              }
+              case "stylesheet": {
+                format = DependencyFormat.Style;
+                break;
+              }
+              case "apple-touch-icon":
+              case "apple-touch-startup-image":
+              case "icon": {
+                format = DependencyFormat.Binary;
+                break;
+              }
+            }
+            const chunk = getChunk(
+              chunks,
+              href,
+              type,
+              format,
+            );
+            const attrs = node.attrs as Record<string, string>;
+            attrs.href = createRelativeOutput(chunk.output, root);
+          }
+          break;
+        }
+        case "style": {
+          const content = node.content;
+          if (content != null) {
+            const { css } = processor.process(content);
+            node.content = css as unknown as string[];
+          }
+          break;
         }
       }
       return node;
     });
-    return tree;
   };
 }
-export function posthtmlInjectImageDependencies(
-  bundleInput: string,
-  bundleOutput: string,
-  { graph, importMap }: {
-    graph: Graph;
-    importMap: Deno.ImportMap;
+
+export async function injectDependencies(
+  filepath: string,
+  source: string,
+  { root, chunks, use, importMap }: {
+    root: string;
+    chunks: Chunk[];
+    importMap?: ImportMap;
+    use?: postcss.Plugin[];
   },
 ) {
-  return (tree: any) => {
-    const base = getBase(tree);
-
-    const bundleDirPath = path.isAbsolute(bundleOutput)
-      ? "."
-      : path.dirname(bundleOutput);
-
-    tree.walk((node: any) => {
-      if (node.tag === "img") {
-        let src = node.attrs?.src;
-        src = resolveBase(src, base);
-        if (src && !isURL(src)) {
-          const resolvedUrl = resolveDependency(
-            bundleInput,
-            src,
-            importMap,
-          );
-          const asset = getAsset(graph, resolvedUrl, DependencyType.Import);
-
-          node.attrs.src = addRelativePrefix(
-            path.relative(
-              Deno.cwd(),
-              path.relative(bundleDirPath, asset.output),
-            ),
-          );
-        }
-      }
-      return node;
-    });
-    return tree;
-  };
-}
-export function posthtmlInjectStyleDependencies(
-  item: Item,
-  context: Context,
-  use: postcss.AcceptedPlugin[],
-) {
-  const bundleInput = item.history[0];
-  const { graph } = context;
-  const asset = getAsset(graph, bundleInput, item.type);
-  const processor = postcss.default([
-    ...use,
-    postcssInjectImportsPlugin(item, context, use),
-    postcssInjectDependenciesPlugin(bundleInput, asset.output, { graph }),
+  const processor = posthtml([
+    posthtmlInjectDependencies(
+      filepath,
+      { root, chunks, importMap, use },
+    ),
   ]);
+  const { html } = await processor.process(source);
 
-  return async (tree: any) => {
-    const promises: Promise<any>[] = [];
-    tree.walk((node: any) => {
-      if (node.tag === "style") {
-        const promise = new Promise(async (resolve) => {
-          const { css } = await processor.process(node.content);
-          node.content = css;
-          resolve(null);
-        });
-        promises.push(promise);
-      }
-      return node;
-    });
-    await Promise.all(promises);
-    return tree;
-  };
-}
-export function posthtmlInjectInlineStyleDependencies(
-  item: Item,
-  context: Context,
-  use: postcss.AcceptedPlugin[],
-) {
-  const bundleInput = item.history[0];
-  const { graph } = context;
-
-  const asset = getAsset(graph, bundleInput, item.type);
-
-  const processor = postcss.default([
-    ...use,
-    // postcssInjectImportsPlugin(chunk, context, use), /* disabled because @import are not possible in script attributes */
-    postcssInjectDependenciesPlugin(bundleInput, asset.output, {
-      graph,
-    }),
-  ]);
-
-  const promises: Promise<any>[] = [];
-  return async (tree: any) => {
-    tree.walk((node: any) => {
-      const style = node.attrs?.style;
-      if (style) {
-        const promise = new Promise(async (resolve) => {
-          const { css } = await processor.process(style);
-          node.attrs.style = css;
-          resolve(undefined);
-        });
-        promises.push(promise);
-      }
-      return node;
-    });
-    await Promise.all(promises);
-    return tree;
-  };
+  return html;
 }

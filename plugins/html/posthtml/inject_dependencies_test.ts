@@ -1,561 +1,415 @@
-import { Bundler } from "../../../bundler.ts";
-import { postcss, posthtml } from "../../../deps.ts";
-import { Graph } from "../../../graph.ts";
-import { Logger, logLevels } from "../../../logger.ts";
-import { assertStringIncludes, tests } from "../../../test_deps.ts";
-import { Chunk, Context, DependencyType } from "../../plugin.ts";
-import {
-  posthtmlInjectImageDependencies,
-  posthtmlInjectInlineStyleDependencies,
-  posthtmlInjectLinkDependencies,
-  posthtmlInjectScriptDependencies,
-  posthtmlInjectStyleDependencies,
-} from "./inject_dependencies.ts";
-tests({
-  name: "posthtml plugin → inject dependencies",
-  tests: () => [
-    {
-      name: "importMap",
+import { assertEquals } from "../../../test_deps.ts";
+import { Chunk, DependencyFormat, DependencyType } from "../../plugin.ts";
+import { injectDependencies } from "./inject_dependencies.ts";
+
+Deno.test({
+  name: "importMap",
+  async fn() {
+    const importMap = {
+      imports: {
+        "file:///src/": "file:///custom/path/",
+      },
+    };
+    const input = "/src/a.html";
+    const source = `<html><body><img src="b.png"></body></html>`;
+    const root = "dist";
+    const chunks: Chunk[] = [
+      {
+        item: {
+          input: "file:///custom/path/b.png",
+          type: DependencyType.ImportExport,
+          format: DependencyFormat.Binary,
+          source,
+        },
+        dependencyItems: [],
+        output: "file:///dist/b.png",
+      },
+    ];
+    const result = await injectDependencies(input, source, {
+      root,
+      chunks,
+      importMap,
+    });
+
+    assertEquals(
+      result,
+      `<html><body><img src="/b.png"></body></html>`,
+    );
+  },
+});
+
+Deno.test({
+  name: "base",
+  async fn() {
+    const importMap = {
+      imports: {
+        "file:///src/": "file:///custom/path/",
+      },
+    };
+
+    const input = "/src/a.html";
+    const source =
+      `<html><head><base href="src/path/"></head><body><img src="/custom/path/b.png"></body></html>`;
+    const root = "dist";
+    const chunks: Chunk[] = [
+      {
+        item: {
+          input: "file:///custom/path/b.png",
+          type: DependencyType.ImportExport,
+          format: DependencyFormat.Binary,
+          source,
+        },
+        dependencyItems: [],
+        output: "file:///dist/b.png",
+      },
+    ];
+    const result = await injectDependencies(input, source, {
+      root,
+      chunks,
+      importMap,
+    });
+
+    assertEquals(
+      result,
+      `<html><head><base href="src/path/"></head><body><img src="/b.png"></body></html>`,
+    );
+  },
+});
+
+Deno.test({
+  name: "base and importMap",
+  async fn() {
+    const importMap = {
+      imports: {
+        "file:///src/": "file:///custom/path/",
+      },
+    };
+    const input = "/src/a.html";
+    const source =
+      `<html><head><base href="src/"></head><body><img src="/custom/path/b.png"></body></html>`;
+    const root = "dist";
+    const chunks: Chunk[] = [
+      {
+        item: {
+          input: "file:///custom/path/b.png",
+          type: DependencyType.ImportExport,
+          format: DependencyFormat.Binary,
+          source,
+        },
+        dependencyItems: [],
+        output: "file:///dist/b.png",
+      },
+    ];
+    const result = await injectDependencies(input, source, {
+      root,
+      chunks,
+      importMap,
+    });
+
+    assertEquals(
+      result,
+      `<html><head><base href="src/"></head><body><img src="/b.png"></body></html>`,
+    );
+  },
+});
+
+Deno.test({
+  name: "img",
+  async fn(t) {
+    await t.step({
+      name: "src",
       async fn() {
-        const importMap = {
-          imports: {
-            "path/": "custom/path/",
+        const input = "/src/a.html";
+        const root = "dist";
+        const source = `<html><head><img src="b.png"></head></html>`;
+        const chunks: Chunk[] = [
+          {
+            item: {
+              input,
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Script,
+              source,
+            },
+            dependencyItems: [
+              {
+                input: "file:///src/b.png",
+                type: DependencyType.ImportExport,
+                format: DependencyFormat.Binary,
+                source: ``,
+              },
+            ],
+            output: "file:///dist/a.html",
           },
-        };
-        const inputA = "src/a.html";
-        const outputA = "dist/a.html";
-        const inputB = "custom/path/b.png";
-        const outputB = "b.png";
-
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: outputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
+          {
+            item: {
+              input: "file:///src/b.png",
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Binary,
+              source,
             },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [{
-            input: inputB,
-            output: outputB,
-            dependencies: {},
-            export: {},
-            type: DependencyType.Import,
-          }],
-        };
-        const plugin = posthtmlInjectImageDependencies(
-          inputA,
-          outputB,
-          { importMap, graph },
-        );
-        const processor = posthtml([plugin]);
-
-        const source = `<html><body><img src="path/b.png"></body></html>`;
-        const { html } = await processor.process(source);
-
-        assertStringIncludes(
-          html,
-          `<html><body><img src="./b.png"></body></html>`,
-        );
-      },
-    },
-
-    {
-      name: "base",
-      async fn() {
-        const importMap = { imports: {} };
-        const inputA = "a.html";
-        const ounputA = "dist/a.html";
-        const inputB = "custom/path/b.png";
-        const outputB = "dist/b.png";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: ounputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [
-            {
-              input: inputB,
-              output: outputB,
-              dependencies: {},
-              export: {},
-              type: DependencyType.Import,
-            },
-          ],
-        };
-        const plugin = posthtmlInjectImageDependencies(
-          inputA,
-          ounputA,
-          { importMap, graph },
-        );
-        const processor = posthtml([plugin]);
-
-        const source =
-          `<html><head><base href="custom/path/"></head><body><img src="b.png"></body></html>`;
-        const { html } = await processor.process(source);
-
-        assertStringIncludes(
-          html,
-          `<html><head><base href="custom/path/"></head><body><img src="./b.png"></body></html>`,
-        );
-      },
-    },
-
-    {
-      name: "base and importMap",
-      async fn() {
-        const importMap = { imports: {} };
-        const inputA = "a.html";
-        const ounputA = "dist/a.html";
-        const inputB = "custom/path/b.png";
-        const outputB = "dist/b.png";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: ounputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [
-            {
-              input: inputB,
-              output: outputB,
-              dependencies: {},
-              export: {},
-              type: DependencyType.Import,
-            },
-          ],
-        };
-        const plugin = posthtmlInjectImageDependencies(
-          inputA,
-          ounputA,
-          { importMap, graph },
-        );
-        const processor = posthtml([plugin]);
-
-        const source =
-          `<html><head><base href="custom/"></head><body><img src="path/b.png"></body></html>`;
-        const { html } = await processor.process(source);
-
-        assertStringIncludes(
-          html,
-          `<html><head><base href="custom/"></head><body><img src="./b.png"></body></html>`,
-        );
-      },
-    },
-
-    {
-      name: "link",
-      async fn() {
-        const importMap = { imports: {} };
-        const inputA = "src/a.html";
-        const ounputA = "dist/a.html";
-        const inputB = "src/b.css";
-        const outputB = "dist/b.css";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: ounputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [
-            {
-              input: inputB,
-              output: outputB,
-              dependencies: {},
-              export: {},
-              type: DependencyType.Import,
-            },
-          ],
-        };
-        const plugin = posthtmlInjectLinkDependencies(
-          inputA,
-          ounputA,
-          { importMap, graph },
-        );
-        const processor = posthtml([plugin]);
-
-        const source =
-          `<html><head><link rel="stylesheet" href="b.css"></head></html>`;
-        const { html } = await processor.process(source);
-
-        assertStringIncludes(
-          html,
-          `<html><head><link rel="stylesheet" href="./b.css"></head></html>`,
-        );
-      },
-    },
-
-    {
-      name: "link level down",
-      async fn() {
-        const importMap = { imports: {} };
-        const inputA = "src/a.html";
-        const ounputA = "a.html";
-        const inputB = "src/b.css";
-        const outputB = "dist/b.css";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: ounputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [
-            {
-              input: inputB,
-              output: outputB,
-              dependencies: {},
-              export: {},
-              type: DependencyType.Import,
-            },
-          ],
-        };
-        const plugin = posthtmlInjectLinkDependencies(
-          inputA,
-          ounputA,
-          { importMap, graph },
-        );
-        const processor = posthtml([plugin]);
-
-        const source =
-          `<html><head><link rel="stylesheet" href="b.css"></head></html>`;
-        const { html } = await processor.process(source);
-
-        assertStringIncludes(
-          html,
-          `<html><head><link rel="stylesheet" href="./dist/b.css"></head></html>`,
-        );
-      },
-    },
-
-    {
-      name: "link level up",
-      async fn() {
-        const importMap = { imports: {} };
-        const inputA = "src/a.html";
-        const ounputA = "dist/a.html";
-        const inputB = "src/b.css";
-        const outputB = "b.css";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: ounputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [
-            {
-              input: inputB,
-              output: outputB,
-              dependencies: {},
-              export: {},
-              type: DependencyType.Import,
-            },
-          ],
-        };
-        const plugin = posthtmlInjectLinkDependencies(
-          inputA,
-          ounputA,
-          { importMap, graph },
-        );
-        const processor = posthtml([plugin]);
-
-        const source =
-          `<html><head><link rel="stylesheet" href="b.css"></head></html>`;
-        const { html } = await processor.process(source);
-
-        assertStringIncludes(
-          html,
-          `<html><head><link rel="stylesheet" href="../b.css"></head></html>`,
-        );
-      },
-    },
-
-    {
-      name: "webmanifest",
-      async fn() {
-        const importMap = { imports: {} };
-        const inputA = "src/a.html";
-        const ounputA = "dist/a.html";
-        const inputB = "src/webmanifest.json";
-        const outputB = "dist/webmanifest.json";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: ounputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [
-            {
-              input: inputB,
-              output: outputB,
-              dependencies: {},
-              export: {},
-              type: DependencyType.WebManifest,
-            },
-          ],
-        };
-        const plugin = posthtmlInjectLinkDependencies(
-          inputA,
-          ounputA,
-          { importMap, graph },
-        );
-        const processor = posthtml([plugin]);
-
-        const source =
-          `<html><head><link rel="manifest" href="webmanifest.json"></div></head></html>`;
-        const { html } = await processor.process(source);
-
-        assertStringIncludes(
-          html,
-          `<html><head><link rel="manifest" href="./webmanifest.json"></head></html>`,
-        );
-      },
-    },
-
-    {
-      name: "script",
-      async fn() {
-        const importMap = { imports: {} };
-        const inputA = "src/a.html";
-        const ounputA = "dist/a.html";
-        const inputB = "src/b.js";
-        const outputB = "dist/b.js";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: ounputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [
-            {
-              input: inputB,
-              output: outputB,
-              dependencies: {},
-              export: {},
-              type: DependencyType.Import,
-            },
-          ],
-        };
-        const plugin = posthtmlInjectScriptDependencies(
-          inputA,
-          ounputA,
-          { importMap, graph },
-        );
-        const processor = posthtml([plugin]);
-
-        const source = `<html><body><script src="b.js"></script></body></html>`;
-        const { html } = await processor.process(source);
-
-        assertStringIncludes(
-          html,
-          `<html><body><script src="./b.js" type="module"></script></body></html>`,
-        );
-      },
-    },
-
-    {
-      name: "style",
-      async fn() {
-        const use: postcss.AcceptedPlugin[] = [];
-        const inputA = "src/a.html";
-        const ounputA = "dist/a.html";
-        const inputB = "src/b.css";
-        const outputB = "dist/b.css";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: ounputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [
-            {
-              input: inputB,
-              output: outputB,
-              dependencies: {},
-              export: {},
-              type: DependencyType.Import,
-            },
-          ],
-        };
-        const chunk: Chunk = {
-          item: {
-            history: [inputA],
-            type: DependencyType.Import,
+            dependencyItems: [],
+            output: "file:///dist/output.png",
           },
-          dependencyItems: [
-            {
-              history: [inputB, inputA],
-              type: DependencyType.Import,
-            },
-          ],
-        };
-        const bundler = new Bundler([]);
-        const sources = {
-          "src/b.css": `div { color: red; }`,
-        };
-        const context: Context = {
-          bundler,
-          outputMap: {},
-          importMap: { imports: {} },
-          sources,
-          cacheDirPath: "dist/.cache",
-          depsDirPath: "dist/deps",
-          outDirPath: "dist",
-          reload: false,
-          optimize: false,
-          quiet: false,
-          cache: {},
-          graph,
-          chunks: [chunk],
-          logger: new Logger({ logLevel: logLevels.info }),
-          bundles: {},
-        };
-        const item = chunk.item;
-        const plugin = posthtmlInjectStyleDependencies(
-          item,
-          context,
-          use,
-        );
-        const processor = posthtml([plugin]);
-
-        const source =
-          `<html><head><style>@import "b.css";</style></head></html>`;
-        const { html } = await processor.process(source);
-
-        assertStringIncludes(
-          html,
-          `<html><head><style>div { color: red; }</style></head></html>`,
+        ];
+        const result = await injectDependencies(input, source, {
+          root,
+          chunks,
+        });
+        assertEquals(
+          result,
+          `<html><head><img src="/output.png"></head></html>`,
         );
       },
-    },
+    });
 
-    {
-      name: "inline style",
+    await t.step({
+      name: "srcset",
       async fn() {
-        const use: postcss.AcceptedPlugin[] = [];
-        const inputA = "src/a.html";
-        const ounputA = "dist/a.html";
-        const inputB = "src/b.png";
-        const outputB = "dist/b.png";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: ounputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
+        const input = "/src/a.html";
+        const root = "dist";
+        const source = `<html><head><img srcset="b.png"></head></html>`;
+        const chunks: Chunk[] = [
+          {
+            item: {
+              input,
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Script,
+              source,
+            },
+            dependencyItems: [
+              {
+                input: "file:///src/b.png",
+                type: DependencyType.ImportExport,
+                format: DependencyFormat.Binary,
+                source: ``,
               },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [{
-            input: inputB,
-            output: outputB,
-            dependencies: {},
-            export: {},
-            type: DependencyType.Import,
-          }],
-        };
-        const chunk: Chunk = {
-          item: {
-            history: [inputA],
-            type: DependencyType.Import,
+            ],
+            output: "file:///dist/a.html",
           },
-          dependencyItems: [
-            {
-              history: [inputB, inputA],
-              type: DependencyType.Import,
+          {
+            item: {
+              input: "file:///src/b.png",
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Binary,
+              source,
             },
-          ],
-        };
-        const bundler = new Bundler([]);
-        const context: Context = {
-          bundler,
-          outputMap: {},
-          importMap: { imports: {} },
-          sources: {},
-          cacheDirPath: "dist/.cache",
-          depsDirPath: "dist/deps",
-          outDirPath: "dist",
-          reload: false,
-          optimize: false,
-          quiet: false,
-          cache: {},
-          graph,
-          chunks: [chunk],
-          logger: new Logger({ logLevel: logLevels.info }),
-          bundles: {},
-        };
-        const item = chunk.item;
-        const plugin = posthtmlInjectInlineStyleDependencies(
-          item,
-          context,
-          use,
-        );
-        const processor = posthtml([plugin]);
-
-        const source =
-          `<html><body><div style="background: url('b.png')"></div></body></html>`;
-        const { html } = await processor.process(source);
-
-        assertStringIncludes(
-          html,
-          `<html><body><div style="background: url('./b.png')"></div></body></html>`,
+            dependencyItems: [],
+            output: "file:///dist/output.png",
+          },
+        ];
+        const result = await injectDependencies(input, source, {
+          root,
+          chunks,
+        });
+        assertEquals(
+          result,
+          `<html><head><img srcset="/output.png"></head></html>`,
         );
       },
-    },
-  ],
+    });
+
+    await t.step({
+      name: "multiple srcset",
+      async fn() {
+        const input = "/src/a.html";
+        const root = "dist";
+        const source =
+          `<html><head><img srcset=" b.png 480w, c.png 800w "></head></html>`;
+        const chunks: Chunk[] = [
+          {
+            item: {
+              input,
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Script,
+              source,
+            },
+            dependencyItems: [
+              {
+                input: "file:///src/b.png",
+                type: DependencyType.ImportExport,
+                format: DependencyFormat.Binary,
+                source: ``,
+              },
+              {
+                input: "file:///src/c.png",
+                type: DependencyType.ImportExport,
+                format: DependencyFormat.Binary,
+                source: ``,
+              },
+            ],
+            output: "file:///dist/a.html",
+          },
+          {
+            item: {
+              input: "file:///src/b.png",
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Binary,
+              source,
+            },
+            dependencyItems: [],
+            output: "file:///dist/outputB.png",
+          },
+          {
+            item: {
+              input: "file:///src/c.png",
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Binary,
+              source,
+            },
+            dependencyItems: [],
+            output: "file:///dist/outputC.png",
+          },
+        ];
+        const result = await injectDependencies(input, source, {
+          root,
+          chunks,
+        });
+
+        assertEquals(
+          result,
+          `<html><head><img srcset="/outputB.png 480w, /outputC.png 800w"></head></html>`,
+        );
+      },
+    });
+  },
+});
+Deno.test({
+  name: "link",
+  async fn() {
+    const input = "/src/a.html";
+
+    const source =
+      `<html><head><link rel="stylesheet" href="b.css"></head></html>`;
+    const root = "dist";
+    const chunks: Chunk[] = [
+      {
+        item: {
+          input: "file:///src/b.css",
+          type: DependencyType.ImportExport,
+          format: DependencyFormat.Style,
+          source,
+        },
+        dependencyItems: [],
+        output: "file:///dist/b.css",
+      },
+    ];
+    const result = await injectDependencies(input, source, { root, chunks });
+
+    assertEquals(
+      result,
+      `<html><head><link rel="stylesheet" href="/b.css"></head></html>`,
+    );
+  },
+});
+
+Deno.test({
+  name: "webmanifest",
+  async fn() {
+    const input = "/src/a.html";
+
+    const source =
+      `<html><head><link rel="manifest" href="webmanifest.json"></div></head></html>`;
+    const root = "dist";
+    const chunks: Chunk[] = [
+      {
+        item: {
+          input: "file:///src/webmanifest.json",
+          type: DependencyType.WebManifest,
+          format: DependencyFormat.Json,
+          source,
+        },
+        dependencyItems: [],
+        output: "file:///dist/webmanifest.json",
+      },
+    ];
+    const result = await injectDependencies(input, source, { root, chunks });
+
+    assertEquals(
+      result,
+      `<html><head><link rel="manifest" href="/webmanifest.json"></head></html>`,
+    );
+  },
+});
+
+Deno.test({
+  name: "script",
+  async fn() {
+    const input = "/src/a.html";
+
+    const source = `<html><body><script src="b.js"></script></body></html>`;
+    const root = "dist";
+    const chunks: Chunk[] = [
+      {
+        item: {
+          input: "file:///src/b.js",
+          type: DependencyType.ImportExport,
+          format: DependencyFormat.Script,
+          source,
+        },
+        dependencyItems: [],
+        output: "file:///dist/b.js",
+      },
+    ];
+    const result = await injectDependencies(input, source, { root, chunks });
+
+    assertEquals(
+      result,
+      `<html><body><script src="/b.js"></script></body></html>`,
+    );
+  },
+});
+
+Deno.test({
+  name: "style",
+  async fn() {
+    const input = "/src/a.html";
+    const source = `<html><head><style>@import "b.css";</style></head></html>`;
+    const root = "dist";
+    const chunks: Chunk[] = [
+      {
+        item: {
+          input: "file:///src/b.css",
+          type: DependencyType.ImportExport,
+          format: DependencyFormat.Style,
+          source,
+        },
+        dependencyItems: [],
+        output: "file:///dist/b.css",
+      },
+    ];
+    const result = await injectDependencies(input, source, { root, chunks });
+
+    assertEquals(
+      result,
+      `<html><head><style>@import "/b.css";</style></head></html>`,
+    );
+  },
+});
+
+Deno.test({
+  name: "inline style",
+  async fn() {
+    const input = "/src/a.html";
+    const source =
+      `<html><body><div style="background: url('b.png')"></div></body></html>`;
+    const root = "dist";
+    const chunks: Chunk[] = [
+      {
+        item: {
+          input: "file:///src/b.png",
+          type: DependencyType.ImportExport,
+          format: DependencyFormat.Binary,
+          source,
+        },
+        dependencyItems: [],
+        output: "file:///dist/b.png",
+      },
+    ];
+    const result = await injectDependencies(input, source, { root, chunks });
+
+    assertEquals(
+      result,
+      `<html><body><div style="background: url('/b.png')"></div></body></html>`,
+    );
+  },
 });

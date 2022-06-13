@@ -1,4 +1,5 @@
 .vscode
 examples/**/dist
+examples/**/.cache
 .DS_Store
 .gitignore

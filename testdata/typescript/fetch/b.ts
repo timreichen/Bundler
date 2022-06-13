@@ -1,1 +1,1 @@
-const content: string = "some content";
+export const b = "b";

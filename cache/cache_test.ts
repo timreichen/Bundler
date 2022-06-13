@@ -1,88 +1,106 @@
-import { assertEquals, assertThrowsAsync, tests } from "../test_deps.ts";
+import { path } from "../deps.ts";
+import { assertEquals, assertRejects } from "../test_deps.ts";
 import {
   cache,
   extractDependencies,
   resolve as resolveCache,
+  resolveDependency,
 } from "./cache.ts";
 
-import { fs, path } from "../deps.ts";
-import { resolve } from "../dependency/dependency.ts";
-
-tests({
+Deno.test({
   name: "cache",
-  tests: () => [
-    {
+  async fn(t) {
+    await t.step({
       name: "resolve",
-      fn: () => {
-        const input = "https://deno.land/std@0.70.0/path/mod.ts";
+      fn() {
+        const input = "https://deno.land/std/path/mod.ts";
         assertEquals(
           path.basename(resolveCache(input)),
-          "19b929fe073c70f585b972cd5ad329ef4ffc4c961a57078c1dbd484c40959364",
+          "72ee5916977ca9d8801c801f642353d811373786e51e3d7574cca966634b4f97",
         );
       },
-    },
-    {
-      name: "cache",
-      fn: async () => {
-        const input = "https://deno.land/std@0.70.0/path/mod.ts";
+    });
+    await t.step({
+      name: "cache file",
+      async fn() {
+        const input = "https://deno.land/std/path/mod.ts";
         const cachePath = resolveCache(input);
-        const exists = fs.existsSync(cachePath);
-        if (exists) {
+        let exists = true;
+        try {
           Deno.removeSync(cachePath);
+        } catch {
+          exists = false;
+          //
         }
         await cache(input);
 
-        assertEquals(fs.existsSync(cachePath), true);
+        assertEquals(Deno.lstatSync(cachePath).isFile, true);
+
         if (!exists) {
           Deno.removeSync(cachePath);
         }
       },
-    },
-    {
+    });
+    await t.step({
       name: "cache failed",
-      fn: async () => {
-        const input = "https://deno.land/x/bundler/404.ts";
-        await assertThrowsAsync(async () => {
+      async fn() {
+        await assertRejects(async () => {
+          const input = "http://httpstat.us/404";
           await cache(input);
-        }, Error);
+          const cachePath = resolveCache(input);
+          Deno.lstatSync(cachePath);
+        });
       },
-    },
-    {
-      name: "extract dependencies resolve path",
-      fn: () => {
-        const importMap: Deno.ImportMap = {
-          imports: {
-            "directory/": "my/path/",
-          },
-        };
-        const path = "directory/parent.ts";
-        const specifier = "./child.ts";
-        const resolvedInput = resolve(path, specifier, importMap);
-        assertEquals(resolvedInput, "my/path/child.ts");
-      },
-    },
-    {
-      name: "extract dependencies resolve url",
-      fn: () => {
+    });
+  },
+});
+
+Deno.test({
+  name: "extract dependencies",
+  async fn(t) {
+    await t.step({
+      name: "resolve path",
+      fn() {
         const importMap = {
           imports: {
-            "directory/":
-              "https://raw.githubusercontent.com/timreichen/Bundler/master/",
+            "file://some/path/": "file://other/path/",
           },
         };
-        const path = "directory/parent.ts";
-        const specifier = "./child.ts";
-        const resolvedInput = resolve(path, specifier, importMap);
+        const filePath = "file://some/path/parent.ts";
+        const moduleSpecifier = "./child.ts";
+        const resolvedInput = resolveDependency(
+          filePath,
+          moduleSpecifier,
+          importMap,
+        );
+        assertEquals(resolvedInput, "file://other/path/child.ts");
+      },
+    });
+    await t.step({
+      name: "resolve url",
+      fn() {
+        const importMap = {
+          imports: {
+            "file://some/path/": "https://example.com/",
+          },
+        };
+        const filePath = "file://some/path/parent.ts";
+        const moduleSpecifier = "./child.ts";
+        const resolvedInput = resolveDependency(
+          filePath,
+          moduleSpecifier,
+          importMap,
+        );
         assertEquals(
           resolvedInput,
-          "https://raw.githubusercontent.com/timreichen/Bundler/master/child.ts",
+          "https://example.com/child.ts",
         );
       },
-    },
-    {
-      name: "extract dependencies type import",
+    });
+    await t.step({
+      name: "type import",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `import type { A } from "./b.ts";`;
         const dependencies = extractDependencies(
           fileName,
@@ -90,11 +108,11 @@ tests({
         );
         assertEquals(dependencies, new Set(["./b.ts"]));
       },
-    },
-    {
-      name: "extract dependencies namespace import",
+    });
+    await t.step({
+      name: "namespace import",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `import * as A from "./b.ts";`;
         const dependencies = extractDependencies(
           fileName,
@@ -102,11 +120,11 @@ tests({
         );
         assertEquals(dependencies, new Set(["./b.ts"]));
       },
-    },
-    {
-      name: "extract dependencies named import",
+    });
+    await t.step({
+      name: "named import",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `import { A, B } from "./b.ts";`;
         const dependencies = extractDependencies(
           fileName,
@@ -114,11 +132,11 @@ tests({
         );
         assertEquals(dependencies, new Set(["./b.ts"]));
       },
-    },
-    {
-      name: "extract dependencies default import",
+    });
+    await t.step({
+      name: "default import",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `import A from "./b.ts";`;
         const dependencies = extractDependencies(
           fileName,
@@ -126,11 +144,11 @@ tests({
         );
         assertEquals(dependencies, new Set(["./b.ts"]));
       },
-    },
-    {
-      name: "extract dependencies module specifier import",
+    });
+    await t.step({
+      name: "module moduleSpecifier import",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `import "./b.ts";`;
         const dependencies = extractDependencies(
           fileName,
@@ -138,11 +156,11 @@ tests({
         );
         assertEquals(dependencies, new Set(["./b.ts"]));
       },
-    },
-    {
-      name: "extract dependencies dynamic import",
+    });
+    await t.step({
+      name: "dynamic import",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `import("./b.ts");`;
         const dependencies = extractDependencies(
           fileName,
@@ -150,11 +168,11 @@ tests({
         );
         assertEquals(dependencies, new Set([]));
       },
-    },
-    {
-      name: "extract dependencies dynamic import warn",
+    });
+    await t.step({
+      name: "dynamic import warn",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `import("./" + "b.ts");`;
         const dependencies = extractDependencies(
           fileName,
@@ -162,11 +180,11 @@ tests({
         );
         assertEquals(dependencies, new Set([]));
       },
-    },
-    {
-      name: "extract dependencies type export",
+    });
+    await t.step({
+      name: "type export",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `export type { A } from "./b.ts";`;
         const dependencies = extractDependencies(
           fileName,
@@ -174,11 +192,11 @@ tests({
         );
         assertEquals(dependencies, new Set(["./b.ts"]));
       },
-    },
-    {
-      name: "extract dependencies export interface",
+    });
+    await t.step({
+      name: "export interface",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `export interface A { };`;
         const dependencies = extractDependencies(
           fileName,
@@ -186,11 +204,11 @@ tests({
         );
         assertEquals(dependencies, new Set([]));
       },
-    },
-    {
-      name: "extract dependencies namespace export",
+    });
+    await t.step({
+      name: "namespace export",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `export * from "./b.ts";`;
         const dependencies = extractDependencies(
           fileName,
@@ -198,11 +216,11 @@ tests({
         );
         assertEquals(dependencies, new Set(["./b.ts"]));
       },
-    },
-    {
-      name: "extract dependencies namespace alias export",
+    });
+    await t.step({
+      name: "namespace alias export",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `export * as b from "./b.ts";`;
         const dependencies = extractDependencies(
           fileName,
@@ -210,11 +228,11 @@ tests({
         );
         assertEquals(dependencies, new Set(["./b.ts"]));
       },
-    },
-    {
-      name: "extract dependencies forward named export",
+    });
+    await t.step({
+      name: "forward named export",
       fn() {
-        const fileName = "foo/a.ts";
+        const fileName = "file://foo/a.ts";
         const sourceText = `export { a, b } from "./b.ts"`;
         const dependencies = extractDependencies(
           fileName,
@@ -222,6 +240,18 @@ tests({
         );
         assertEquals(dependencies, new Set(["./b.ts"]));
       },
-    },
-  ],
+    });
+    await t.step({
+      name: "import assertion",
+      fn() {
+        const fileName = "file://foo/a.ts";
+        const sourceText = `import foo from "./b.json" assert { type: "json" }`;
+        const dependencies = extractDependencies(
+          fileName,
+          sourceText,
+        );
+        assertEquals(dependencies, new Set(["./b.json"]));
+      },
+    });
+  },
 });

@@ -1,22 +1,20 @@
-// deno-lint-ignore-file no-explicit-any
-import { path } from "../../deps.ts";
+import { path, posthtml } from "../../deps.ts";
 import { isURL } from "../../_util.ts";
 
 /**
  * returns base href if <base> tag exists in html header.
  * @param tree
  */
-export function getBase(tree: any) {
-  const html = tree.find((item: any) =>
+export function getBase(tree: posthtml.RawNode[]) {
+  const html = tree.find((item) =>
     item instanceof Object && item.tag === "html"
   );
-  const head = html?.content.find((item: any) =>
+  const head = html?.content?.find((item) =>
     item instanceof Object && item.tag === "head"
-  );
-  const base = head?.content.find((item: any) =>
+  ) as posthtml.RawNode;
+  const base = head?.content?.find((item) =>
     item instanceof Object && item.tag === "base"
-  );
-
+  ) as posthtml.RawNode;
   return base?.attrs?.href || ".";
 }
 
@@ -27,25 +25,26 @@ export function resolveBase(url: string, base: string) {
   return url;
 }
 
-export function setBase(tree: any, href: string) {
-  const html = tree.find((item: any) =>
+export function setBase(tree: posthtml.RawNode[], href: string) {
+  const html = tree.find((item) =>
     item instanceof Object && item.tag === "html"
-  );
-  let head = html?.content.find((item: any) =>
+  ) as posthtml.RawNode;
+  let head = html?.content?.find((item) =>
     item instanceof Object && item.tag === "head"
-  );
+  ) as posthtml.RawNode;
+
   if (!head) {
-    head = { tag: "head" };
-    html.content.push(head);
+    head = { tag: "head", attrs: {} };
+    html.content?.push(head);
   }
   head.content ||= [];
 
-  const index = head.content.findIndex((item: any) =>
+  const index = head.content?.findIndex((item) =>
     item instanceof Object && item.tag === "base"
   );
   const base = { tag: "base", attrs: { href } };
   if (index !== -1) {
-    const baseItem = head.content.splice(index, 1);
+    const baseItem = head.content.splice(index, 1)[0] as posthtml.RawNode;
     if (baseItem.attrs) {
       base.attrs = {
         ...baseItem.attrs,
@@ -53,6 +52,5 @@ export function setBase(tree: any, href: string) {
       };
     }
   }
-
   head.content.unshift(base);
 }

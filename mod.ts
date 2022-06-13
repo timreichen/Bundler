@@ -1,6 +1,43 @@
-export { Bundler } from "./bundler.ts";
-export { Watcher } from "./watcher.ts";
-export { Logger } from "./logger.ts";
-export { Server } from "./server.ts";
+import { Bundler } from "./bundler.ts";
+import { HTMLPlugin } from "./plugins/html/html_plugin.ts";
+import { CSSPlugin } from "./plugins/css/css_plugin.ts";
+import { JSONPlugin } from "./plugins/json/json_plugin.ts";
+import { WebManifestPlugin } from "./plugins/json/webmanifest_plugin.ts";
+import { TypescriptPlugin } from "./plugins/typescript/typescript_plugin.ts";
+import { TerserPlugin } from "./plugins/typescript/terser_plugin.ts";
+import { FilePlugin } from "./plugins/file/file.ts";
+import {
+  CreateAssetsContext,
+  CreateBundlesContext,
+  CreateChunksContext,
+} from "./plugins/plugin.ts";
 
-export { defaultPlugins } from "./_bundler_utils.ts";
+export {
+  Bundler,
+  CSSPlugin,
+  FilePlugin,
+  HTMLPlugin,
+  JSONPlugin,
+  TerserPlugin,
+  TypescriptPlugin,
+  WebManifestPlugin,
+};
+
+export function bundle(
+  inputs: string[],
+  options?: Partial<
+    CreateAssetsContext & CreateChunksContext & CreateBundlesContext
+  >,
+) {
+  const plugins = [
+    new HTMLPlugin(),
+    new CSSPlugin(),
+    new TypescriptPlugin(),
+    new JSONPlugin(),
+    new WebManifestPlugin(),
+    new TerserPlugin(),
+    new FilePlugin(),
+  ];
+  const bundler = new Bundler({ plugins });
+  return bundler.bundle(inputs, options);
+}

@@ -1,0 +1,5 @@
+div {
+  & > h1 {
+    font-family: Helvetica;
+  }
+}

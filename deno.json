@@ -1,0 +1,5 @@
+{
+  "tasks": {
+    "test": "deno test --doc --unstable --allow-env --allow-read --allow-write --allow-net --ignore=testdata"
+  }
+}

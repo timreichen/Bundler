@@ -1,15 +1,13 @@
-import { postcss, postcssValueParser } from "../../../deps.ts";
-import { resolve as resolveDependency } from "../../../dependency/dependency.ts";
+import { ImportMap, postcss, postcssValueParser } from "../../../deps.ts";
 import { isURL } from "../../../_util.ts";
-import { DependencyType, ModuleData } from "../../plugin.ts";
+import { Dependency, DependencyData, DependencyType } from "../../plugin.ts";
+import { getDependencyFormat, resolveDependency } from "../../_util.ts";
 
-export function postcssExtractDependenciesPlugin(
-  moduleData: ModuleData,
-) {
+export function postcssExtractDependenciesPlugin(dependencies: Dependency[]) {
   return (
     input: string,
-    { importMap }: { importMap: Deno.ImportMap },
-  ): postcss.AcceptedPlugin => {
+    { importMap }: { importMap?: ImportMap },
+  ): postcss.Plugin => {
     return {
       postcssPlugin: "extract-dependencies",
       AtRule: {
@@ -26,9 +24,15 @@ export function postcssExtractDependenciesPlugin(
           }
           if (!url || isURL(url)) return;
           const resolvedUrl = resolveDependency(input, url, importMap);
-          moduleData.dependencies[resolvedUrl] = {
-            [DependencyType.Import]: {},
-          };
+          const format = getDependencyFormat(url);
+          if (!format) {
+            throw new Error(`no format found: ${url}`);
+          }
+          dependencies.push({
+            input: resolvedUrl,
+            format,
+            type: DependencyType.ImportExport,
+          });
         },
       },
       Declaration: (declaration) => {
@@ -38,9 +42,15 @@ export function postcssExtractDependenciesPlugin(
           const url = node.nodes[0].value;
           if (!url || isURL(url)) continue;
           const resolvedUrl = resolveDependency(input, url, importMap);
-          moduleData.dependencies[resolvedUrl] = {
-            [DependencyType.Import]: {},
-          };
+          const format = getDependencyFormat(url);
+          if (!format) {
+            throw new Error(`no format found: ${url}`);
+          }
+          dependencies.push({
+            input: resolvedUrl,
+            format,
+            type: DependencyType.ImportExport,
+          });
         }
       },
     };
@@ -50,14 +60,17 @@ export function postcssExtractDependenciesPlugin(
 export async function extractDependencies(
   input: string,
   source: string,
-  importMap: Deno.ImportMap,
-) {
-  const moduleData: ModuleData = { dependencies: {}, export: {} };
-  const plugin = postcssExtractDependenciesPlugin(moduleData)(
+  importMap?: ImportMap,
+): Promise<DependencyData> {
+  const dependencies: Dependency[] = [];
+  const plugin = postcssExtractDependenciesPlugin(dependencies)(
     input,
     { importMap },
   );
   const processor = postcss.default([plugin]);
-  await processor.process(source);
-  return moduleData;
+  await processor.process(source, { from: input });
+  return {
+    dependencies,
+    exports: {},
+  };
 }

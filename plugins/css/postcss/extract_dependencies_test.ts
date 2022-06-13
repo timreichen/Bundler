@@ -1,84 +1,109 @@
-import { assertEquals, tests } from "../../../test_deps.ts";
-import { DependencyType } from "../../plugin.ts";
+import { assertEquals } from "../../../test_deps.ts";
+import { ImportMap, resolveImportMap } from "../../../deps.ts";
+import { DependencyFormat, DependencyType } from "../../plugin.ts";
 import { extractDependencies } from "./extract_dependencies.ts";
 
-tests({
-  name: "postcss plugin → extract dependencies",
-  tests: () => [
-    {
-      name: "importMap",
-      async fn() {
-        const importMap = { imports: { "path/": "custom/path/" } };
-        const input = "styles.css";
-        const source = `@import "path/dependency.css";`;
-        const moduleData = await extractDependencies(input, source, importMap);
+Deno.test({
+  name: "importMap",
+  async fn() {
+    const importMap = { imports: { "./path/": "./custom/path/" } };
+    const resolvedImportMap = resolveImportMap(
+      importMap,
+      new URL("file:///"),
+    ) as ImportMap;
+    const input = "file:///styles.css";
+    const source = `@import "path/dependency.css";`;
+    const moduleData = await extractDependencies(
+      input,
+      source,
+      resolvedImportMap,
+    );
 
-        assertEquals(moduleData, {
-          dependencies: {
-            "custom/path/dependency.css": {
-              [DependencyType.Import]: {},
-            },
+    assertEquals(moduleData, {
+      dependencies: [{
+        input: "file:///custom/path/dependency.css",
+        format: DependencyFormat.Style,
+        type: DependencyType.ImportExport,
+      }],
+      exports: {},
+    });
+  },
+});
+
+Deno.test(
+  {
+    name: "@import",
+    async fn(t) {
+      await t.step(
+        {
+          name: "literal",
+          async fn() {
+            const importMap = { imports: {} };
+            const input = "/src/styles.css";
+            const source = `@import "dependency.css";`;
+            const moduleData = await extractDependencies(
+              input,
+              source,
+              importMap,
+            );
+
+            assertEquals(moduleData, {
+              dependencies: [{
+                input: "file:///src/dependency.css",
+                format: DependencyFormat.Style,
+                type: DependencyType.ImportExport,
+              }],
+              exports: {},
+            });
           },
-          export: {},
-        });
-      },
-    },
+        },
+      );
+      await t.step({
+        name: "url",
+        async fn() {
+          const importMap = { imports: {} };
+          const input = "/src/styles.css";
+          const source = `@import url("dependency.css");`;
+          const moduleData = await extractDependencies(
+            input,
+            source,
+            importMap,
+          );
 
-    {
-      name: "@import",
+          assertEquals(moduleData, {
+            dependencies: [{
+              input: "file:///src/dependency.css",
+              format: DependencyFormat.Style,
+              type: DependencyType.ImportExport,
+            }],
+            exports: {},
+          });
+        },
+      });
+    },
+  },
+);
+
+Deno.test({
+  name: "property",
+  async fn(t) {
+    await t.step({
+      name: "url",
       async fn() {
         const importMap = { imports: {} };
-        const input = "styles.css";
-        const source = `@import "dependency.css";`;
-        const moduleData = await extractDependencies(input, source, importMap);
-
-        assertEquals(moduleData, {
-          dependencies: {
-            "dependency.css": {
-              [DependencyType.Import]: {},
-            },
-          },
-          export: {},
-        });
-      },
-    },
-
-    {
-      name: "@import url()",
-      async fn() {
-        const importMap = { imports: {} };
-        const input = "styles.css";
-        const source = `@import url("dependency.css");`;
-        const moduleData = await extractDependencies(input, source, importMap);
-
-        assertEquals(moduleData, {
-          dependencies: {
-            "dependency.css": {
-              [DependencyType.Import]: {},
-            },
-          },
-          export: {},
-        });
-      },
-    },
-
-    {
-      name: "url()",
-      async fn() {
-        const importMap = { imports: {} };
-        const input = "styles.css";
+        const input = "/src/styles.css";
         const source = `div { background-image: url("image.png"); }`;
         const moduleData = await extractDependencies(input, source, importMap);
 
         assertEquals(moduleData, {
-          dependencies: {
-            "image.png": {
-              [DependencyType.Import]: [],
-            },
-          },
-          export: {},
+          dependencies: [{
+            input: "file:///src/image.png",
+            format: DependencyFormat.Binary,
+            type: DependencyType.ImportExport,
+          }],
+          exports: {},
         });
       },
-    },
-  ],
+    });
+  },
 });

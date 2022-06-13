@@ -1,2 +1,2 @@
-const data = fetch("./b.ts");
-console.log(data);
+const b = await fetch("./b.ts");
+console.log(b);

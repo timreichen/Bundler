@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+
 import { world } from "./world.ts";
 
 const h1 = document.createElement("h1");

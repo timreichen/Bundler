@@ -1,5 +1,7 @@
-import ReactDOM from "https://cdn.skypack.dev/react-dom@17.0.2";
-import React from "https://cdn.skypack.dev/react@17.0.2";
+/// <reference lib="dom" />
+
+import ReactDOM from "https://cdn.skypack.dev/react-dom";
+import React from "https://cdn.skypack.dev/react";
 
 import { App } from "./App.tsx";
 

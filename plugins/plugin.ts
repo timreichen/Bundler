@@ -1,153 +1,189 @@
-import { path } from "../deps.ts";
 import { Bundler } from "../bundler.ts";
-import { Asset, Graph } from "../graph.ts";
-import { isURL } from "../_util.ts";
-import { Logger } from "../logger.ts";
+import { colors, ImportMap, ts } from "../deps.ts";
+import { timestamp } from "../_util.ts";
 
 export enum DependencyType {
-  Import = "Import",
+  ImportExport = "ImportExport",
   DynamicImport = "DynamicImport",
   Fetch = "Fetch",
   WebWorker = "WebWorker",
   ServiceWorker = "ServiceWorker",
   WebManifest = "WebManifest",
 }
-
-export enum Format {
+export enum DependencyFormat {
   Html = "Html",
   Style = "Style",
   Script = "Script",
   Json = "Json",
-  Image = "Image",
   Wasm = "Wasm",
+  Binary = "Binary",
 }
 
-/**
- * get Format based on file extension
- */
-export function getFormat(input: string) {
-  const extension = path.extname(input);
-
-  switch (true) {
-    case extension.endsWith(".html"): {
-      return Format.Html;
-    }
-    case extension.endsWith(".css"): {
-      return Format.Style;
-    }
-    case extension.endsWith(".json"): {
-      return Format.Json;
-    }
-    case extension.endsWith(".wasm"): {
-      return Format.Wasm;
-    }
-    case /\.(png|jpe?g|ico|gif|svg)$/.test(input): {
-      return Format.Image;
-    }
-    case /\.(t|j)sx?$/.test(input) ||
-      (isURL(input) && !/([\.][a-zA-Z]\w*)$/.test(input)): {
-      return Format.Script;
-    }
-  }
-  // throw new Error(`No format for extension found: '${extension}'`);
-}
-
-export type History = string[];
-
-export type Source = unknown;
-export type Sources = Record<string, Source>;
-
-export type Bundles = Record<string, Source>;
-export type OutputMap = Record<string, string>;
-
-export interface Item {
-  history: History;
-  type: DependencyType;
-}
-export interface Chunk {
-  item: Item;
-  dependencyItems: Item[];
-}
-
-export type Chunks = Chunk[];
-export type Cache = Record<string, string>;
-
-interface Specifiers {
-  specifiers?: Record<
-    string, /* identifier */
-    string /* specifier */
-  >; /* example: import { x as y } from "./x.ts" -> { y: "x" } */
+export interface DependencyInfo {
+  specifiers?: Record<string, string>;
+  default?: string | boolean;
   namespaces?: string[];
   types?: Record<string, string>;
 }
-export interface Import extends Specifiers {
-  defaults?: string[];
-}
-export interface Export extends Specifiers {
-  default?: string | boolean;
-}
-export type Dependencies = Record<
-  string, /* input */
-  Partial<Record<keyof typeof DependencyType, Import>>
->;
 
-export interface ModuleData {
-  dependencies: Dependencies;
-  export: Export;
+export interface Dependency extends DependencyInfo {
+  input: string;
+  type: DependencyType;
+  format: DependencyFormat;
 }
 
-export type Context = {
-  importMap: Deno.ImportMap;
-  cacheDirPath: string;
-  depsDirPath: string;
-  outDirPath: string;
-  reload: boolean | string[];
-  optimize: boolean;
-  quiet: boolean;
-  outputMap: OutputMap;
+export interface DependencyData {
+  dependencies: Dependency[];
+  exports: DependencyInfo;
+}
 
-  graph: Graph;
-  chunks: Chunks;
-  bundles: Bundles;
+export interface Item {
+  input: string;
+  type: DependencyType;
+  format: DependencyFormat;
+}
 
-  sources: Sources;
-  cache: Cache;
+export interface ChunkItem extends Item {
+  source: Source;
+}
 
-  logger: Logger;
+export interface Asset extends ChunkItem, DependencyData {
+}
 
+export interface Chunk {
+  item: ChunkItem;
+  output: string;
+  dependencyItems: ChunkItem[];
+}
+
+export interface Bundle {
+  output: string;
+  source: Source;
+}
+
+interface Context {
   bundler: Bundler;
-};
+}
 
-export interface Plugin {
-  test(item: Item, context: Context): Promise<boolean> | boolean;
-  readSource?(
+export interface CreateAssetsContext extends Context {
+  importMap?: ImportMap;
+  reload?: boolean | string[];
+  assets?: Asset[];
+  compilerOptions?: ts.CompilerOptions;
+}
+export interface CreateAssetContext extends CreateAssetsContext {
+  assets: Asset[];
+}
+
+export interface CreateChunksContext extends Context {
+  importMap?: ImportMap;
+  outputMap: Record<string, string>;
+  root: string;
+  chunks?: Chunk[];
+}
+export interface CreateChunkContext extends CreateChunksContext {
+  assets: Asset[];
+  // removeAssertClauses?: boolean
+}
+
+export interface CreateBundlesContext extends Context {
+  root: string;
+  importMap?: ImportMap;
+  optimize?: boolean;
+}
+export type TransformAssetContext = CreateAssetContext;
+
+export interface CreateBundleContext extends CreateBundlesContext {
+  chunks: Chunk[];
+}
+
+// deno-lint-ignore no-empty-interface
+export interface OptimizeBundleContext {
+}
+
+export type Source = ArrayBuffer | string;
+
+const encoder = new TextEncoder();
+
+export abstract class Plugin {
+  constructor() {
+  }
+
+  async createOutput(input: string, root: string, extension: string) {
+    const hashBuffer = await crypto.subtle.digest(
+      "SHA-256",
+      encoder.encode(input),
+    );
+
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    if (!root.endsWith("/")) {
+      root = `${root}/`;
+    }
+
+    return new URL(`${hex}${extension}`, new URL(root, "file://")).href;
+  }
+
+  protected async readSource(
     input: string,
-    context: Context,
+    _context: CreateAssetContext,
+  ): Promise<Source> {
+    return await Deno.readFile(input);
+  }
+
+  async createSource(
+    input: string,
+    context: CreateAssetContext,
+  ): Promise<Source> {
+    const time = performance.now();
+    const source = await this.readSource(input, context);
+    // watchFile(input).then(() => this.cacheSources.delete(input));
+    context.bundler.logger.debug(
+      colors.yellow("Read"),
+      input,
+      colors.dim(colors.italic(`(${timestamp(time)})`)),
+    );
+    return source;
+  }
+
+  abstract test(
+    input: string,
+    type: DependencyType,
+  ): Promise<boolean> | boolean;
+
+  getSource?(
+    input: string,
+    type: DependencyType,
+    context: CreateAssetContext,
   ): Promise<Source> | Source;
-  prepareSource?(input: string, context: Context): Promise<Source> | Source;
-  transformSource?(
-    bundleInput: string,
-    item: Item,
-    context: Context,
+  transformAsset?(
+    input: string,
+    source: Source,
+    context: TransformAssetContext,
   ): Promise<Source> | Source;
   createAsset?(
-    item: Item,
-    context: Context,
+    input: string,
+    type: DependencyType,
+    context: CreateAssetContext,
   ): Promise<Asset> | Asset;
+
+  splitAssetDependencies(
+    _asset: Asset,
+    _context: CreateChunkContext,
+  ): Promise<Item[]> | Item[] {
+    return [];
+  }
+
   createChunk?(
-    item: Item,
-    context: Context,
-    chunkList: Item[],
+    asset: Asset,
+    chunkAssets: Set<Asset>,
+    context: CreateChunkContext,
   ): Promise<Chunk> | Chunk;
   createBundle?(
     chunk: Chunk,
-    context: Context,
-  ): Promise<Source | void> | Source | void;
-  optimizeBundle?(
-    output: string,
-    context: Context,
+    context: CreateBundleContext,
+  ): Promise<Bundle> | Bundle;
+  optimizeSource?(
+    source: Source,
   ): Promise<Source> | Source;
-}
-
-export class Plugin {
 }

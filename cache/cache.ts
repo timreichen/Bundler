@@ -1,6 +1,13 @@
-import { colors, fs, path, resolveWithImportMap, Sha256, ts } from "../deps.ts";
-
-import { resolve as resolveDependency } from "../dependency/dependency.ts";
+import {
+  colors,
+  fs,
+  ImportMap,
+  path,
+  resolveImportMap,
+  resolveModuleSpecifier,
+  Sha256,
+  ts,
+} from "../deps.ts";
 import { isURL } from "../_util.ts";
 
 const { green } = colors;
@@ -11,38 +18,33 @@ function typescriptExtractDependenciesTransformer(
   dependencies: Set<string>,
 ) {
   return (context: ts.TransformationContext) => {
-    function createVisitor(sourceFile: ts.SourceFile): ts.Visitor {
-      const visit: ts.Visitor = (node: ts.Node) => {
-        let filePath = ".";
-
-        if (ts.isImportDeclaration(node)) {
-          const importClause = node.importClause;
-          const moduleSpecifier = node.moduleSpecifier;
-          if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
-            filePath = moduleSpecifier.text;
-            dependencies.add(filePath);
-          }
+    const visitor: ts.Visitor = (node: ts.Node) => {
+      if (ts.isImportDeclaration(node)) {
+        const importClause = node.importClause;
+        const moduleSpecifier = node.moduleSpecifier;
+        if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
+          const filePath = moduleSpecifier.text;
+          dependencies.add(filePath);
           if (importClause) {
-            importClause.getChildren(sourceFile).forEach((child) => {
-              if (ts.isNamespaceImport(child)) {
-                // import * as x from "./x.ts"
-                dependencies.add(filePath);
-              } else if (ts.isIdentifier(child)) {
-                // import x from "./x.ts"
-                dependencies.add(filePath);
-              } else if (ts.isNamedImports(child)) {
-                // import { x } from "./x.ts"
-                dependencies.add(filePath);
-              }
-            });
+            if (ts.isNamespaceImport(importClause)) {
+              // import * as x from "./x.ts"
+              dependencies.add(filePath);
+            }
+            if (ts.isNamedImports(importClause)) {
+              // import { x } from "./x.ts"
+              dependencies.add(filePath);
+            }
+            if (ts.isIdentifier(importClause)) {
+              // import x from "./x.ts"
+              dependencies.add(filePath);
+            }
           }
-          return node;
-        } else if (ts.isExportDeclaration(node)) {
-          const moduleSpecifier = node.moduleSpecifier;
-          if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
-            filePath = moduleSpecifier.text;
-          }
-
+        }
+        return node;
+      } else if (ts.isExportDeclaration(node)) {
+        const moduleSpecifier = node.moduleSpecifier;
+        if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
+          const filePath = moduleSpecifier.text;
           const exportClause = node.exportClause;
           if (exportClause) {
             if (ts.isNamespaceExport(exportClause)) {
@@ -56,18 +58,31 @@ function typescriptExtractDependenciesTransformer(
             // export * from "./x.ts"
             dependencies.add(filePath);
           }
-          return node;
         }
-        return ts.visitEachChild(node, visit, context);
-      };
-      return visit;
-    }
-    return (node: ts.Node) => {
-      const sourceFile = node.getSourceFile();
-      const visitor = createVisitor(sourceFile);
-      return ts.visitNode(node, visitor);
+        return node;
+      }
+      return ts.visitEachChild(node, visitor, context);
     };
+    return (node: ts.Node) => ts.visitNode(node, visitor);
   };
+}
+
+export function resolveDependency(
+  filePath: string,
+  moduleSpecifier: string,
+  importMap?: ImportMap,
+) {
+  if (importMap) {
+    return resolveModuleSpecifier(
+      moduleSpecifier,
+      importMap,
+      new URL(filePath),
+    );
+  }
+
+  const base = new URL(filePath, "file://");
+
+  return new URL(moduleSpecifier, base).href;
 }
 
 export function extractDependencies(
@@ -158,43 +173,81 @@ export function resolve(url: string): string {
 
 const metadataExtension = ".metadata.json";
 
+async function exists(filePath: string) {
+  try {
+    await Deno.stat(filePath);
+    return true;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      return false;
+    } else {
+      throw new Error();
+    }
+  }
+}
+
 /**
  * API for deno cache
  * Fetches path files recusively and caches them to deno cache dir.
  */
 export async function cache(
   filePath: string,
-  { importMap = { imports: {} }, reload = false, compilerOptions = {} }: {
-    importMap?: Deno.ImportMap;
+  {
+    importMap = { imports: {} },
+    importMapPath,
+    reload = false,
+    recursive = true,
+    compilerOptions = {},
+  }: {
+    importMap?: ImportMap;
     reload?: boolean | string[];
+    recursive?: boolean;
     compilerOptions?: ts.CompilerOptions;
+    importMapPath?: URL;
   } = {},
 ) {
   if (!isURL(filePath)) return;
 
-  const resolvedSpecifier = resolveWithImportMap(filePath, importMap);
-  const filePaths = new Set([resolvedSpecifier]);
+  if (importMapPath) {
+    importMap = resolveImportMap(importMap, importMapPath) as ImportMap;
+  }
 
-  for (const filePath of filePaths) {
+  const baseURL = new URL(import.meta.url);
+
+  const resolvedSpecifier = resolveModuleSpecifier(
+    filePath,
+    importMap,
+    baseURL,
+  );
+  const checkedFilePaths = new Set();
+
+  async function request(filePath: string): Promise<void> {
+    if (checkedFilePaths.has(filePath)) return;
+    checkedFilePaths.add(filePath);
     const cachedFilePath = createCacheModulePathForURL(filePath);
 
     let source: string;
 
     const needsReload = reload === true ||
       Array.isArray(reload) && reload.includes(filePath);
+
     if (
-      needsReload || !await fs.exists(cachedFilePath)
+      needsReload || !await exists(cachedFilePath)
     ) {
       console.info(green("Download"), filePath);
       const response = await fetch(filePath, { redirect: "follow" });
-      const text = await response.text();
-      if (response.status !== 200) {
-        throw new Error(
-          `Import '${filePath}' failed: ${text}`,
+
+      if (!response.ok) {
+        console.error(
+          `${colors.red("error")}:`,
+          `Module not found "${filePath}"`,
         );
+        await response.arrayBuffer(); // WORKAROUND: avoid test resouce leak https://github.com/denoland/deno/issues/4735#issuecomment-612989804
+
+        return;
       }
 
-      source = text;
+      source = await response.text();
       const headers: { [key: string]: string } = {};
       for (const [key, value] of response.headers) headers[key] = value;
       const metaFilePath = `${cachedFilePath}${metadataExtension}`;
@@ -205,16 +258,28 @@ export async function cache(
         JSON.stringify({ url: filePath, headers }, null, " "),
       );
 
-      const dependencies = await extractDependencies(
-        filePath,
-        source,
-        { compilerOptions },
-      );
-      dependencies.forEach((dependencyFilePath) =>
-        filePaths.add(
-          resolveDependency(filePath, dependencyFilePath),
-        )
+      const filePaths: Set<string> = new Set();
+      if (response.redirected) {
+        filePaths.add(response.url);
+      }
+
+      if (recursive) {
+        const dependencies = await extractDependencies(
+          filePath,
+          source,
+          { compilerOptions },
+        );
+        dependencies.forEach((dependencyFilePath) =>
+          filePaths.add(
+            resolveDependency(filePath, dependencyFilePath),
+          )
+        );
+      }
+      await Promise.all(
+        [...filePaths].map(async (filePath) => await request(filePath)),
       );
     }
   }
+
+  return await request(resolvedSpecifier);
 }

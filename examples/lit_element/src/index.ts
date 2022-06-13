@@ -1,1 +1,1 @@
-import "./element.ts";
+import "./AppElement.ts";

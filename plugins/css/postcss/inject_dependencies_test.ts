@@ -1,133 +1,168 @@
-import { assertEqualsIgnoreWhitespace, tests } from "../../../test_deps.ts";
-import { Graph } from "../../../graph.ts";
-import { DependencyType } from "../../plugin.ts";
+import { assertEquals } from "../../../test_deps.ts";
+import { ImportMap, resolveImportMap } from "../../../deps.ts";
+import { Chunk, DependencyFormat, DependencyType } from "../../plugin.ts";
 import { injectDependencies } from "./inject_dependencies.ts";
 
-tests({
-  name: "postcss plugin → inject dependencies",
-  tests: () => [
-    {
-      name: "url()",
-      async fn() {
-        const inputA = "src/a.css";
-        const outputA = "dist/a.css";
-        const inputB = "src/image.png";
-        const outputB = "dist/image.png";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: outputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [{
-            input: inputB,
-            output: outputB,
-            dependencies: {},
-            export: {},
-            type: DependencyType.Import,
-          }],
-        };
-
-        const source = `div { background-image: url("image.png"); }`;
-        const transformedSource = await injectDependencies(
-          inputA,
-          outputA,
+Deno.test({
+  name: "inject",
+  async fn() {
+    const input = "file:///src/styles.css";
+    const source = `@import "custom/path/dependency.css";`;
+    const root = "dist";
+    const chunks: Chunk[] = [
+      {
+        item: {
+          input: "file:///src/custom/path/dependency.css",
+          type: DependencyType.ImportExport,
+          format: DependencyFormat.Style,
           source,
-          { graph },
+        },
+        dependencyItems: [],
+        output: "file:///dist/output.css",
+      },
+    ];
+    const result = await injectDependencies(
+      input,
+      source,
+      { root, chunks },
+    );
+
+    assertEquals(result, `@import "/output.css";`);
+  },
+});
+
+Deno.test({
+  name: "importMap",
+  async fn() {
+    const importMap = { imports: { "./path/": "./custom/path/" } };
+    const resolvedImportMap = resolveImportMap(
+      importMap,
+      new URL("file:///"),
+    ) as ImportMap;
+    const input = "file:///styles.css";
+    const source = `@import "path/dependency.css";`;
+    const root = "dist";
+    const chunks: Chunk[] = [
+      {
+        item: {
+          input: "file:///custom/path/dependency.css",
+          type: DependencyType.ImportExport,
+          format: DependencyFormat.Style,
+          source,
+        },
+        dependencyItems: [],
+        output: "file:///dist/output.css",
+      },
+    ];
+    const result = await injectDependencies(
+      input,
+      source,
+      {
+        root,
+        chunks,
+        importMap: resolvedImportMap,
+      },
+    );
+
+    assertEquals(result, `@import "/output.css";`);
+  },
+});
+
+Deno.test({
+  name: "@import",
+  async fn(t) {
+    await t.step({
+      name: "literal",
+      async fn() {
+        const input = "file:///styles.css";
+        const source = `@import url("/other/style.css");`;
+        const root = "dist";
+        const chunks: Chunk[] = [
+          {
+            item: {
+              input: "file:///other/style.css",
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Style,
+              source,
+            },
+            dependencyItems: [],
+            output: "file:///dist/output.css",
+          },
+        ];
+        const transformedSource = await injectDependencies(
+          input,
+          source,
+          { root, chunks },
         );
-        assertEqualsIgnoreWhitespace(
+        assertEquals(
           transformedSource,
-          `div { background-image: url("./image.png"); }`,
+          `@import url("/output.css");`,
         );
       },
-    },
-
-    {
-      name: "url() level up",
+    });
+    await t.step({
+      name: "url",
       async fn() {
-        const inputA = "src/a.css";
-        const outputA = "dist/a.css";
-        const inputB = "src/image.png";
-        const outputB = "image.png";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: outputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
+        const input = "file:///styles.css";
+        const source = `@import url("/other/style.css");`;
+        const root = "dist";
+        const chunks: Chunk[] = [
+          {
+            item: {
+              input: "file:///other/style.css",
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Style,
+              source,
             },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [{
-            input: inputB,
-            output: outputB,
-            dependencies: {},
-            export: {},
-            type: DependencyType.Import,
-          }],
-        };
-        const source = `div { background-image: url("image.png"); }`;
+            dependencyItems: [],
+            output: "file:///dist/custom/other/style.css",
+          },
+        ];
         const transformedSource = await injectDependencies(
-          inputA,
-          outputA,
+          input,
           source,
-          { graph },
+          { root, chunks },
         );
-        assertEqualsIgnoreWhitespace(
+        assertEquals(
           transformedSource,
-          `div { background-image: url("../image.png"); }`,
+          `@import url("/custom/other/style.css");`,
         );
       },
-    },
+    });
+  },
+});
 
-    {
-      name: "url() level down",
+Deno.test({
+  name: "property",
+  async fn(t) {
+    await t.step({
+      name: "url",
       async fn() {
-        const inputA = "src/a.css";
-        const outputA = "a.css";
-        const inputB = "src/image.png";
-        const outputB = "dist/image.png";
-        const graph: Graph = {
-          [inputA]: [{
-            input: inputA,
-            output: outputA,
-            dependencies: {
-              [inputB]: {
-                [DependencyType.Import]: {},
-              },
-            },
-            export: {},
-            type: DependencyType.Import,
-          }],
-          [inputB]: [{
-            input: inputB,
-            output: outputB,
-            dependencies: {},
-            export: {},
-            type: DependencyType.Import,
-          }],
-        };
+        const input = "file:///styles.css";
         const source = `div { background-image: url("image.png"); }`;
+        const root = "dist";
+        const chunks: Chunk[] = [
+          {
+            item: {
+              input: "file:///image.png",
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Binary,
+              source,
+            },
+            dependencyItems: [],
+            output: "file:///dist/image.png",
+          },
+        ];
         const transformedSource = await injectDependencies(
-          inputA,
-          outputA,
+          input,
           source,
-          { graph },
+          { root, chunks },
         );
-        assertEqualsIgnoreWhitespace(
+        assertEquals(
           transformedSource,
-          `div { background-image: url("./dist/image.png"); }`,
+          `div { background-image: url("/image.png"); }`,
         );
       },
-    },
-  ],
+    });
+  },
 });

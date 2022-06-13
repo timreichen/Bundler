@@ -1,0 +1,7 @@
+:host {
+  display: block;
+  font-family: helvetica;
+  user-select: none;
+  text-align: center;
+  color: rgb(50, 150, 250);
+}

@@ -235,6 +235,7 @@ async function bundleCommand(args: flags.Args) {
             throw error;
           }
         }
+        cachedAssets[asset.input] = asset;
       }
       await Deno.remove(cachedAssetFilepath);
     }

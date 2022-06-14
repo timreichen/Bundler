@@ -138,7 +138,7 @@ async function exists(filename: string) {
     await Deno.stat(filename);
     return true;
   } catch (error) {
-    if (error.kind === Deno.errors.NotFound) {
+    if (error instanceof Deno.errors.NotFound) {
       return false;
     }
     throw error;
@@ -202,26 +202,42 @@ async function bundleCommand(args: flags.Args) {
       //   await Deno.remove(cachedAssetFilepath);
       //   continue;
       // }
-      const source = await Deno.readTextFile(
-        path.join(cacheAssetsDir, dirEntry.name),
-      );
+      const source = await Deno.readTextFile(cachedAssetFilepath);
       const asset: Asset = JSON.parse(source);
+
       let cacheExpired = false;
       if (isFileURL(asset.input)) {
-        const input = path.fromFileUrl(asset.input);
-        const assetStat = await Deno.lstat(input);
-        const cachedAssetFileStat = await Deno.lstat(cachedAssetFilepath);
-        if (cachedAssetFileStat.mtime && assetStat.mtime) {
-          cacheExpired = cachedAssetFileStat.mtime < assetStat.mtime;
+        try {
+          const input = path.fromFileUrl(asset.input);
+          const assetStat = await Deno.lstat(input);
+          const cachedAssetFileStat = await Deno.lstat(cachedAssetFilepath);
+          if (cachedAssetFileStat.mtime && assetStat.mtime) {
+            cacheExpired = cachedAssetFileStat.mtime < assetStat.mtime;
+          }
+        } catch (error) {
+          if (!(error instanceof Deno.errors.NotFound)) {
+            throw error;
+          }
         }
       }
 
       if (!cacheExpired) {
-        if (asset.source === null) {
-          asset.source = await Deno.readFileSync(asset.input).buffer;
+        try {
+          if (asset.source === null) {
+            asset.source = await Deno.readFileSync(
+              path.fromFileUrl(asset.input),
+            ).buffer;
+          }
+          cachedAssets[asset.input] = asset;
+          continue;
+        } catch (error) {
+          if (!(error instanceof Deno.errors.NotFound)) {
+            throw error;
+          }
         }
         cachedAssets[asset.input] = asset;
       }
+      await Deno.remove(cachedAssetFilepath);
     }
   } catch (error) {
     if (!(error instanceof Deno.errors.NotFound)) {

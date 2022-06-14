@@ -10,7 +10,7 @@ export function isURL(filepath: string) {
   try {
     new URL(filepath);
     return true;
-  } catch (_) {
+  } catch {
     return false;
   }
 }
@@ -19,7 +19,7 @@ export function isFileURL(filepath: string) {
   try {
     const url = new URL(filepath);
     return url.protocol === "file:";
-  } catch (_) {
+  } catch {
     return false;
   }
 }

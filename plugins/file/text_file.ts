@@ -1,5 +1,5 @@
-import { ImportMap } from "../../deps.ts";
-import { isURL } from "../../_util.ts";
+import { ImportMap, path } from "../../deps.ts";
+import { isFileURL, isURL } from "../../_util.ts";
 import { DependencyType, Plugin } from "../plugin.ts";
 
 export class TextFilePlugin extends Plugin {
@@ -12,9 +12,10 @@ export class TextFilePlugin extends Plugin {
     _options: { importMap?: ImportMap } = {},
   ) {
     try {
-      if (isURL(input)) {
-        return await fetch(input)
-          .then((res) => res.text());
+      if (isFileURL(input)) {
+        input = path.fromFileUrl(input);
+      } else if (isURL(input)) {
+        return await fetch(input).then((res) => res.text());
       }
       return await Deno.readTextFile(input);
     } catch (error) {

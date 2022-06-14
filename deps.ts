@@ -2,7 +2,7 @@ export {
   resolveImportMap,
   resolveModuleSpecifier,
 } from "https://deno.land/x/importmap@0.2.1/mod.ts";
-export type { ImportMap } from "https://deno.land/x/importmap/mod.ts";
+export type { ImportMap } from "https://deno.land/x/importmap@0.2.1/mod.ts";
 
 export { default as ts } from "https://esm.sh/typescript";
 export * as terser from "https://esm.sh/terser";

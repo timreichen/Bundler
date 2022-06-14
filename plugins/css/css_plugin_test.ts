@@ -303,13 +303,14 @@ Deno.test({
         const chunk = await bundler.createChunk(assetA, chunkAssets, {
           assets: [assetA, assetB],
         });
+        const chunkB = {
+          item: { ...assetB },
+          output: "file:///dist/image.png",
+          dependencyItems: [],
+        };
 
         const bundle = await bundler.createBundle(chunk, {
-          chunks: [chunk, {
-            item: { ...assetB },
-            output: "file:///dist/image.png",
-            dependencyItems: [],
-          }],
+          chunks: [chunk, chunkB],
         });
 
         assertEquals(bundle, {

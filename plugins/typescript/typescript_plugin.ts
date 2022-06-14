@@ -75,10 +75,15 @@ export class TypescriptPlugin extends TextFilePlugin {
   ) {
     const source = await this.createSource(input, context) as string;
     const { importMap } = context;
+    const tsCompilerOptions: ts.CompilerOptions = {
+      ...defaultCompilerOptions,
+      ...this.#compilerOptions,
+    };
+
     const { dependencies, exports } = await extractDependencies(
       input,
       source,
-      this.#compilerOptions,
+      tsCompilerOptions,
       { importMap },
     );
 
@@ -227,9 +232,14 @@ export class TypescriptPlugin extends TextFilePlugin {
   createBundle(chunk: Chunk, context: CreateBundleContext) {
     let source = chunk.item.source as string;
 
+    const tsCompilerOptions: ts.CompilerOptions = {
+      ...defaultCompilerOptions,
+      ...this.#compilerOptions,
+    };
+
     source = injectDependencies(
       chunk,
-      this.#compilerOptions,
+      tsCompilerOptions,
       {
         ...context,
         logger: context.bundler.logger,

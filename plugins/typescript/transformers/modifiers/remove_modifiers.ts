@@ -27,6 +27,7 @@ export function removeModifiers(
   source: string,
   exportMap: Record<string, string>,
   blacklistIdentifiers: Set<string>,
+  compilerOptions: ts.CompilerOptions,
 ) {
   const sourceFile = ts.createSourceFile(
     fileName,
@@ -36,6 +37,7 @@ export function removeModifiers(
   const { transformed } = ts.transform(
     sourceFile,
     [removeModifiersTransformer(exportMap, blacklistIdentifiers)],
+    compilerOptions,
   );
   return printer.printFile(transformed[0] as ts.SourceFile);
 }
@@ -44,10 +46,12 @@ export function removeModifiersFromSourceFile(
   sourceFile: ts.SourceFile,
   exportMap: Record<string, string>,
   blacklistIdentifiers: Set<string>,
+  compilerOptions: ts.CompilerOptions,
 ) {
   const { transformed } = ts.transform(
     sourceFile,
     [removeModifiersTransformer(exportMap, blacklistIdentifiers)],
+    compilerOptions,
   );
   return transformed[0] as ts.SourceFile;
 }
@@ -57,6 +61,7 @@ export function removeModifiersSourceFile(
   source: string,
   exportMap: Record<string, string>,
   blacklistIdentifiers: Set<string>,
+  compilerOptions: ts.CompilerOptions,
 ) {
   const sourceFile = ts.createSourceFile(
     fileName,
@@ -67,6 +72,7 @@ export function removeModifiersSourceFile(
     sourceFile,
     exportMap,
     blacklistIdentifiers,
+    compilerOptions,
   );
 }
 

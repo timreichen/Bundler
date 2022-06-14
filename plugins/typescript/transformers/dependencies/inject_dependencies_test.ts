@@ -8,7 +8,7 @@ const logger = new ConsoleLogger(ConsoleLogger.logLevels.debug);
 logger.quiet = true;
 
 const compilerOptions: ts.CompilerOptions = {
-  newLine: ts.NewLineKind.LineFeed,
+  newLine: ts.NewLineKind.CarriageReturnLineFeed,
 };
 
 Deno.test({

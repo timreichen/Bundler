@@ -362,9 +362,9 @@ export function extractDependenciesTransformer(
 
 export function extractDependenciesFromSourceFile(
   sourceFile: ts.SourceFile,
-  { importMap, compilerOptions }: {
+  compilerOptions: ts.CompilerOptions,
+  { importMap }: {
     importMap?: ImportMap;
-    compilerOptions?: ts.CompilerOptions;
   } = {},
 ) {
   const data: DependencyData = { dependencies: [], exports: {} };
@@ -379,18 +379,17 @@ export function extractDependenciesFromSourceFile(
 export function extractDependencies(
   fileName: string,
   sourceText: string,
-  { importMap, compilerOptions }: {
-    importMap?: ImportMap;
-    compilerOptions?: ts.CompilerOptions;
-  } = {},
+  compilerOptions: ts.CompilerOptions,
+  { importMap }: { importMap?: ImportMap } = {},
 ) {
   const sourceFile = ts.createSourceFile(
     fileName,
     sourceText,
     ts.ScriptTarget.ESNext,
   );
-  return extractDependenciesFromSourceFile(sourceFile, {
+  return extractDependenciesFromSourceFile(
+    sourceFile,
     compilerOptions,
-    importMap,
-  });
+    { importMap },
+  );
 }

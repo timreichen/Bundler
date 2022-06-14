@@ -75,10 +75,12 @@ export class TypescriptPlugin extends TextFilePlugin {
   ) {
     const source = await this.createSource(input, context) as string;
     const { importMap } = context;
-    const { dependencies, exports } = await extractDependencies(input, source, {
-      importMap,
-      compilerOptions: this.#compilerOptions,
-    });
+    const { dependencies, exports } = await extractDependencies(
+      input,
+      source,
+      this.#compilerOptions,
+      { importMap },
+    );
 
     return {
       input,

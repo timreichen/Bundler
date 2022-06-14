@@ -1,6 +1,11 @@
+import { ts } from "../../../../deps.ts";
 import { assertEquals } from "../../../../test_deps.ts";
 import { DependencyFormat, DependencyType } from "../../../plugin.ts";
 import { extractDependencies } from "./extract_dependencies.ts";
+
+const compilerOptions: ts.CompilerOptions = {
+  newLine: ts.NewLineKind.LineFeed,
+};
 
 Deno.test({
   name: "import",
@@ -13,6 +18,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -33,6 +39,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -53,6 +60,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -73,6 +81,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -93,6 +102,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -113,6 +123,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -132,6 +143,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -151,6 +163,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {});
@@ -164,6 +177,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -190,6 +204,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -205,6 +220,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -220,6 +236,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -240,6 +257,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -255,6 +273,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -275,6 +294,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, [
           {
@@ -295,6 +315,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -310,6 +331,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -325,6 +347,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -340,6 +363,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -355,6 +379,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -370,6 +395,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -385,6 +411,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -400,6 +427,7 @@ Deno.test({
         const { dependencies, exports } = extractDependencies(
           fileName,
           sourceText,
+          compilerOptions,
         );
         assertEquals(dependencies, []);
         assertEquals(exports, {
@@ -418,6 +446,7 @@ Deno.test({
     const { dependencies, exports } = extractDependencies(
       fileName,
       sourceText,
+      compilerOptions,
     );
     assertEquals(dependencies, [
       {
@@ -437,6 +466,7 @@ Deno.test({
     const { dependencies, exports } = extractDependencies(
       fileName,
       sourceText,
+      compilerOptions,
     );
     assertEquals(dependencies, [
       {
@@ -456,6 +486,7 @@ Deno.test({
     const { dependencies, exports } = extractDependencies(
       fileName,
       sourceText,
+      compilerOptions,
     );
     assertEquals(dependencies, [
       {
@@ -476,6 +507,7 @@ Deno.test({
     const { dependencies, exports } = extractDependencies(
       fileName,
       sourceText,
+      compilerOptions,
     );
     assertEquals(dependencies, [
       {
@@ -497,6 +529,7 @@ Deno.test({
     const { dependencies, exports } = extractDependencies(
       fileName,
       sourceText,
+      compilerOptions,
     );
     assertEquals(dependencies, [
       {

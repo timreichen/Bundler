@@ -12,20 +12,25 @@ import { path, resolveImportMap, ts } from "./deps.ts";
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "testdata");
 
-const typescriptPlugin = new TypescriptPlugin();
-
 const compilerOptions: ts.CompilerOptions = {
   newLine: ts.NewLineKind.LineFeed,
 };
 
+const typescriptPlugin = new TypescriptPlugin(compilerOptions);
+const cssPlugin = new CSSPlugin();
+const jsonPlugin = new JSONPlugin();
+const htmlPlugin = new HTMLPlugin();
+const webManifestPlugin = new WebManifestPlugin();
+const filePlugin = new FilePlugin();
+
 const bundler = new Bundler({
   plugins: [
-    new TypescriptPlugin(compilerOptions),
-    new CSSPlugin(),
-    new JSONPlugin(),
-    new HTMLPlugin(),
-    new WebManifestPlugin(),
-    new FilePlugin(),
+    typescriptPlugin,
+    cssPlugin,
+    jsonPlugin,
+    htmlPlugin,
+    webManifestPlugin,
+    filePlugin,
   ],
   quiet: true,
 });
@@ -915,12 +920,12 @@ Deno.test({
         const a = path.toFileUrl(
           path.join(testdataDir, "html/webmanifest/index.html"),
         ).href;
-        const output = await typescriptPlugin.createOutput(a, "dist", ".html");
+        const output = await htmlPlugin.createOutput(a, "dist", ".html");
         const b = path.toFileUrl(path.join(
           testdataDir,
           "html/webmanifest/manifest.webmanifest",
         )).href;
-        const manifestOutput = await typescriptPlugin.createOutput(
+        const manifestOutput = await webManifestPlugin.createOutput(
           b,
           "dist",
           ".webmanifest",
@@ -939,7 +944,7 @@ Deno.test({
           }">\n  </head>\n  <body>\n  </body>\n</html>`,
         });
 
-        const imageOutput1 = await typescriptPlugin
+        const imageOutput1 = await filePlugin
           .createOutput(
             path.toFileUrl(
               path.join(testdataDir, "html/webmanifest/icon-192x192.png"),
@@ -947,7 +952,7 @@ Deno.test({
             "dist",
             ".png",
           );
-        const imageOutput2 = await typescriptPlugin
+        const imageOutput2 = await filePlugin
           .createOutput(
             path.toFileUrl(
               path.join(testdataDir, "html/webmanifest/icon-256x256.png"),
@@ -955,7 +960,7 @@ Deno.test({
             "dist",
             ".png",
           );
-        const imageOutput3 = await typescriptPlugin
+        const imageOutput3 = await filePlugin
           .createOutput(
             path.toFileUrl(
               path.join(testdataDir, "html/webmanifest/icon-384x384.png"),
@@ -963,7 +968,7 @@ Deno.test({
             "dist",
             ".png",
           );
-        const imageOutput4 = await typescriptPlugin
+        const imageOutput4 = await filePlugin
           .createOutput(
             path.toFileUrl(
               path.join(testdataDir, "html/webmanifest/icon-512x512.png"),
@@ -973,7 +978,7 @@ Deno.test({
           );
 
         assertEquals(bundles[1], {
-          output: await typescriptPlugin.createOutput(
+          output: await webManifestPlugin.createOutput(
             b,
             "dist",
             ".webmanifest",

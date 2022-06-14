@@ -27,13 +27,22 @@ export function extractDependenciesTransformer(
         moduleSpecifier: string,
         importMap?: ImportMap,
       ) {
-        return importMap
-          ? resolveImportMapModuleSpecifier(
+        let resolvedModuleSpecifier = moduleSpecifier;
+
+        if (importMap) {
+          resolvedModuleSpecifier = resolveImportMapModuleSpecifier(
             moduleSpecifier,
             importMap,
             new URL(filePath, "file://"),
-          )
-          : resolveModuleSpecifier(filePath, moduleSpecifier);
+          );
+        }
+
+        resolvedModuleSpecifier = resolveModuleSpecifier(
+          filePath,
+          resolvedModuleSpecifier,
+        );
+
+        return resolvedModuleSpecifier;
       }
 
       const visitor: ts.Visitor = (node: ts.Node) => {

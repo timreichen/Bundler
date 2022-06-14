@@ -1,8 +1,6 @@
 import { assertEquals } from "../../../../test_deps.ts";
-import { isWindows } from "../../../../_util.ts";
+import { newline } from "../../../../_util.ts";
 import { injectIdentifiers } from "./inject_identifiers.ts";
-
-const newline = isWindows ? "\r\n" : "\n";
 
 Deno.test({
   name: "variable declaration",

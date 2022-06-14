@@ -3,9 +3,7 @@ import { Bundler } from "../../bundler.ts";
 import { Asset, DependencyFormat, DependencyType } from "../plugin.ts";
 import { TypescriptPlugin } from "./typescript_plugin.ts";
 import { path } from "../../deps.ts";
-import { isWindows } from "../../_util.ts";
-
-const newline = isWindows ? "\r\n" : "\n";
+import { newline } from "../../_util.ts";
 
 const plugin = new TypescriptPlugin();
 

@@ -1,13 +1,11 @@
 import { ConsoleLogger } from "../../../../log/console_logger.ts";
 import { assertEquals } from "../../../../test_deps.ts";
-import { isWindows } from "../../../../_util.ts";
+import { newline } from "../../../../_util.ts";
 import { Chunk, DependencyFormat, DependencyType } from "../../../plugin.ts";
 import { injectDependencies } from "./inject_dependencies.ts";
 
 const logger = new ConsoleLogger(ConsoleLogger.logLevels.debug);
 logger.quiet = true;
-
-const newline = isWindows ? "\r\n" : "\n";
 
 Deno.test({
   name: "update import moduleSpecifier",

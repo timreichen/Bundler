@@ -8,12 +8,10 @@ import { WebManifestPlugin } from "./plugins/json/webmanifest_plugin.ts";
 import { HTMLPlugin } from "./plugins/html/html_plugin.ts";
 import { FilePlugin } from "./plugins/file/file.ts";
 import { path, resolveImportMap } from "./deps.ts";
-import { isWindows } from "./_util.ts";
+import { newline } from "./_util.ts";
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "testdata");
-
-const newline = isWindows ? "\r\n" : "\n";
 
 const typescriptPlugin = new TypescriptPlugin();
 const cssPlugin = new CSSPlugin();

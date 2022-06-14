@@ -3,15 +3,13 @@ import { Bundler } from "../../bundler.ts";
 import { Asset, Chunk, DependencyFormat, DependencyType } from "../plugin.ts";
 import { WebManifestPlugin } from "./webmanifest_plugin.ts";
 import { path } from "../../deps.ts";
-import { isWindows } from "../../_util.ts";
+import { newline } from "../../_util.ts";
 
 const plugin = new WebManifestPlugin();
 const bundler = new Bundler({ plugins: [plugin], quiet: true });
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "../../testdata");
-
-const newline = isWindows ? "\r\n" : "\n";
 
 Deno.test({
   name: "test",

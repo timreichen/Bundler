@@ -3,7 +3,7 @@ import { Bundler } from "../../bundler.ts";
 import { Asset, DependencyFormat, DependencyType } from "../plugin.ts";
 import { CSSPlugin } from "./css_plugin.ts";
 import { path } from "../../deps.ts";
-import { isWindows } from "../../_util.ts";
+import { newline } from "../../_util.ts";
 
 const plugin = new CSSPlugin();
 
@@ -11,8 +11,6 @@ const bundler = new Bundler({ plugins: [plugin], quiet: true });
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "../../testdata");
-
-const newline = isWindows ? "\r\n" : "\n";
 
 Deno.test({
   name: "test",

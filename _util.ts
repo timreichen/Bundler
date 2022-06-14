@@ -15,7 +15,8 @@ const osType: OSType = (() => {
 
   return "linux";
 })();
-export const isWindows = osType === "windows";
+const isWindows = osType === "windows";
+export const newline = isWindows ? "\r\n" : "\n";
 
 /**
  * returns true if path can be parsed by URL

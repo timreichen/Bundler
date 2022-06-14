@@ -83,8 +83,7 @@ export class TypescriptPlugin extends TextFilePlugin {
     const { dependencies, exports } = await extractDependencies(
       input,
       source,
-      tsCompilerOptions,
-      { importMap },
+      { importMap, compilerOptions: tsCompilerOptions },
     );
 
     return {
@@ -239,10 +238,10 @@ export class TypescriptPlugin extends TextFilePlugin {
 
     source = injectDependencies(
       chunk,
-      tsCompilerOptions,
       {
         ...context,
         logger: context.bundler.logger,
+        compilerOptions: tsCompilerOptions,
       },
     );
 

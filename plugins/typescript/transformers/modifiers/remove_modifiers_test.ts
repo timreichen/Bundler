@@ -1,10 +1,5 @@
-import { ts } from "../../../../deps.ts";
 import { assertEquals } from "../../../../test_deps.ts";
 import { removeModifiers } from "./remove_modifiers.ts";
-
-const compilerOptions: ts.CompilerOptions = {
-  newLine: ts.NewLineKind.LineFeed,
-};
 
 Deno.test({
   name: "export",
@@ -21,7 +16,6 @@ Deno.test({
           source,
           exportSpecifiers,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(
           transformedSource,
@@ -43,7 +37,6 @@ Deno.test({
           source,
           exportSpecifiers,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(
           transformedSource,
@@ -65,7 +58,6 @@ Deno.test({
           source,
           exportSpecifiers,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(
           transformedSource,
@@ -87,7 +79,6 @@ Deno.test({
           source,
           exportSpecifiers,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(
           transformedSource,
@@ -109,7 +100,6 @@ Deno.test({
           source,
           exportSpecifiers,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(
           transformedSource,
@@ -131,7 +121,6 @@ Deno.test({
           source,
           exportSpecifiers,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(
           transformedSource,
@@ -153,7 +142,6 @@ Deno.test({
           source,
           exportSpecifiers,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(
           transformedSource,
@@ -175,7 +163,6 @@ Deno.test({
           source,
           exportSpecifiers,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(transformedSource, `class X {\n}\n`);
         assertEquals(exportSpecifiers, { X: "X" });
@@ -194,7 +181,6 @@ Deno.test({
           source,
           exportSpecifiers,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(transformedSource, `class X {\n}\n`);
         assertEquals(exportSpecifiers, { default: "X" });
@@ -213,7 +199,6 @@ Deno.test({
           source,
           exportSpecifiers,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(

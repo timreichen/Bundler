@@ -618,7 +618,7 @@ export function injectIdentifiersFromSourceFile(
   sourceFile: ts.SourceFile,
   identifierMap: Map<string, string>,
   blacklistIdentifiers: Set<string>,
-  compilerOptions: ts.CompilerOptions,
+  compilerOptions?: ts.CompilerOptions,
 ) {
   const { transformed } = ts.transform(sourceFile, [
     injectIdentifiersTransformer(
@@ -633,7 +633,7 @@ export function injectIdentifiers(
   sourceText: string,
   identifierMap: Map<string, string>,
   blacklistIdentifiers: Set<string>,
-  compilerOptions: ts.CompilerOptions,
+  compilerOptions?: ts.CompilerOptions,
 ) {
   const sourceFile = ts.createSourceFile(
     fileName,

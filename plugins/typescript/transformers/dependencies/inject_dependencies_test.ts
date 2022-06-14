@@ -1,4 +1,3 @@
-import { ts } from "../../../../deps.ts";
 import { ConsoleLogger } from "../../../../log/console_logger.ts";
 import { assertEquals } from "../../../../test_deps.ts";
 import { Chunk, DependencyFormat, DependencyType } from "../../../plugin.ts";
@@ -6,10 +5,6 @@ import { injectDependencies } from "./inject_dependencies.ts";
 
 const logger = new ConsoleLogger(ConsoleLogger.logLevels.debug);
 logger.quiet = true;
-
-const compilerOptions: ts.CompilerOptions = {
-  newLine: ts.NewLineKind.LineFeed,
-};
 
 Deno.test({
   name: "update import moduleSpecifier",
@@ -44,7 +39,7 @@ Deno.test({
             output: "file:///dist/b.js",
           },
         ];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -82,7 +77,7 @@ Deno.test({
             output: "file:///dist/b.js",
           },
         ];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -120,7 +115,7 @@ Deno.test({
             output: "file:///dist/b.js",
           },
         ];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -161,7 +156,6 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -201,7 +195,6 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -240,7 +233,6 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -279,7 +271,6 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -318,7 +309,6 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -354,7 +344,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -389,7 +379,6 @@ Deno.test({
         const chunks: Chunk[] = [];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -426,7 +415,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -459,7 +448,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -492,7 +481,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -531,7 +520,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -570,7 +559,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -612,7 +601,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -654,7 +643,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -691,7 +680,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -727,7 +716,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -760,7 +749,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -799,7 +788,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -838,7 +827,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -871,7 +860,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -912,7 +901,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -953,7 +942,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -994,7 +983,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1030,7 +1019,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1066,7 +1055,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1101,7 +1090,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1141,7 +1130,6 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1176,7 +1164,6 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1218,7 +1205,6 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1259,7 +1245,6 @@ Deno.test({
         }];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1296,7 +1281,6 @@ Deno.test({
         }];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1329,7 +1313,6 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1357,7 +1340,6 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1384,7 +1366,6 @@ Deno.test({
         const chunks: Chunk[] = [];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1422,7 +1403,6 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1460,7 +1440,6 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1498,7 +1477,6 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1536,7 +1514,6 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
 
@@ -1572,7 +1549,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1605,7 +1582,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1638,7 +1615,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1671,7 +1648,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1704,7 +1681,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1737,7 +1714,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1776,7 +1753,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1809,7 +1786,7 @@ Deno.test({
         };
 
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1842,7 +1819,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1883,7 +1860,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1924,7 +1901,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1960,7 +1937,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -1995,7 +1972,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -2031,7 +2008,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -2066,7 +2043,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -2101,7 +2078,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -2147,7 +2124,6 @@ Deno.test({
     ];
     const result = injectDependencies(
       chunk,
-      compilerOptions,
       { root, chunks, logger },
     );
     assertEquals(result, `const worker = new Worker("/b.js");\n`);
@@ -2185,7 +2161,6 @@ Deno.test({
 
     const result = injectDependencies(
       chunk,
-      compilerOptions,
       { root, chunks, logger },
     );
     assertEquals(result, `fetch("/b.js");\n`);
@@ -2223,7 +2198,6 @@ Deno.test({
 
     const result = injectDependencies(
       chunk,
-      compilerOptions,
       { root, chunks, logger },
     );
     assertEquals(result, `navigator.serviceWorker.register("/b.js");\n`);
@@ -2263,7 +2237,6 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
         assertEquals(
@@ -2295,7 +2268,7 @@ Deno.test({
           output: "file:///dist/a.js",
         };
         const chunks: Chunk[] = [];
-        const result = injectDependencies(chunk, compilerOptions, {
+        const result = injectDependencies(chunk, {
           root,
           chunks,
           logger,
@@ -2342,7 +2315,6 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
         assertEquals(
@@ -2376,7 +2348,6 @@ Deno.test({
         const chunks: Chunk[] = [];
         const result = injectDependencies(
           chunk,
-          compilerOptions,
           { root, chunks, logger },
         );
         assertEquals(

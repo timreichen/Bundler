@@ -1,10 +1,8 @@
-import { ts } from "../../../../deps.ts";
 import { assertEquals } from "../../../../test_deps.ts";
+import { isWindows } from "../../../../_util.ts";
 import { injectIdentifiers } from "./inject_identifiers.ts";
 
-const compilerOptions: ts.CompilerOptions = {
-  newLine: ts.NewLineKind.LineFeed,
-};
+const newline = isWindows ? "\r\n" : "\n";
 
 Deno.test({
   name: "variable declaration",
@@ -21,12 +19,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const a = "a", b = "b";\n`,
+          `const a = "a", b = "b";${newline}`,
         );
       },
     });
@@ -42,12 +39,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const a1 = "a", b1 = "b";\n`,
+          `const a1 = "a", b1 = "b";${newline}`,
         );
       },
     });
@@ -64,12 +60,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `let a = "a", b = "b";\n`,
+          `let a = "a", b = "b";${newline}`,
         );
       },
     });
@@ -85,12 +80,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `let a1 = "a", b1 = "b";\n`,
+          `let a1 = "a", b1 = "b";${newline}`,
         );
       },
     });
@@ -107,12 +101,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `var a = "a", b = "b";\n`,
+          `var a = "a", b = "b";${newline}`,
         );
       },
     });
@@ -128,12 +121,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `var a1 = "a", b1 = "b";\n`,
+          `var a1 = "a", b1 = "b";${newline}`,
         );
       },
     });
@@ -152,12 +144,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const [a] = y;\nconsole.log(a);\n`,
+          `const [a] = y;${newline}console.log(a);${newline}`,
         );
       },
     });
@@ -173,12 +164,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const [a1] = y;\nconsole.log(a1);\n`,
+          `const [a1] = y;${newline}console.log(a1);${newline}`,
         );
       },
     });
@@ -197,12 +187,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const { x: a } = y;\nconsole.log(a);\n`,
+          `const { x: a } = y;${newline}console.log(a);${newline}`,
         );
       },
     });
@@ -218,12 +207,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const { x: a1 } = y;\nconsole.log(a1);\n`,
+          `const { x: a1 } = y;${newline}console.log(a1);${newline}`,
         );
       },
     });
@@ -242,12 +230,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `let a = b1;\n`,
+          `let a = b1;${newline}`,
         );
       },
     });
@@ -263,12 +250,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `let a = b;\n`,
+          `let a = b;${newline}`,
         );
       },
     });
@@ -292,12 +278,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `function a() { }\n`,
+          `function a() { }${newline}`,
         );
       },
     });
@@ -313,12 +298,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `function a1() { }\n`,
+          `function a1() { }${newline}`,
         );
       },
     });
@@ -337,12 +321,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `function x(a) { console.log(a); }\n`,
+          `function x(a) { console.log(a); }${newline}`,
         );
       },
     });
@@ -358,12 +341,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `function x(a1) { console.log(a1); }\n`,
+          `function x(a1) { console.log(a1); }${newline}`,
         );
       },
     });
@@ -387,12 +369,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const fn = (a) => { return a; };\n`,
+          `const fn = (a) => { return a; };${newline}`,
         );
       },
     });
@@ -408,12 +389,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const fn = (a1) => { return a1; };\n`,
+          `const fn = (a1) => { return a1; };${newline}`,
         );
       },
     });
@@ -431,12 +411,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const fn = (a) => { const b = (a1) => a1; return a; };\n`,
+          `const fn = (a) => { const b = (a1) => a1; return a; };${newline}`,
         );
       },
     });
@@ -453,12 +432,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const fn = (a1) => { const b = (a2) => a2; return a1; };\n`,
+          `const fn = (a1) => { const b = (a2) => a2; return a1; };${newline}`,
         );
       },
     });
@@ -477,12 +455,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const fn = (a) => a;\n`,
+          `const fn = (a) => a;${newline}`,
         );
       },
     });
@@ -500,12 +477,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const fn = (a1) => a1;\n`,
+          `const fn = (a1) => a1;${newline}`,
         );
       },
     });
@@ -529,12 +505,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class a {\n}\n`,
+          `class a {${newline}}${newline}`,
         );
       },
     });
@@ -550,12 +525,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class a1 {\n}\n`,
+          `class a1 {${newline}}${newline}`,
         );
       },
     });
@@ -573,12 +547,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class A extends B1 {\n}\n`,
+          `class A extends B1 {${newline}}${newline}`,
         );
       },
     });
@@ -596,12 +569,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class A extends B1.C {\n}\n`,
+          `class A extends B1.C {${newline}}${newline}`,
         );
       },
     });
@@ -619,12 +591,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `@b1()\nclass A {\n}\n`,
+          `@b1()${newline}class A {${newline}}${newline}`,
         );
       },
     });
@@ -642,12 +613,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class A {\n    @b1()\n    method() { }\n}\n`,
+          `class A {${newline}    @b1()${newline}    method() { }${newline}}${newline}`,
         );
       },
     });
@@ -665,12 +635,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class A {\n    @b1()\n    property = true;\n}\n`,
+          `class A {${newline}    @b1()${newline}    property = true;${newline}}${newline}`,
         );
       },
     });
@@ -688,12 +657,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class A {\n    b = true;\n}\n`,
+          `class A {${newline}    b = true;${newline}}${newline}`,
         );
       },
     });
@@ -711,12 +679,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class A {\n    static b = true;\n}\n`,
+          `class A {${newline}    static b = true;${newline}}${newline}`,
         );
       },
     });
@@ -740,11 +707,10 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(
           source,
-          `const x = { x() { return a1; } };\n`,
+          `const x = { x() { return a1; } };${newline}`,
         );
       },
     });
@@ -762,12 +728,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const x = { x(a) { return a; } };\n`,
+          `const x = { x(a) { return a; } };${newline}`,
         );
       },
     });
@@ -783,12 +748,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const x = { x(a1) { return a1; } };\n`,
+          `const x = { x(a1) { return a1; } };${newline}`,
         );
       },
     });
@@ -812,11 +776,10 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(
           source,
-          `const x = { get x() { return a1; } };\n`,
+          `const x = { get x() { return a1; } };${newline}`,
         );
       },
     });
@@ -834,12 +797,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const x = { get x(a) { return a; } };\n`,
+          `const x = { get x(a) { return a; } };${newline}`,
         );
       },
     });
@@ -855,12 +817,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const x = { get x(a1) { return a1; } };\n`,
+          `const x = { get x(a1) { return a1; } };${newline}`,
         );
       },
     });
@@ -884,11 +845,10 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
         assertEquals(
           source,
-          `const x = { set x() { return a1; } };\n`,
+          `const x = { set x() { return a1; } };${newline}`,
         );
       },
     });
@@ -906,12 +866,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const x = { set x(a) { return a; } };\n`,
+          `const x = { set x(a) { return a; } };${newline}`,
         );
       },
     });
@@ -927,12 +886,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const x = { set x(a1) { return a1; } };\n`,
+          `const x = { set x(a1) { return a1; } };${newline}`,
         );
       },
     });
@@ -956,12 +914,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class A {\n    constructor() { this.b = b1; }\n}\n`,
+          `class A {${newline}    constructor() { this.b = b1; }${newline}}${newline}`,
         );
       },
     });
@@ -979,12 +936,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class A {\n    constructor(b) { this.b = b; }\n}\n`,
+          `class A {${newline}    constructor(b) { this.b = b; }${newline}}${newline}`,
         );
       },
     });
@@ -1000,12 +956,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `class A {\n    constructor(b1) { this.b = b1; }\n}\n`,
+          `class A {${newline}    constructor(b1) { this.b = b1; }${newline}}${newline}`,
         );
       },
     });
@@ -1029,12 +984,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          "a1 `something`;\n",
+          `a1 \`something\`;${newline}`,
         );
       },
     });
@@ -1058,12 +1012,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `export enum a {\n}\n`,
+          `export enum a {${newline}}${newline}`,
         );
       },
     });
@@ -1079,12 +1032,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `export enum a1 {\n}\n`,
+          `export enum a1 {${newline}}${newline}`,
         );
       },
     });
@@ -1108,12 +1060,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `[a1, b, c];\n`,
+          `[a1, b, c];${newline}`,
         );
       },
     });
@@ -1132,12 +1083,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `console.log({ a1, A: a1, b, c });\n`,
+          `console.log({ a1, A: a1, b, c });${newline}`,
         );
       },
     });
@@ -1156,12 +1106,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const x = a1.b;\n`,
+          `const x = a1.b;${newline}`,
         );
       },
     });
@@ -1180,12 +1129,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `console.log(log1);\n`,
+          `console.log(log1);${newline}`,
         );
       },
     });
@@ -1204,12 +1152,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const x = [a1];\n`,
+          `const x = [a1];${newline}`,
         );
       },
     });
@@ -1228,12 +1175,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const x = a1["b"];\n`,
+          `const x = a1["b"];${newline}`,
         );
       },
     });
@@ -1252,12 +1198,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `a1 += a1;\n`,
+          `a1 += a1;${newline}`,
         );
       },
     });
@@ -1275,12 +1220,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `(a1, b, c);\n`,
+          `(a1, b, c);${newline}`,
         );
       },
     });
@@ -1298,12 +1242,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `(a1 = b);\n`,
+          `(a1 = b);${newline}`,
         );
       },
     });
@@ -1321,12 +1264,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `a1 = b1 ? c1 : d1;\n`,
+          `a1 = b1 ? c1 : d1;${newline}`,
         );
       },
     });
@@ -1344,12 +1286,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `!a1;\n`,
+          `!a1;${newline}`,
         );
       },
     });
@@ -1367,12 +1308,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `a1++;\n`,
+          `a1++;${newline}`,
         );
       },
     });
@@ -1390,12 +1330,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `a1 ? a1 : a1;\n`,
+          `a1 ? a1 : a1;${newline}`,
         );
       },
     });
@@ -1414,12 +1353,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `new a1();\n`,
+          `new a1();${newline}`,
         );
       },
     });
@@ -1438,12 +1376,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `new a1();\n`,
+          `new a1();${newline}`,
         );
       },
     });
@@ -1462,12 +1399,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `new x(a1);\n`,
+          `new x(a1);${newline}`,
         );
       },
     });
@@ -1490,12 +1426,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `a1();\n`,
+          `a1();${newline}`,
         );
       },
     });
@@ -1513,12 +1448,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `x(a1);\n`,
+          `x(a1);${newline}`,
         );
       },
     });
@@ -1537,12 +1471,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const a = "a";\n((a1) => { return a1; })(a);\n`,
+          `const a = "a";${newline}((a1) => { return a1; })(a);${newline}`,
         );
       },
     });
@@ -1560,12 +1493,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const a1 = "a";\n((a2) => { return a2; })(a1);\n`,
+          `const a1 = "a";${newline}((a2) => { return a2; })(a1);${newline}`,
         );
       },
     });
@@ -1584,12 +1516,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `const a1 = "a";\n((a2) => { console.log(a1); return a2; })(a1);\n`,
+          `const a1 = "a";${newline}((a2) => { console.log(a1); return a2; })(a1);${newline}`,
         );
       },
     });
@@ -1613,12 +1544,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `return a1;\n`,
+          `return a1;${newline}`,
         );
       },
     });
@@ -1636,12 +1566,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `if (a1) { }\nelse if (a1) { }\n`,
+          `if (a1) { }${newline}else if (a1) { }${newline}`,
         );
       },
     });
@@ -1659,12 +1588,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `switch (a1) {\n}\n`,
+          `switch (a1) {${newline}}${newline}`,
         );
       },
     });
@@ -1682,12 +1610,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `switch (b) {\n    case a1: { }\n}\n`,
+          `switch (b) {${newline}    case a1: { }${newline}}${newline}`,
         );
       },
     });
@@ -1706,12 +1633,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `while (a1) { }\n`,
+          `while (a1) { }${newline}`,
         );
       },
     });
@@ -1730,12 +1656,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `do { } while (a1);\n`,
+          `do { } while (a1);${newline}`,
         );
       },
     });
@@ -1754,12 +1679,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `for (let a = 0; a < a; a++) { }\n`,
+          `for (let a = 0; a < a; a++) { }${newline}`,
         );
       },
     });
@@ -1775,12 +1699,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `for (let a1 = 0; a1 < a1; a1++) { }\n`,
+          `for (let a1 = 0; a1 < a1; a1++) { }${newline}`,
         );
       },
     });
@@ -1799,12 +1722,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `for (a1 of a2) { }\n`,
+          `for (a1 of a2) { }${newline}`,
         );
       },
     });
@@ -1823,12 +1745,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `for (a1 in a2) { }\n`,
+          `for (a1 in a2) { }${newline}`,
         );
       },
     });
@@ -1852,12 +1773,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `export { a1 };\n`,
+          `export { a1 };${newline}`,
         );
       },
     });
@@ -1873,12 +1793,11 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
-          compilerOptions,
         );
 
         assertEquals(
           source,
-          `export { a };\n`,
+          `export { a };${newline}`,
         );
       },
     });

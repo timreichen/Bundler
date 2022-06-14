@@ -271,8 +271,7 @@ Deno.test({
               source: 'export const b = "b";\n',
             },
           ],
-          output:
-            "file:///dist/73617db6b7cc169d9880bf262c334bab989bb83ca4050264a7fd7e79c9579dd4.js",
+          output: await plugin.createOutput(a, "dist", ".js"),
         });
       },
     });
@@ -324,8 +323,7 @@ Deno.test({
               type: DependencyType.ImportExport,
             },
           ],
-          output:
-            "file:///dist/7c73a4e48a92bf09ae88a5ba220d6f68a5ae634f5447c8617b35c19c90554951.js",
+          output: await plugin.createOutput(a, "dist", ".js"),
         });
       },
     });
@@ -378,8 +376,7 @@ Deno.test({
                 'import { a } from "./a.ts";\n\nconsole.log(a);\n\nexport const b = "b";\n',
             },
           ],
-          output:
-            "file:///dist/e5e6b50d3a820edecb2e4674aa65f925887e6627b23392eab02fdccc7f387582.js",
+          output: await plugin.createOutput(a, "dist", ".js"),
         });
       },
     });
@@ -432,8 +429,7 @@ Deno.test({
                 'import { b } from "./b.ts";\n\nconsole.log(b);\n\nexport const a = "a";\n',
             },
           ],
-          output:
-            "file:///dist/270d0205bc4298fa83012c97628ed5b30dd2e39a7d9ecfe73884e06245c59ef7.js",
+          output: await plugin.createOutput(b, "dist", ".js"),
         });
       },
     });
@@ -484,8 +480,7 @@ Deno.test({
               source: 'export const b = "b";\n',
             },
           ],
-          output:
-            "file:///dist/44183887a9c72a7ed9a8e01114210e170b07faf9e7d2eb7d4815d3536390776b.js",
+          output: await plugin.createOutput(a, "dist", ".js"),
         });
       },
     });
@@ -525,8 +520,7 @@ Deno.test({
             source: 'const b = await fetch("./b.ts");\nconsole.log(b);\n',
           },
           dependencyItems: [],
-          output:
-            "file:///dist/ec42f7d24424d9f45cbceb255b43395234edda32938a3d4f6c2e3eca60bc174f.js",
+          output: await plugin.createOutput(a, "dist", ".js"),
         });
       },
     });
@@ -546,8 +540,7 @@ Deno.test({
         const bundles = await bundler.createBundles(chunks);
         assertEquals(bundles, [
           {
-            output:
-              "file:///dist/110d55de4196564d60bddda37af5e920bd8acce3c57baece085c57d002e401e9.js",
+            output: await plugin.createOutput(a, "dist", ".js"),
             source: 'console.log("hello world");\n',
           },
         ]);
@@ -566,8 +559,7 @@ Deno.test({
 
         assertEquals(bundles, [
           {
-            output:
-              "file:///dist/73617db6b7cc169d9880bf262c334bab989bb83ca4050264a7fd7e79c9579dd4.js",
+            output: await plugin.createOutput(a, "dist", ".js"),
             source: 'const b = "b";\nconsole.log(b);\n',
           },
         ]);

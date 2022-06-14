@@ -3,6 +3,7 @@ import { Bundler } from "../../bundler.ts";
 import { Asset, DependencyFormat, DependencyType } from "../plugin.ts";
 import { CSSPlugin } from "./css_plugin.ts";
 import { path } from "../../deps.ts";
+import { isWindows } from "../../_util.ts";
 
 const plugin = new CSSPlugin();
 
@@ -10,6 +11,8 @@ const bundler = new Bundler({ plugins: [plugin], quiet: true });
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "../../testdata");
+
+const newline = isWindows ? "\r\n" : "\n";
 
 Deno.test({
   name: "test",
@@ -42,7 +45,8 @@ Deno.test({
             },
           ],
           exports: {},
-          source: '@import "./b.css";\n\nh1 {\n  font-family: Helvetica;\n}',
+          source:
+            `@import "./b.css";${newline}${newline}h1 {${newline}  font-family: Helvetica;${newline}}`,
         });
       },
     });
@@ -68,7 +72,8 @@ Deno.test({
             },
           ],
           exports: {},
-          source: 'div {\n  background-image: url("./image.png");\n}',
+          source:
+            `div {${newline}  background-image: url("./image.png");${newline}}`,
         });
       },
     });
@@ -84,7 +89,8 @@ Deno.test({
           format: DependencyFormat.Style,
           dependencies: [],
           exports: {},
-          source: "\n  div > h1 {\n    font-family: Helvetica;\n  }",
+          source:
+            `${newline}  div > h1 {${newline}    font-family: Helvetica;${newline}  }`,
         }]);
       },
     });
@@ -129,13 +135,14 @@ Deno.test({
               format: DependencyFormat.Style,
               input: b,
               type: DependencyType.ImportExport,
-              source: `h1 {\n  color: green;\n}`,
+              source: `h1 {${newline}  color: green;${newline}}`,
             },
           ],
           item: {
             format: DependencyFormat.Style,
             input: a,
-            source: '@import "./b.css";\n\nh1 {\n  font-family: Helvetica;\n}',
+            source:
+              `@import "./b.css";${newline}${newline}h1 {${newline}  font-family: Helvetica;${newline}}`,
             type: DependencyType.ImportExport,
           },
           output: await plugin.createOutput(a, "dist", ".css"),
@@ -182,7 +189,8 @@ Deno.test({
           item: {
             format: DependencyFormat.Style,
             input: a,
-            source: 'div {\n  background-image: url("./image.png");\n}',
+            source:
+              `div {${newline}  background-image: url("./image.png");${newline}}`,
             type: DependencyType.ImportExport,
           },
           output: await plugin.createOutput(a, "dist", ".css"),
@@ -228,7 +236,7 @@ Deno.test({
         assertEquals(bundle, {
           output: await plugin.createOutput(a, "dist", ".css"),
           source:
-            "h1 {\n  color: green;\n}\n\nh1 {\n  font-family: Helvetica;\n}",
+            `h1 {${newline}  color: green;${newline}}${newline}${newline}h1 {${newline}  font-family: Helvetica;${newline}}`,
         });
       },
     });
@@ -273,7 +281,7 @@ Deno.test({
         assertEquals(bundle, {
           output: await plugin.createOutput(a, "dist", ".css"),
           source:
-            "h1 {\n  color: green;\n}\n\nh1 {\n  font-family: Helvetica;\n}",
+            `h1 {${newline}  color: green;${newline}}${newline}${newline}h1 {${newline}  font-family: Helvetica;${newline}}`,
         });
       },
     });
@@ -315,7 +323,8 @@ Deno.test({
 
         assertEquals(bundle, {
           output: await plugin.createOutput(a, "dist", ".css"),
-          source: 'div {\n  background-image: url("/image.png");\n}',
+          source:
+            `div {${newline}  background-image: url("/image.png");${newline}}`,
         });
       },
     });

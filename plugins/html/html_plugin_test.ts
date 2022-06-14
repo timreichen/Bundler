@@ -3,6 +3,7 @@ import { Bundler } from "../../bundler.ts";
 import { Asset, DependencyFormat, DependencyType } from "../plugin.ts";
 import { HTMLPlugin } from "./html_plugin.ts";
 import { path } from "../../deps.ts";
+import { isWindows } from "../../_util.ts";
 
 const plugin = new HTMLPlugin();
 
@@ -10,6 +11,8 @@ const bundler = new Bundler({ plugins: [plugin], quiet: true });
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "../../testdata");
+
+const newline = isWindows ? "\r\n" : "\n";
 
 Deno.test({
   name: "test",
@@ -46,7 +49,7 @@ Deno.test({
           ],
           exports: {},
           source:
-            '<html>\n  <head>\n    <script src="index.ts"></script>\n  </head>\n  <body>\n  </body>\n</html>',
+            `<html>${newline}  <head>${newline}    <script src="index.ts"></script>${newline}  </head>${newline}  <body>${newline}  </body>${newline}</html>`,
         });
       },
     });
@@ -74,7 +77,7 @@ Deno.test({
           ],
           exports: {},
           source:
-            '<html>\n  <head>\n    <link rel="stylesheet" href="style.css">\n  </head>\n  <body>\n  </body>\n</html>',
+            `<html>${newline}  <head>${newline}    <link rel="stylesheet" href="style.css">${newline}  </head>${newline}  <body>${newline}  </body>${newline}</html>`,
         });
       },
     });
@@ -101,7 +104,7 @@ Deno.test({
             format: DependencyFormat.Html,
             input: a,
             source:
-              '<html>\n  <head>\n    <script src="index.ts"></script>\n  </head>\n  <body>\n  </body>\n</html>',
+              `<html>${newline}  <head>${newline}    <script src="index.ts"></script>${newline}  </head>${newline}  <body>${newline}  </body>${newline}</html>`,
             type: DependencyType.ImportExport,
           },
           output: await plugin.createOutput(a, "dist", ".html"),
@@ -126,7 +129,7 @@ Deno.test({
             format: DependencyFormat.Html,
             input: a,
             source:
-              '<html>\n  <head>\n    <link rel="stylesheet" href="style.css">\n  </head>\n  <body>\n  </body>\n</html>',
+              `<html>${newline}  <head>${newline}    <link rel="stylesheet" href="style.css">${newline}  </head>${newline}  <body>${newline}  </body>${newline}</html>`,
             type: DependencyType.ImportExport,
           },
           output: await plugin.createOutput(a, "dist", ".html"),
@@ -168,7 +171,7 @@ Deno.test({
         assertEquals(bundle, {
           output: await plugin.createOutput(a, "dist", ".html"),
           source:
-            '<html>\n  <head>\n    <script src="/index.js"></script>\n  </head>\n  <body>\n  </body>\n</html>',
+            `<html>${newline}  <head>${newline}    <script src="/index.js"></script>${newline}  </head>${newline}  <body>${newline}  </body>${newline}</html>`,
         });
       },
     });

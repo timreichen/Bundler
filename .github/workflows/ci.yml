@@ -14,10 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         deno: [canary]
-        os:
-          - ${{ github.repository_owner == 'timreichen' && 'ubuntu-20.04-xl' || 'ubuntu-20.04' }}
-          - ${{ github.repository_owner == 'timreichen' && 'windows-2019-xl' || 'windows-2019' }}
-          - macOS-latest
+        os: ['ubuntu-latest', 'windows-latest', 'macOS-latest']
 
     steps:
       - name: Clone repository
@@ -34,7 +31,7 @@ jobs:
         run: deno task test
 
   lint:
-    runs-on: ${{ github.repository_owner == 'timreichen' && 'ubuntu-20.04-xl' || 'ubuntu-20.04' }}
+    runs-on: ubuntu-latest
     steps:
       - name: Clone repository
         uses: actions/checkout@v2

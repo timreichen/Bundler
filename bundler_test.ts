@@ -990,15 +990,15 @@ Deno.test({
             ".webmanifest",
           ),
           source:
-            `{${newline} "theme_color": "#0596fa",${newline} "background_color": "#0596fa",${newline} "display": "standalone",${newline} "scope": "/",${newline} "start_url": "/",${newline} "name": "Bundler",${newline} "short_name": "Bundler",${newline} "icons": [${newline}  {${newline}   "src": "/${
+            `{\n "theme_color": "#0596fa",\n "background_color": "#0596fa",\n "display": "standalone",\n "scope": "/",\n "start_url": "/",\n "name": "Bundler",\n "short_name": "Bundler",\n "icons": [\n  {\n   "src": "/${
               path.relative(path.dirname(manifestOutput), imageOutput1)
-            }",${newline}   "sizes": "192x192",${newline}   "type": "image/png"${newline}  },${newline}  {${newline}   "src": "/${
+            }",\n   "sizes": "192x192",\n   "type": "image/png"\n  },\n  {\n   "src": "/${
               path.relative(path.dirname(manifestOutput), imageOutput2)
-            }",${newline}   "sizes": "256x256",${newline}   "type": "image/png"${newline}  },${newline}  {${newline}   "src": "/${
+            }",\n   "sizes": "256x256",\n   "type": "image/png"\n  },\n  {\n   "src": "/${
               path.relative(path.dirname(manifestOutput), imageOutput3)
-            }",${newline}   "sizes": "384x384",${newline}   "type": "image/png"${newline}  },${newline}  {${newline}   "src": "/${
+            }",\n   "sizes": "384x384",\n   "type": "image/png"\n  },\n  {\n   "src": "/${
               path.relative(path.dirname(manifestOutput), imageOutput4)
-            }",${newline}   "sizes": "512x512",${newline}   "type": "image/png"${newline}  }${newline} ]${newline}}`,
+            }",\n   "sizes": "512x512",\n   "type": "image/png"\n  }\n ]\n}`,
         });
       },
     });

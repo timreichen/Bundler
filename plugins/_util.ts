@@ -72,7 +72,7 @@ export function createRelativeOutput(output: string, root: string) {
   const href = new URL(output, "file://").href;
   root = new URL(root, "file://").href;
 
-  return "/" + path.relative(root, href);
+  return "/" + path.posix.relative(root, href);
 }
 
 export function getAsset(

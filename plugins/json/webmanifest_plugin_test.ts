@@ -3,12 +3,15 @@ import { Bundler } from "../../bundler.ts";
 import { Asset, Chunk, DependencyFormat, DependencyType } from "../plugin.ts";
 import { WebManifestPlugin } from "./webmanifest_plugin.ts";
 import { path } from "../../deps.ts";
+import { isWindows } from "../../_util.ts";
 
 const plugin = new WebManifestPlugin();
 const bundler = new Bundler({ plugins: [plugin], quiet: true });
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "../../testdata");
+
+const newline = isWindows ? "\r\n" : "\n";
 
 Deno.test({
   name: "test",
@@ -83,7 +86,7 @@ Deno.test({
       ],
       exports: {},
       source:
-        `{\n  "name": "HackerWeb",\n  "short_name": "HackerWeb",\n  "start_url": ".",\n  "display": "standalone",\n  "background_color": "#fff",\n  "description": "Eine einfach lesbare Hacker News App.",\n  "icons": [{\n    "src": "images/touch/homescreen48.png",\n    "sizes": "48x48",\n    "type": "image/png"\n  }, {\n    "src": "images/touch/homescreen72.png",\n    "sizes": "72x72",\n    "type": "image/png"\n  }, {\n    "src": "images/touch/homescreen96.png",\n    "sizes": "96x96",\n    "type": "image/png"\n  }, {\n    "src": "images/touch/homescreen144.png",\n    "sizes": "144x144",\n    "type": "image/png"\n  }, {\n    "src": "images/touch/homescreen168.png",\n    "sizes": "168x168",\n    "type": "image/png"\n  }, {\n    "src": "images/touch/homescreen192.png",\n    "sizes": "192x192",\n    "type": "image/png"\n  }],\n  "related_applications": [{\n    "platform": "Web"\n  }, {\n    "platform": "play",\n    "url": "https://play.google.com/store/apps/details?id=cheeaun.hackerweb"\n  }]\n}\n`,
+        `{${newline}  "name": "HackerWeb",${newline}  "short_name": "HackerWeb",${newline}  "start_url": ".",${newline}  "display": "standalone",${newline}  "background_color": "#fff",${newline}  "description": "Eine einfach lesbare Hacker News App.",${newline}  "icons": [{${newline}    "src": "images/touch/homescreen48.png",${newline}    "sizes": "48x48",${newline}    "type": "image/png"${newline}  }, {${newline}    "src": "images/touch/homescreen72.png",${newline}    "sizes": "72x72",${newline}    "type": "image/png"${newline}  }, {${newline}    "src": "images/touch/homescreen96.png",${newline}    "sizes": "96x96",${newline}    "type": "image/png"${newline}  }, {${newline}    "src": "images/touch/homescreen144.png",${newline}    "sizes": "144x144",${newline}    "type": "image/png"${newline}  }, {${newline}    "src": "images/touch/homescreen168.png",${newline}    "sizes": "168x168",${newline}    "type": "image/png"${newline}  }, {${newline}    "src": "images/touch/homescreen192.png",${newline}    "sizes": "192x192",${newline}    "type": "image/png"${newline}  }],${newline}  "related_applications": [{${newline}    "platform": "Web"${newline}  }, {${newline}    "platform": "play",${newline}    "url": "https://play.google.com/store/apps/details?id=cheeaun.hackerweb"${newline}  }]${newline}}${newline}`,
     });
   },
 });
@@ -103,7 +106,7 @@ Deno.test({
         format: DependencyFormat.Json,
         input: a,
         source:
-          `{\n  "name": "HackerWeb",\n  "short_name": "HackerWeb",\n  "start_url": ".",\n  "display": "standalone",\n  "background_color": "#fff",\n  "description": "Eine einfach lesbare Hacker News App.",\n  "icons": [{\n    "src": "images/touch/homescreen48.png",\n    "sizes": "48x48",\n    "type": "image/png"\n  }, {\n    "src": "images/touch/homescreen72.png",\n    "sizes": "72x72",\n    "type": "image/png"\n  }, {\n    "src": "images/touch/homescreen96.png",\n    "sizes": "96x96",\n    "type": "image/png"\n  }, {\n    "src": "images/touch/homescreen144.png",\n    "sizes": "144x144",\n    "type": "image/png"\n  }, {\n    "src": "images/touch/homescreen168.png",\n    "sizes": "168x168",\n    "type": "image/png"\n  }, {\n    "src": "images/touch/homescreen192.png",\n    "sizes": "192x192",\n    "type": "image/png"\n  }],\n  "related_applications": [{\n    "platform": "Web"\n  }, {\n    "platform": "play",\n    "url": "https://play.google.com/store/apps/details?id=cheeaun.hackerweb"\n  }]\n}\n`,
+          `{${newline}  "name": "HackerWeb",${newline}  "short_name": "HackerWeb",${newline}  "start_url": ".",${newline}  "display": "standalone",${newline}  "background_color": "#fff",${newline}  "description": "Eine einfach lesbare Hacker News App.",${newline}  "icons": [{${newline}    "src": "images/touch/homescreen48.png",${newline}    "sizes": "48x48",${newline}    "type": "image/png"${newline}  }, {${newline}    "src": "images/touch/homescreen72.png",${newline}    "sizes": "72x72",${newline}    "type": "image/png"${newline}  }, {${newline}    "src": "images/touch/homescreen96.png",${newline}    "sizes": "96x96",${newline}    "type": "image/png"${newline}  }, {${newline}    "src": "images/touch/homescreen144.png",${newline}    "sizes": "144x144",${newline}    "type": "image/png"${newline}  }, {${newline}    "src": "images/touch/homescreen168.png",${newline}    "sizes": "168x168",${newline}    "type": "image/png"${newline}  }, {${newline}    "src": "images/touch/homescreen192.png",${newline}    "sizes": "192x192",${newline}    "type": "image/png"${newline}  }],${newline}  "related_applications": [{${newline}    "platform": "Web"${newline}  }, {${newline}    "platform": "play",${newline}    "url": "https://play.google.com/store/apps/details?id=cheeaun.hackerweb"${newline}  }]${newline}}${newline}`,
         type: DependencyType.WebManifest,
       },
       output: await plugin.createOutput(a, "dist", ".json"),
@@ -204,7 +207,7 @@ Deno.test({
 
       assertEquals(bundle, {
         source:
-          `{\n "name": "HackerWeb",\n "short_name": "HackerWeb",\n "start_url": ".",\n "display": "standalone",\n "background_color": "#fff",\n "description": "Eine einfach lesbare Hacker News App.",\n "icons": [\n  {\n   "src": "/homescreen48.png",\n   "sizes": "48x48",\n   "type": "image/png"\n  },\n  {\n   "src": "/homescreen72.png",\n   "sizes": "72x72",\n   "type": "image/png"\n  },\n  {\n   "src": "/homescreen96.png",\n   "sizes": "96x96",\n   "type": "image/png"\n  },\n  {\n   "src": "/homescreen144.png",\n   "sizes": "144x144",\n   "type": "image/png"\n  },\n  {\n   "src": "/homescreen168.png",\n   "sizes": "168x168",\n   "type": "image/png"\n  },\n  {\n   "src": "/homescreen192.png",\n   "sizes": "192x192",\n   "type": "image/png"\n  }\n ],\n "related_applications": [\n  {\n   "platform": "Web"\n  },\n  {\n   "platform": "play",\n   "url": "https://play.google.com/store/apps/details?id=cheeaun.hackerweb"\n  }\n ]\n}`,
+          `{${newline} "name": "HackerWeb",${newline} "short_name": "HackerWeb",${newline} "start_url": ".",${newline} "display": "standalone",${newline} "background_color": "#fff",${newline} "description": "Eine einfach lesbare Hacker News App.",${newline} "icons": [${newline}  {${newline}   "src": "/homescreen48.png",${newline}   "sizes": "48x48",${newline}   "type": "image/png"${newline}  },${newline}  {${newline}   "src": "/homescreen72.png",${newline}   "sizes": "72x72",${newline}   "type": "image/png"${newline}  },${newline}  {${newline}   "src": "/homescreen96.png",${newline}   "sizes": "96x96",${newline}   "type": "image/png"${newline}  },${newline}  {${newline}   "src": "/homescreen144.png",${newline}   "sizes": "144x144",${newline}   "type": "image/png"${newline}  },${newline}  {${newline}   "src": "/homescreen168.png",${newline}   "sizes": "168x168",${newline}   "type": "image/png"${newline}  },${newline}  {${newline}   "src": "/homescreen192.png",${newline}   "sizes": "192x192",${newline}   "type": "image/png"${newline}  }${newline} ],${newline} "related_applications": [${newline}  {${newline}   "platform": "Web"${newline}  },${newline}  {${newline}   "platform": "play",${newline}   "url": "https://play.google.com/store/apps/details?id=cheeaun.hackerweb"${newline}  }${newline} ]${newline}}`,
         output: await plugin.createOutput(a, "dist", ".json"),
       });
     });

@@ -3,12 +3,15 @@ import { Bundler } from "../../bundler.ts";
 import { Asset, DependencyFormat, DependencyType } from "../plugin.ts";
 import { JSONPlugin } from "./json_plugin.ts";
 import { path } from "../../deps.ts";
+import { isWindows } from "../../_util.ts";
 
 const plugin = new JSONPlugin();
 const bundler = new Bundler({ plugins: [plugin], quiet: true });
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "../../testdata");
+
+const newline = isWindows ? "\r\n" : "\n";
 
 Deno.test({
   name: "test",
@@ -30,7 +33,7 @@ Deno.test({
       format: DependencyFormat.Json,
       dependencies: [],
       exports: {},
-      source: '{\n  "foo": "bar"\n}\n',
+      source: `{${newline}  "foo": "bar"${newline}}${newline}`,
     });
   },
 });
@@ -47,7 +50,7 @@ Deno.test({
       item: {
         format: DependencyFormat.Json,
         input: a,
-        source: '{\n  "foo": "bar"\n}\n',
+        source: `{${newline}  "foo": "bar"${newline}}${newline}`,
         type: DependencyType.ImportExport,
       },
       output: await plugin.createOutput(a, "dist", ".json"),
@@ -66,7 +69,7 @@ Deno.test({
       const chunk = await bundler.createChunk(asset, chunkAssets);
       const bundle = await bundler.createBundle(chunk);
       assertEquals(bundle, {
-        source: '{\n  "foo": "bar"\n}\n',
+        source: `{${newline}  "foo": "bar"${newline}}${newline}`,
         output: await plugin.createOutput(a, "dist", ".json"),
       });
     });
@@ -78,7 +81,7 @@ Deno.test({
       const chunk = await bundler.createChunk(asset, chunkAssets);
       const bundle = await bundler.createBundle(chunk, { optimize: true });
       assertEquals(bundle, {
-        source: '{"foo":"bar"}',
+        source: `{"foo":"bar"}`,
         output: await plugin.createOutput(a, "dist", ".json"),
       });
     });

@@ -7,16 +7,20 @@ import { TypescriptPlugin } from "./plugins/typescript/typescript_plugin.ts";
 import { WebManifestPlugin } from "./plugins/json/webmanifest_plugin.ts";
 import { HTMLPlugin } from "./plugins/html/html_plugin.ts";
 import { FilePlugin } from "./plugins/file/file.ts";
-import { path, resolveImportMap } from "./deps.ts";
+import { path, resolveImportMap, ts } from "./deps.ts";
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "testdata");
 
 const typescriptPlugin = new TypescriptPlugin();
 
+const compilerOptions: ts.CompilerOptions = {
+  newLine: ts.NewLineKind.LineFeed,
+};
+
 const bundler = new Bundler({
   plugins: [
-    new TypescriptPlugin(),
+    new TypescriptPlugin(compilerOptions),
     new CSSPlugin(),
     new JSONPlugin(),
     new HTMLPlugin(),

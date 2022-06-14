@@ -2,9 +2,12 @@ import { assertEquals } from "../../test_deps.ts";
 import { Bundler } from "../../bundler.ts";
 import { Asset, DependencyFormat, DependencyType } from "../plugin.ts";
 import { TypescriptPlugin } from "./typescript_plugin.ts";
-import { path } from "../../deps.ts";
+import { path, ts } from "../../deps.ts";
 
-const plugin = new TypescriptPlugin();
+const compilerOptions: ts.CompilerOptions = {
+  newLine: ts.NewLineKind.LineFeed,
+};
+const plugin = new TypescriptPlugin(compilerOptions);
 
 const bundler = new Bundler({ plugins: [plugin], quiet: true });
 
@@ -14,7 +17,6 @@ const testdataDir = path.resolve(moduleDir, "../../testdata");
 Deno.test({
   name: "test",
   fn() {
-    const plugin = new TypescriptPlugin();
     assertEquals(plugin.test(".js", DependencyType.ImportExport), true);
     assertEquals(plugin.test(".ts", DependencyType.ImportExport), true);
     assertEquals(plugin.test(".jsx", DependencyType.ImportExport), true);

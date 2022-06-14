@@ -29,16 +29,6 @@ import {
 import { Asset, Bundle, Chunk } from "./plugins/plugin.ts";
 import { Logger } from "./log/logger.ts";
 
-const plugins = [
-  new HTMLPlugin(),
-  new CSSPlugin(),
-  new TypescriptPlugin(),
-  new JSONPlugin(),
-  new WebManifestPlugin(),
-  new TerserPlugin(),
-  new FilePlugin(),
-];
-
 async function writeBundles(bundler: Bundler, bundles: Bundle[]) {
   const time = performance.now();
   for (const bundle of bundles) {
@@ -159,7 +149,7 @@ async function bundleCommand(args: flags.Args) {
     config,
   } = parseBundleArgs(args);
 
-  let compilerOptions: ts.CompilerOptions;
+  let compilerOptions: ts.CompilerOptions = {};
   let importMap: ImportMap;
 
   const denoJsonPath = path.join(Deno.cwd(), "deno.json");
@@ -186,6 +176,16 @@ async function bundleCommand(args: flags.Args) {
       new URL(resolvedImportMapPath, "file://"),
     );
   }
+
+  const plugins = [
+    new HTMLPlugin(),
+    new CSSPlugin(),
+    new TypescriptPlugin(compilerOptions),
+    new JSONPlugin(),
+    new WebManifestPlugin(),
+    new TerserPlugin(),
+    new FilePlugin(),
+  ];
 
   const bundler = new Bundler({ plugins, logLevel, quiet });
 
@@ -239,7 +239,6 @@ async function bundleCommand(args: flags.Args) {
       assets: Object.values(cachedAssets),
       chunks: Object.values(cachedChunks),
       importMap,
-      compilerOptions,
     });
 
     cachedAssets = {

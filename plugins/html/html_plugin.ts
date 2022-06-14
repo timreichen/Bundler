@@ -17,16 +17,6 @@ export class HTMLPlugin extends TextFilePlugin {
   test(input: string, _type: DependencyType) {
     return input.endsWith(".html");
   }
-  // async transformSource(
-  //   input: string,
-  //   source: string
-  // ) {
-  //   const { html } = await posthtml([
-  //     posthtmlInjectDependenciesPlugin(input),
-  //   ])
-  //     .process(source);
-  //   return html;
-  // }
 
   async createAsset(
     input: string,

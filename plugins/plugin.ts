@@ -1,5 +1,5 @@
 import { Bundler } from "../bundler.ts";
-import { colors, ImportMap, ts } from "../deps.ts";
+import { colors, ImportMap } from "../deps.ts";
 import { timestamp } from "../_util.ts";
 
 export enum DependencyType {
@@ -69,7 +69,6 @@ export interface CreateAssetsContext extends Context {
   importMap?: ImportMap;
   reload?: boolean | string[];
   assets?: Asset[];
-  compilerOptions?: ts.CompilerOptions;
 }
 export interface CreateAssetContext extends CreateAssetsContext {
   assets: Asset[];

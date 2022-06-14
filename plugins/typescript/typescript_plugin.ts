@@ -37,6 +37,11 @@ const defaultCompilerOptions: ts.CompilerOptions = {
 };
 
 export class TypescriptPlugin extends TextFilePlugin {
+  #compilerOptions: ts.CompilerOptions;
+  constructor(compilerOptions: ts.CompilerOptions = {}) {
+    super();
+    this.#compilerOptions = compilerOptions;
+  }
   test(input: string, _type: DependencyType) {
     return /\.(t|j)sx?$/.test(input) ||
       (
@@ -69,10 +74,10 @@ export class TypescriptPlugin extends TextFilePlugin {
     context: CreateAssetContext,
   ) {
     const source = await this.createSource(input, context) as string;
-    const { importMap, compilerOptions } = context;
+    const { importMap } = context;
     const { dependencies, exports } = await extractDependencies(input, source, {
       importMap,
-      compilerOptions,
+      compilerOptions: this.#compilerOptions,
     });
 
     return {
@@ -204,9 +209,7 @@ export class TypescriptPlugin extends TextFilePlugin {
     if (/\.tsx?$/.test(input)) {
       const tsCompilerOptions: ts.CompilerOptions = {
         ...defaultCompilerOptions,
-        ...ts.convertCompilerOptionsFromJson({
-          compilerOptions: context.compilerOptions || {},
-        }, Deno.cwd()).options,
+        ...this.#compilerOptions,
       };
 
       source = ts.transpile(source as string, tsCompilerOptions, input);
@@ -222,10 +225,14 @@ export class TypescriptPlugin extends TextFilePlugin {
   createBundle(chunk: Chunk, context: CreateBundleContext) {
     let source = chunk.item.source as string;
 
-    source = injectDependencies(chunk, {
-      ...context,
-      logger: context.bundler.logger,
-    });
+    source = injectDependencies(
+      chunk,
+      this.#compilerOptions,
+      {
+        ...context,
+        logger: context.bundler.logger,
+      },
+    );
 
     return {
       source,

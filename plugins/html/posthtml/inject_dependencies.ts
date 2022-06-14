@@ -1,7 +1,7 @@
 import { isURL } from "../../../_util.ts";
 import { getBase, resolveBase } from "../_util.ts";
 import { Chunk, DependencyFormat, DependencyType } from "../../plugin.ts";
-import { ImportMap, postcss, posthtml } from "../../../deps.ts";
+import { ImportMap, postcss, posthtml, ts } from "../../../deps.ts";
 import { postcssInjectDependenciesPlugin } from "../../css/postcss/inject_dependencies.ts";
 import {
   createRelativeOutput,
@@ -11,11 +11,12 @@ import {
 
 function posthtmlInjectDependencies(
   input: string,
-  { use = [], root, chunks, importMap }: {
+  { use = [], root, chunks, importMap, compilerOptions: _compilerOptions }: {
     root: string;
     chunks: Chunk[];
     importMap?: ImportMap;
     use?: postcss.Plugin[];
+    compilerOptions?: ts.CompilerOptions;
   },
 ) {
   return (tree: posthtml.Node) => {
@@ -48,6 +49,10 @@ function posthtmlInjectDependencies(
 
             const attrs = node.attrs as Record<string, string>;
             attrs.src = createRelativeOutput(chunk.output, root);
+          }
+          const content = node.content;
+          if (content != null) {
+            // TODO
           }
           break;
         }
@@ -143,17 +148,18 @@ function posthtmlInjectDependencies(
 export async function injectDependencies(
   filepath: string,
   source: string,
-  { root, chunks, use, importMap }: {
+  { root, chunks, use, importMap, compilerOptions }: {
     root: string;
     chunks: Chunk[];
     importMap?: ImportMap;
     use?: postcss.Plugin[];
+    compilerOptions?: ts.CompilerOptions;
   },
 ) {
   const processor = posthtml([
     posthtmlInjectDependencies(
       filepath,
-      { root, chunks, importMap, use },
+      { root, chunks, importMap, use, compilerOptions },
     ),
   ]);
   const { html } = await processor.process(source);

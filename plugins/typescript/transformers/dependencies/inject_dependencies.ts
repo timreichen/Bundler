@@ -43,8 +43,13 @@ function getModName(
 function transform(
   sourceFile: ts.SourceFile,
   transfomers: ts.TransformerFactory<ts.SourceFile>[],
+  compilerOptions: ts.CompilerOptions,
 ) {
-  const { transformed } = ts.transform(sourceFile, transfomers);
+  const { transformed } = ts.transform(
+    sourceFile,
+    transfomers,
+    compilerOptions,
+  );
   return transformed[0];
 }
 
@@ -366,6 +371,7 @@ interface DependencyMod {
 export function injectDependenciesFromSourceFile(
   sourceFile: ts.SourceFile,
   chunk: Chunk,
+  compilerOptions: ts.CompilerOptions,
   context: InjectDependenciesContext,
 ) {
   function resolveSpecifier(
@@ -401,6 +407,7 @@ export function injectDependenciesFromSourceFile(
   function inject(
     sourceFile: ts.SourceFile,
     exportMap: Record<string, string>,
+    compilerOptions: ts.CompilerOptions,
   ) {
     const statements: ts.Statement[] = [];
     const injectIdentifiers: Map<string, string> = new Map();
@@ -463,6 +470,7 @@ export function injectDependenciesFromSourceFile(
                   const injectResult = inject(
                     dependencySourceFile,
                     _exportMap,
+                    compilerOptions,
                   );
 
                   dependencyMods[dependencyItem.input] = injectResult;
@@ -585,6 +593,7 @@ export function injectDependenciesFromSourceFile(
                   const injectResult = inject(
                     dependencySourceFile,
                     newExportMap,
+                    compilerOptions,
                   );
 
                   dependencyMods[dependencyItem.input] = injectResult;
@@ -751,7 +760,7 @@ export function injectDependenciesFromSourceFile(
       },
       removeModifiersTransformer(exportMap, blacklistIdentifiers),
       injectIdentifiersTransformer(injectIdentifiers, blacklistIdentifiers),
-    ]);
+    ], compilerOptions);
 
     statements.push(...result.statements);
 
@@ -771,7 +780,7 @@ export function injectDependenciesFromSourceFile(
     };
   }
 
-  const injectResult = inject(sourceFile, exportMap);
+  const injectResult = inject(sourceFile, exportMap, compilerOptions);
 
   const modStatements = [...injectResult.statements];
 
@@ -798,6 +807,7 @@ export function injectDependenciesFromSourceFile(
 
 export function injectDependencies(
   chunk: Chunk,
+  compilerOptions: ts.CompilerOptions,
   context: InjectDependenciesContext,
 ) {
   const sourceFile = ts.createSourceFile(
@@ -808,6 +818,7 @@ export function injectDependencies(
   return injectDependenciesFromSourceFile(
     sourceFile,
     chunk,
+    compilerOptions,
     context,
   );
 }

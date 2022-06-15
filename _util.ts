@@ -1,25 +1,5 @@
 import { path } from "./deps.ts";
 
-type OSType = "windows" | "linux" | "darwin";
-
-const osType: OSType = (() => {
-  // deno-lint-ignore no-explicit-any
-  const { Deno } = globalThis as any;
-  if (typeof Deno?.build?.os === "string") {
-    return Deno.build.os;
-  }
-
-  // deno-lint-ignore no-explicit-any
-  const { navigator } = globalThis as any;
-  if (navigator?.appVersion?.includes?.("Win")) {
-    return "windows";
-  }
-
-  return "linux";
-})();
-const isWindows = osType === "windows";
-export const newline = isWindows ? "\r\n" : "\n";
-
 /**
  * returns true if path can be parsed by URL
  *

@@ -1,8 +1,6 @@
 import { ts } from "../../../../deps.ts";
 import { createNextIdentifier } from "../_util.ts";
 
-const printer: ts.Printer = ts.createPrinter({ removeComments: false });
-
 export function injectIdentifiersTransformer(
   identifierMap: Map<string, string>,
   blacklistIdentifiers: Set<string>,
@@ -626,6 +624,10 @@ export function injectIdentifiersFromSourceFile(
       blacklistIdentifiers,
     ),
   ], compilerOptions);
+  const printer: ts.Printer = ts.createPrinter({
+    removeComments: false,
+    newLine: compilerOptions?.newLine,
+  });
   return printer.printFile(transformed[0] as ts.SourceFile);
 }
 export function injectIdentifiers(

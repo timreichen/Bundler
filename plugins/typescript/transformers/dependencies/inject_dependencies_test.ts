@@ -1,11 +1,16 @@
+import { ts } from "../../../../deps.ts";
 import { ConsoleLogger } from "../../../../log/console_logger.ts";
 import { assertEquals } from "../../../../test_deps.ts";
-import { newline } from "../../../../_util.ts";
+
 import { Chunk, DependencyFormat, DependencyType } from "../../../plugin.ts";
 import { injectDependencies } from "./inject_dependencies.ts";
 
 const logger = new ConsoleLogger(ConsoleLogger.logLevels.debug);
 logger.quiet = true;
+
+const compilerOptions: ts.CompilerOptions = {
+  newLine: ts.NewLineKind.LineFeed,
+};
 
 Deno.test({
   name: "update import moduleSpecifier",
@@ -44,6 +49,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(result, ``);
@@ -82,9 +88,10 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
-        assertEquals(result, `import * as a from "/b.js";${newline}`);
+        assertEquals(result, `import * as a from "/b.js";\n`);
       },
     });
     await t.step({
@@ -120,9 +127,10 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
-        assertEquals(result, `import { a, b } from "/b.js";${newline}`);
+        assertEquals(result, `import { a, b } from "/b.js";\n`);
       },
     });
     await t.step({
@@ -157,12 +165,12 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
           result,
-          `import { a as x, a as y, b } from "/b.js";${newline}`,
+          `import { a as x, a as y, b } from "/b.js";\n`,
         );
       },
     });
@@ -199,10 +207,10 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `import A from "/b.js";${newline}`);
+        assertEquals(result, `import A from "/b.js";\n`);
       },
     });
     await t.step({
@@ -237,10 +245,10 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `import "/b.js";${newline}`);
+        assertEquals(result, `import "/b.js";\n`);
       },
     });
     await t.step({
@@ -275,10 +283,10 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `import("/b.js");${newline}`);
+        assertEquals(result, `import("/b.js");\n`);
       },
     });
     await t.step({
@@ -313,10 +321,10 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `import("./" + "b.ts");${newline}`);
+        assertEquals(result, `import("./" + "b.ts");\n`);
       },
     });
   },
@@ -352,9 +360,10 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
-        assertEquals(result, `console.log("hello world");${newline}`);
+        assertEquals(result, `console.log("hello world");\n`);
       },
     });
     await t.step({
@@ -383,10 +392,10 @@ Deno.test({
         const chunks: Chunk[] = [];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `console.log("hello world");${newline}`);
+        assertEquals(result, `console.log("hello world");\n`);
       },
     });
     await t.step({
@@ -423,9 +432,10 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
-        assertEquals(result, `console.log("hello world");${newline}`);
+        assertEquals(result, `console.log("hello world");\n`);
       },
     });
     await t.step({
@@ -456,9 +466,10 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
-        assertEquals(result, `type a = string;${newline}type b = a;${newline}`);
+        assertEquals(result, `type a = string;\ntype b = a;\n`);
       },
     });
     await t.step({
@@ -489,11 +500,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}console.log(b);${newline}`,
+          `const b = "b";\nconsole.log(b);\n`,
         );
       },
     });
@@ -531,11 +543,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const c = "c";${newline}console.log(c);${newline}`,
+          `const c = "c";\nconsole.log(c);\n`,
         );
       },
     });
@@ -573,11 +586,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const c = "c";${newline}const mod = { c };${newline}console.log(mod);${newline}`,
+          `const c = "c";\nconst mod = { c };\nconsole.log(mod);\n`,
         );
       },
     });
@@ -615,11 +629,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}console.log(x);${newline}`,
+          `const x = "x";\nconsole.log(x);\n`,
         );
       },
     });
@@ -657,11 +672,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}console.log(x);${newline}`,
+          `const x = "x";\nconsole.log(x);\n`,
         );
       },
     });
@@ -694,11 +710,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}const x1 = "y";${newline}console.log(x, x1);${newline}`,
+          `const x = "x";\nconst x1 = "y";\nconsole.log(x, x1);\n`,
         );
       },
     });
@@ -730,11 +747,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}console.log(b);${newline}`,
+          `const b = "b";\nconsole.log(b);\n`,
         );
       },
     });
@@ -766,11 +784,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}console.log(x);${newline}`,
+          `const x = "x";\nconsole.log(x);\n`,
         );
       },
     });
@@ -808,11 +827,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}console.log(b);${newline}`,
+          `const b = "b";\nconsole.log(b);\n`,
         );
       },
     });
@@ -850,11 +870,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}console.log(x);${newline}`,
+          `const x = "x";\nconsole.log(x);\n`,
         );
       },
     });
@@ -886,11 +907,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}const mod = { b };${newline}console.log(mod);${newline}`,
+          `const b = "b";\nconst mod = { b };\nconsole.log(mod);\n`,
         );
       },
     });
@@ -927,11 +949,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const c = "c";${newline}const mod = { c };${newline}const mod1 = { c };${newline}console.log(mod1);${newline}`,
+          `const c = "c";\nconst mod = { c };\nconst mod1 = { c };\nconsole.log(mod1);\n`,
         );
       },
     });
@@ -968,11 +991,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const c = "c";${newline}const mod = { c };${newline}const mod1 = { x: c };${newline}console.log(mod1);${newline}`,
+          `const c = "c";\nconst mod = { c };\nconst mod1 = { x: c };\nconsole.log(mod1);\n`,
         );
       },
     });
@@ -1009,11 +1033,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}const mod = { c: x };${newline}const mod1 = { x: c };${newline}console.log(mod1);${newline}`,
+          `const x = "x";\nconst mod = { c: x };\nconst mod1 = { x: c };\nconsole.log(mod1);\n`,
         );
       },
     });
@@ -1045,11 +1070,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}const mod = { b };${newline}const b1 = "x";${newline}console.log(mod, b1);${newline}`,
+          `const b = "b";\nconst mod = { b };\nconst b1 = "x";\nconsole.log(mod, b1);\n`,
         );
       },
     });
@@ -1081,11 +1107,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}const mod = { b };${newline}const mod1 = "mod";${newline}console.log(mod, mod1);${newline}`,
+          `const b = "b";\nconst mod = { b };\nconst mod1 = "mod";\nconsole.log(mod, mod1);\n`,
         );
       },
     });
@@ -1116,11 +1143,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const mod = "mod";${newline}const mod1 = { mod };${newline}console.log(mod1);${newline}`,
+          `const mod = "mod";\nconst mod1 = { mod };\nconsole.log(mod1);\n`,
         );
       },
     });
@@ -1152,12 +1180,12 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
           result,
-          `const b = "b";${newline}console.log(b);${newline}`,
+          `const b = "b";\nconsole.log(b);\n`,
         );
       },
     });
@@ -1189,12 +1217,12 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
           result,
-          `const b = "b";${newline}console.log(b);${newline}`,
+          `const b = "b";\nconsole.log(b);\n`,
         );
       },
     });
@@ -1233,12 +1261,12 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
           result,
-          `const c = "c";${newline}console.log("b", c);${newline}console.log("a", c);${newline}`,
+          `const c = "c";\nconsole.log("b", c);\nconsole.log("a", c);\n`,
         );
       },
     });
@@ -1273,10 +1301,10 @@ Deno.test({
         }];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `import("/b.js");${newline}`);
+        assertEquals(result, `import("/b.js");\n`);
       },
     });
     await t.step({
@@ -1309,10 +1337,10 @@ Deno.test({
         }];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `import("./" + "b.ts");${newline}`);
+        assertEquals(result, `import("./" + "b.ts");\n`);
       },
     });
   },
@@ -1341,7 +1369,7 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, ``);
@@ -1368,12 +1396,12 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
           result,
-          `interface A {${newline}}${newline};${newline}export { A };${newline}`,
+          `interface A {\n}\n;\nexport { A };\n`,
         );
       },
     });
@@ -1397,12 +1425,12 @@ Deno.test({
         const chunks: Chunk[] = [];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
           result,
-          `enum A {${newline}}${newline};${newline}export { A };${newline}`,
+          `enum A {\n}\n;\nexport { A };\n`,
         );
       },
     });
@@ -1437,10 +1465,10 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `export * from "/b.js";${newline}`);
+        assertEquals(result, `export * from "/b.js";\n`);
       },
     });
     await t.step({
@@ -1474,10 +1502,10 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `export { x as default };${newline}`);
+        assertEquals(result, `export { x as default };\n`);
       },
     });
     await t.step({
@@ -1511,10 +1539,10 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `export * as b from "/b.js";${newline}`);
+        assertEquals(result, `export * as b from "/b.js";\n`);
       },
     });
     await t.step({
@@ -1548,10 +1576,10 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
-        assertEquals(result, `export { b } from "/b.js";${newline}`);
+        assertEquals(result, `export { b } from "/b.js";\n`);
       },
     });
   },
@@ -1587,11 +1615,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `type b = string;${newline}export { b };${newline}`,
+          `type b = string;\nexport { b };\n`,
         );
       },
     });
@@ -1623,9 +1652,10 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
-        assertEquals(result, `const b = "b";${newline}export { b };${newline}`);
+        assertEquals(result, `const b = "b";\nexport { b };\n`);
       },
     });
     await t.step({
@@ -1656,11 +1686,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}export { b as a };${newline}`,
+          `const b = "b";\nexport { b as a };\n`,
         );
       },
     });
@@ -1692,11 +1723,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}export { x as b };${newline}`,
+          `const x = "x";\nexport { x as b };\n`,
         );
       },
     });
@@ -1728,11 +1760,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}export { b as a };${newline}`,
+          `const b = "b";\nexport { b as a };\n`,
         );
       },
     });
@@ -1764,11 +1797,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}export { x as a };${newline}`,
+          `const x = "x";\nexport { x as a };\n`,
         );
       },
     });
@@ -1806,11 +1840,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}export { x as a };${newline}`,
+          `const x = "x";\nexport { x as a };\n`,
         );
       },
     });
@@ -1842,11 +1877,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}export { x as a };${newline}`,
+          `const x = "x";\nexport { x as a };\n`,
         );
       },
     });
@@ -1878,11 +1914,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}export { b };${newline}`,
+          `const b = "b";\nexport { b };\n`,
         );
       },
     });
@@ -1919,11 +1956,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const c = "c";${newline}export { c };${newline}`,
+          `const c = "c";\nexport { c };\n`,
         );
       },
     });
@@ -1960,11 +1998,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const c = "c";${newline}const mod = { c };${newline}export { mod as b };${newline}`,
+          `const c = "c";\nconst mod = { c };\nexport { mod as b };\n`,
         );
       },
     });
@@ -1996,11 +2035,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const x = "x";${newline}export { x as b };${newline}`,
+          `const x = "x";\nexport { x as b };\n`,
         );
       },
     });
@@ -2031,11 +2071,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}const b1 = "a";${newline}console.log(b1);${newline}export { b };${newline}`,
+          `const b = "b";\nconst b1 = "a";\nconsole.log(b1);\nexport { b };\n`,
         );
       },
     });
@@ -2067,11 +2108,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}const mod = { b };${newline}const mod1 = "mod";${newline}console.log(mod1);${newline}export { mod as b };${newline}`,
+          `const b = "b";\nconst mod = { b };\nconst mod1 = "mod";\nconsole.log(mod1);\nexport { mod as b };\n`,
         );
       },
     });
@@ -2102,11 +2144,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}const mod = { b };${newline}export { mod as a };${newline}`,
+          `const b = "b";\nconst mod = { b };\nexport { mod as a };\n`,
         );
       },
     });
@@ -2137,11 +2180,12 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
           result,
-          `const b = "b";${newline}const mod = { b };${newline}export { mod as a };${newline}`,
+          `const b = "b";\nconst mod = { b };\nexport { mod as a };\n`,
         );
       },
     });
@@ -2179,9 +2223,9 @@ Deno.test({
     ];
     const result = injectDependencies(
       chunk,
-      { root, chunks, logger },
+      { root, chunks, logger, compilerOptions },
     );
-    assertEquals(result, `const worker = new Worker("/b.js");${newline}`);
+    assertEquals(result, `const worker = new Worker("/b.js");\n`);
   },
 });
 Deno.test({
@@ -2216,9 +2260,9 @@ Deno.test({
 
     const result = injectDependencies(
       chunk,
-      { root, chunks, logger },
+      { root, chunks, logger, compilerOptions },
     );
-    assertEquals(result, `fetch("/b.js");${newline}`);
+    assertEquals(result, `fetch("/b.js");\n`);
   },
 });
 Deno.test({
@@ -2253,11 +2297,11 @@ Deno.test({
 
     const result = injectDependencies(
       chunk,
-      { root, chunks, logger },
+      { root, chunks, logger, compilerOptions },
     );
     assertEquals(
       result,
-      `navigator.serviceWorker.register("/b.js");${newline}`,
+      `navigator.serviceWorker.register("/b.js");\n`,
     );
   },
 });
@@ -2295,11 +2339,11 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
         assertEquals(
           result,
-          `import json from "/b.json" assert { type: "json" };${newline}`,
+          `import json from "/b.json" assert { type: "json" };\n`,
         );
       },
     });
@@ -2330,10 +2374,11 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
         assertEquals(
           result,
-          `const json = JSON.parse(\`{ "foo": "bar" }\`);${newline}`,
+          `const json = JSON.parse(\`{ "foo": "bar" }\`);\n`,
         );
       },
     });
@@ -2373,11 +2418,11 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
         assertEquals(
           result,
-          `import css from "/b.css" assert { type: "css" };${newline}`,
+          `import css from "/b.css" assert { type: "css" };\n`,
         );
       },
     });
@@ -2406,11 +2451,11 @@ Deno.test({
         const chunks: Chunk[] = [];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
         assertEquals(
           result,
-          `const css = new CSSStyleSheet();${newline}css.replaceSync(\`h1 { color: red; }\`);${newline}`,
+          `const css = new CSSStyleSheet();\ncss.replaceSync(\`h1 { color: red; }\`);\n`,
         );
       },
     });

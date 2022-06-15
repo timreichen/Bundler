@@ -17,20 +17,20 @@ import {
 import { timestamp } from "./_util.ts";
 import { getAsset, getDependencyFormat } from "./plugins/_util.ts";
 import { colors } from "./deps.ts";
-import { ConsoleLogger } from "./log/console_logger.ts";
+import { DetailLogger } from "./log/detail_logger.ts";
 
 export class Bundler {
   plugins: Plugin[];
-  logger: ConsoleLogger<unknown[]>;
+  logger: DetailLogger;
   constructor(
-    { plugins, logLevel = ConsoleLogger.logLevels.trace, quiet = false }: {
+    { plugins, logLevel = DetailLogger.logLevels.trace, quiet = false }: {
       plugins: Plugin[];
       logLevel?: number;
       quiet?: boolean;
     },
   ) {
     this.plugins = plugins;
-    this.logger = new ConsoleLogger(logLevel);
+    this.logger = new DetailLogger(logLevel);
     this.logger.quiet = quiet;
   }
 
@@ -40,11 +40,6 @@ export class Bundler {
     format: DependencyFormat,
     { assets = [], importMap, reload }: Partial<CreateAssetContext> = {},
   ) {
-    this.logger.debug(
-      colors.yellow("Create Asset"),
-      input,
-      colors.dim(type),
-    );
     const time = performance.now();
     const context = {
       assets,
@@ -187,12 +182,7 @@ export class Bundler {
     }: Partial<CreateChunkContext> = {},
   ) {
     const time = performance.now();
-    this.logger.info(
-      colors.yellow("Create Chunk"),
-      asset.input,
-      colors.dim(asset.type),
-      colors.dim(asset.format),
-    );
+
     const { input, type, format } = asset;
     const context = {
       assets,
@@ -208,6 +198,7 @@ export class Bundler {
         await plugin.test(input, type, format)
       ) {
         const chunk = await plugin.createChunk(asset, chunkAssets, context);
+        this.logger.debug(colors.yellow("Output"), chunk.output);
 
         for (const dependencyItem of chunk.dependencyItems) {
           this.logger.debug(
@@ -217,12 +208,13 @@ export class Bundler {
             colors.dim(dependencyItem.format),
           );
         }
+
         this.logger.info(
           colors.green("Create Chunk"),
-          asset.input,
+          chunk.item.input,
           colors.dim(plugin.constructor.name),
-          colors.dim(asset.type),
-          colors.dim(asset.format),
+          colors.dim(chunk.item.type),
+          colors.dim(chunk.item.format),
           colors.dim(colors.italic(`(${timestamp(time)})`)),
         );
         return chunk;
@@ -263,14 +255,10 @@ export class Bundler {
 
     const checkedAssets: Set<Asset> = new Set();
     for (const chunkItem of chunkItems) {
+      const time = performance.now();
       const { input, type, format } = chunkItem;
+
       const asset = getAsset(assets, input, type, format);
-      this.logger.debug(
-        colors.green("Dependencies"),
-        asset.input,
-        colors.dim(asset.type),
-        colors.dim(asset.format),
-      );
 
       const splitItems = await this.splitAssetDependencies(asset, context);
       chunkItems.push(...splitItems);
@@ -325,13 +313,21 @@ export class Bundler {
         }
         checkedAssets.add(asset);
       }
+
+      this.logger.info(
+        colors.green("Check Dependencies"),
+        input,
+        colors.dim(type),
+        colors.dim(format),
+        colors.dim(colors.italic(`(${timestamp(time)})`)),
+      );
     }
 
     const checkedAssetLength = checkedAssets.size;
 
-    this.logger.debug(
+    this.logger.info(
       colors.brightBlue("Check"),
-      "Assets",
+      "Dependencies",
       colors.dim(
         `${checkedAssetLength} file${checkedAssetLength === 1 ? "" : "s"}`,
       ),
@@ -396,12 +392,6 @@ export class Bundler {
     const time = performance.now();
     const { input, type, format } = chunk.item;
 
-    this.logger.info(
-      colors.yellow("Create Bundle"),
-      input,
-      colors.dim(type),
-      colors.dim(format),
-    );
     for (const plugin of this.plugins) {
       if (
         plugin.createBundle instanceof Function &&
@@ -412,11 +402,6 @@ export class Bundler {
         if (context.optimize) {
           bundle.source = await this.optimizeSource(chunk, bundle.source);
         }
-        // this.logger.debug(
-        //
-        //   colors.yellow("Output"),
-        //   bundle.output,
-        // );
         this.logger.info(
           colors.green("Create Bundle"),
           input,

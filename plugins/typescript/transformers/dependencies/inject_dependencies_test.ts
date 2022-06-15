@@ -2223,7 +2223,7 @@ Deno.test({
     ];
     const result = injectDependencies(
       chunk,
-      { root, chunks, logger },
+      { root, chunks, logger, compilerOptions },
     );
     assertEquals(result, `const worker = new Worker("/b.js");\n`);
   },
@@ -2260,7 +2260,7 @@ Deno.test({
 
     const result = injectDependencies(
       chunk,
-      { root, chunks, logger },
+      { root, chunks, logger, compilerOptions },
     );
     assertEquals(result, `fetch("/b.js");\n`);
   },
@@ -2297,7 +2297,7 @@ Deno.test({
 
     const result = injectDependencies(
       chunk,
-      { root, chunks, logger },
+      { root, chunks, logger, compilerOptions },
     );
     assertEquals(
       result,

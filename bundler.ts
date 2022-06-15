@@ -269,58 +269,60 @@ export class Bundler {
       for (const item of items) {
         const { input, type, format } = item;
         const asset = getAsset(assets, input, type, format);
-        for (const dependency of asset.dependencies) {
-          const depdendencyAsset = getAsset(
-            assets,
-            dependency.input,
-            dependency.type,
-            dependency.format,
-          );
-
-          if (checkedDependencyAssets.has(depdendencyAsset)) continue;
-          checkedDependencyAssets.add(depdendencyAsset);
-
-          if (checkedAssets.has(depdendencyAsset)) {
-            this.logger.debug(
-              colors.yellow("Split"),
-              depdendencyAsset.input,
-              colors.dim(depdendencyAsset.type),
-              colors.dim(depdendencyAsset.format),
+        if (asset.dependencies.length) {
+          for (const dependency of asset.dependencies) {
+            const depdendencyAsset = getAsset(
+              assets,
+              dependency.input,
+              dependency.type,
+              dependency.format,
             );
-            chunkAssets.add(depdendencyAsset);
-          } else {
-            this.logger.debug(
-              colors.yellow("Check"),
-              depdendencyAsset.input,
-              colors.dim(depdendencyAsset.type),
-              colors.dim(depdendencyAsset.format),
-            );
-            if (
-              !chunkItems.some((chunkItem) =>
-                chunkItem.input === input &&
-                chunkItem.type === type &&
-                chunkItem.format === format
-              )
-            ) {
-              items.push({
-                input: dependency.input,
-                type: dependency.type,
-                format: dependency.format,
-              });
+
+            if (checkedDependencyAssets.has(depdendencyAsset)) continue;
+            checkedDependencyAssets.add(depdendencyAsset);
+
+            if (checkedAssets.has(depdendencyAsset)) {
+              this.logger.debug(
+                colors.yellow("Split"),
+                depdendencyAsset.input,
+                colors.dim(depdendencyAsset.type),
+                colors.dim(depdendencyAsset.format),
+              );
+              chunkAssets.add(depdendencyAsset);
+            } else {
+              this.logger.debug(
+                colors.yellow("Check"),
+                depdendencyAsset.input,
+                colors.dim(depdendencyAsset.type),
+                colors.dim(depdendencyAsset.format),
+              );
+              if (
+                !chunkItems.some((chunkItem) =>
+                  chunkItem.input === input &&
+                  chunkItem.type === type &&
+                  chunkItem.format === format
+                )
+              ) {
+                items.push({
+                  input: dependency.input,
+                  type: dependency.type,
+                  format: dependency.format,
+                });
+              }
             }
+            checkedAssets.add(depdendencyAsset);
           }
-          checkedAssets.add(depdendencyAsset);
-        }
-        checkedAssets.add(asset);
-      }
+          checkedAssets.add(asset);
 
-      this.logger.info(
-        colors.green("Check Dependencies"),
-        input,
-        colors.dim(type),
-        colors.dim(format),
-        colors.dim(colors.italic(`(${timestamp(time)})`)),
-      );
+          this.logger.info(
+            colors.green("Check Dependencies"),
+            input,
+            colors.dim(type),
+            colors.dim(format),
+            colors.dim(colors.italic(`(${timestamp(time)})`)),
+          );
+        }
+      }
     }
 
     const checkedAssetLength = checkedAssets.size;

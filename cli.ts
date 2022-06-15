@@ -110,7 +110,7 @@ function parseBundleArgs(args: flags.Args) {
   };
 }
 
-const cacheDir = path.resolve(Deno.cwd(), ".cache");
+const cacheDir = path.resolve(Deno.cwd(), ".bundler");
 const cacheAssetsDir = path.join(cacheDir, "assets");
 
 async function exists(filename: string) {
@@ -267,6 +267,9 @@ async function bundleCommand(args: flags.Args) {
 
     bundler.logger.info(
       colors.green(`Done`),
+      `${assets.length} assets,`,
+      `${chunks.length} chunks,`,
+      `${bundles.length} bundles`,
       colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
 

@@ -165,7 +165,7 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
@@ -207,7 +207,7 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `import A from "/b.js";\n`);
@@ -245,7 +245,7 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `import "/b.js";\n`);
@@ -283,7 +283,7 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `import("/b.js");\n`);
@@ -321,7 +321,7 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `import("./" + "b.ts");\n`);
@@ -392,7 +392,7 @@ Deno.test({
         const chunks: Chunk[] = [];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `console.log("hello world");\n`);
@@ -1180,7 +1180,7 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
@@ -1217,7 +1217,7 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
@@ -1261,7 +1261,7 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
@@ -1301,7 +1301,7 @@ Deno.test({
         }];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `import("/b.js");\n`);
@@ -1337,7 +1337,7 @@ Deno.test({
         }];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `import("./" + "b.ts");\n`);
@@ -1369,7 +1369,7 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, ``);
@@ -1396,7 +1396,7 @@ Deno.test({
 
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
@@ -1425,7 +1425,7 @@ Deno.test({
         const chunks: Chunk[] = [];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(
@@ -1465,7 +1465,7 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `export * from "/b.js";\n`);
@@ -1502,7 +1502,7 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `export { x as default };\n`);
@@ -1539,7 +1539,7 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `export * as b from "/b.js";\n`);
@@ -1576,7 +1576,7 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
 
         assertEquals(result, `export { b } from "/b.js";\n`);
@@ -2339,7 +2339,7 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
         assertEquals(
           result,
@@ -2418,7 +2418,7 @@ Deno.test({
         ];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
         assertEquals(
           result,
@@ -2451,7 +2451,7 @@ Deno.test({
         const chunks: Chunk[] = [];
         const result = injectDependencies(
           chunk,
-          { root, chunks, logger },
+          { root, chunks, logger, compilerOptions },
         );
         assertEquals(
           result,

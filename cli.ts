@@ -23,7 +23,7 @@ import {
   createSha256,
   formatBytes,
   isFileURL,
-  isURL,
+  parsePaths,
   timestamp,
 } from "./_util.ts";
 import { Asset, Bundle, Chunk } from "./plugins/plugin.ts";
@@ -71,16 +71,6 @@ function parseBundleArgs(args: flags.Args) {
     config,
   } = args;
 
-  const regex = /^(?<input>.+?)(?:\=(["']?)(?<output>[\w\-. ]+)\2)?$/;
-  const outputMap = Object.fromEntries(_.map((entry) => {
-    let { input, output } = regex.exec(entry as string)?.groups || {};
-    if (!isURL(input)) {
-      input = path.toFileUrl(path.resolve(Deno.cwd(), input)).href;
-    }
-    if (output) output = path.toFileUrl(path.join(root, output)).href;
-    return [input, output];
-  }));
-
   if (reload) {
     if (reload && Array.isArray(reload)) {
       // reload = reload.map((filepath) =>
@@ -89,7 +79,7 @@ function parseBundleArgs(args: flags.Args) {
     }
   }
 
-  const inputs = Object.keys(outputMap);
+  const { inputs, outputMap } = parsePaths(_, root);
 
   let logLevel;
   switch (logLevelString) {

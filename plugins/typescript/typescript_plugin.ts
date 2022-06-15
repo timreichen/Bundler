@@ -32,6 +32,7 @@ const defaultCompilerOptions: ts.CompilerOptions = {
   jsx: ts.JsxEmit.React,
   target: ts.ScriptTarget.ESNext,
   module: ts.ModuleKind.ESNext,
+  newLine: ts.NewLineKind.CarriageReturnLineFeed,
 };
 
 export class TypescriptPlugin extends TextFilePlugin {

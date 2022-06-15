@@ -7,13 +7,14 @@ import { TypescriptPlugin } from "./plugins/typescript/typescript_plugin.ts";
 import { WebManifestPlugin } from "./plugins/json/webmanifest_plugin.ts";
 import { HTMLPlugin } from "./plugins/html/html_plugin.ts";
 import { FilePlugin } from "./plugins/file/file.ts";
-import { path, resolveImportMap } from "./deps.ts";
-import { newline } from "./_util.ts";
+import { path, resolveImportMap, ts } from "./deps.ts";
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "testdata");
 
-const typescriptPlugin = new TypescriptPlugin();
+const typescriptPlugin = new TypescriptPlugin({
+  newLine: ts.NewLineKind.LineFeed,
+});
 const cssPlugin = new CSSPlugin();
 const jsonPlugin = new JSONPlugin();
 const htmlPlugin = new HTMLPlugin();
@@ -50,7 +51,7 @@ Deno.test({
             format: DependencyFormat.Script,
             dependencies: [],
             exports: {},
-            source: `console.log("hello world");${newline}`,
+            source: `console.log("hello world");\n`,
           },
         ]);
       },
@@ -80,8 +81,7 @@ Deno.test({
               },
             ],
             exports: {},
-            source:
-              `import { b } from "./b.ts";${newline}console.log(b);${newline}`,
+            source: `import { b } from "./b.ts";\nconsole.log(b);\n`,
           },
           {
             dependencies: [],
@@ -93,7 +93,7 @@ Deno.test({
             input: b,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
-            source: `export const b = "b";${newline}`,
+            source: `export const b = "b";\n`,
           },
         ]);
       },
@@ -129,7 +129,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             source:
-              `import { b } from "./b.ts";${newline}console.log(b);${newline}export const a = "a";${newline}`,
+              `import { b } from "./b.ts";\nconsole.log(b);\nexport const a = "a";\n`,
           },
           {
             dependencies: [
@@ -149,7 +149,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             source:
-              `import { a } from "./a.ts";${newline}console.log(a);${newline}export const b = "b";${newline}`,
+              `import { a } from "./a.ts";\nconsole.log(a);\nexport const b = "b";\n`,
           },
         ]);
       },
@@ -185,7 +185,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             source:
-              `import { a } from "./a.ts";${newline}console.log(a);${newline}export const b = "b";${newline}`,
+              `import { a } from "./a.ts";\nconsole.log(a);\nexport const b = "b";\n`,
           },
           {
             dependencies: [
@@ -203,7 +203,7 @@ Deno.test({
             },
             input: a,
             source:
-              `import { b } from "./b.ts";${newline}console.log(b);${newline}export const a = "a";${newline}`,
+              `import { b } from "./b.ts";\nconsole.log(b);\nexport const a = "a";\n`,
 
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
@@ -238,7 +238,7 @@ Deno.test({
             format: DependencyFormat.Script,
             exports: {},
             source:
-              `import b from "./b.json" assert { type: "json" };${newline}console.log(b);${newline}`,
+              `import b from "./b.json" assert { type: "json" };\nconsole.log(b);\n`,
           },
           {
             dependencies: [],
@@ -246,7 +246,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Json,
             exports: {},
-            source: `{${newline}  "foo": "bar"${newline}}${newline}`,
+            source: `{\n  "foo": "bar"\n}\n`,
           },
         ]);
       },
@@ -278,7 +278,7 @@ Deno.test({
             format: DependencyFormat.Script,
             exports: {},
             source:
-              `import b from "./b.css" assert { type: "css" };${newline}console.log(b);${newline}`,
+              `import b from "./b.css" assert { type: "css" };\nconsole.log(b);\n`,
           },
           {
             dependencies: [],
@@ -286,7 +286,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Style,
             exports: {},
-            source: `h1 {${newline}  font-family: Helvetica;${newline}}`,
+            source: `h1 {\n  font-family: Helvetica;\n}`,
           },
         ]);
       },
@@ -326,7 +326,7 @@ Deno.test({
               },
             ],
             exports: {},
-            source: `import { b } from "b";${newline}console.log(b);${newline}`,
+            source: `import { b } from "b";\nconsole.log(b);\n`,
           },
           {
             dependencies: [],
@@ -338,7 +338,7 @@ Deno.test({
             input: b,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
-            source: `export const b = "b";${newline}`,
+            source: `export const b = "b";\n`,
           },
         ]);
       },
@@ -367,15 +367,14 @@ Deno.test({
               input: a,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `import { b } from "./b.ts";${newline}console.log(b);${newline}`,
+              source: `import { b } from "./b.ts";\nconsole.log(b);\n`,
             },
             dependencyItems: [
               {
                 input: b,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const b = "b";${newline}`,
+                source: `export const b = "b";\n`,
               },
             ],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -401,8 +400,7 @@ Deno.test({
               input: a,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `import { b } from "./b.ts";${newline}console.log(b);${newline}`,
+              source: `import { b } from "./b.ts";\nconsole.log(b);\n`,
             },
             dependencyItems: [],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -411,7 +409,7 @@ Deno.test({
             item: {
               format: DependencyFormat.Script,
               input: b,
-              source: `export const b = "b";${newline}`,
+              source: `export const b = "b";\n`,
               type: DependencyType.ImportExport,
             },
             dependencyItems: [],
@@ -438,13 +436,13 @@ Deno.test({
               format: DependencyFormat.Script,
               input: a,
               source:
-                `import { b } from "./b.ts";${newline}console.log(b);${newline}export const a = "a";${newline}`,
+                `import { b } from "./b.ts";\nconsole.log(b);\nexport const a = "a";\n`,
               type: DependencyType.ImportExport,
             },
             dependencyItems: [
               {
                 source:
-                  `import { a } from "./a.ts";${newline}console.log(a);${newline}export const b = "b";${newline}`,
+                  `import { a } from "./a.ts";\nconsole.log(a);\nexport const b = "b";\n`,
                 format: DependencyFormat.Script,
                 input: b,
                 type: DependencyType.ImportExport,
@@ -473,13 +471,13 @@ Deno.test({
               format: DependencyFormat.Script,
               input: b,
               source:
-                `import { a } from "./a.ts";${newline}console.log(a);${newline}export const b = "b";${newline}`,
+                `import { a } from "./a.ts";\nconsole.log(a);\nexport const b = "b";\n`,
               type: DependencyType.ImportExport,
             },
             dependencyItems: [
               {
                 source:
-                  `import { b } from "./b.ts";${newline}console.log(b);${newline}export const a = "a";${newline}`,
+                  `import { b } from "./b.ts";\nconsole.log(b);\nexport const a = "a";\n`,
                 format: DependencyFormat.Script,
                 input: a,
                 type: DependencyType.ImportExport,
@@ -509,7 +507,7 @@ Deno.test({
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
               source:
-                `import { b } from "./b.ts";${newline}console.log(b);${newline}export const a = "a";${newline}`,
+                `import { b } from "./b.ts";\nconsole.log(b);\nexport const a = "a";\n`,
             },
             dependencyItems: [],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -521,7 +519,7 @@ Deno.test({
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
               source:
-                `import { a } from "./a.ts";${newline}console.log(a);${newline}export const b = "b";${newline}`,
+                `import { a } from "./a.ts";\nconsole.log(a);\nexport const b = "b";\n`,
             },
             output: await typescriptPlugin.createOutput(b, "dist", ".js"),
           },
@@ -547,7 +545,7 @@ Deno.test({
               format: DependencyFormat.Script,
               input: a,
               source:
-                `import { b } from "./b.ts";${newline}import { b as c } from "./b.ts";${newline}console.log(b, c);${newline}`,
+                `import { b } from "./b.ts";\nimport { b as c } from "./b.ts";\nconsole.log(b, c);\n`,
               type: DependencyType.ImportExport,
             },
             dependencyItems: [
@@ -555,7 +553,7 @@ Deno.test({
                 input: b,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const b = "b";${newline}`,
+                source: `export const b = "b";\n`,
               },
             ],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -581,14 +579,14 @@ Deno.test({
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
               source:
-                `export { b } from "./b.ts";${newline}export { b as c } from "./b.ts";${newline}`,
+                `export { b } from "./b.ts";\nexport { b as c } from "./b.ts";\n`,
             },
             dependencyItems: [
               {
                 input: b,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const b = "b";${newline}`,
+                source: `export const b = "b";\n`,
               },
             ],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -614,14 +612,14 @@ Deno.test({
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
               source:
-                `import { b } from "./b.ts";${newline}export { b as c } from "./b.ts";${newline}console.log(b);${newline}`,
+                `import { b } from "./b.ts";\nexport { b as c } from "./b.ts";\nconsole.log(b);\n`,
             },
             dependencyItems: [
               {
                 input: b,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const b = "b";${newline}`,
+                source: `export const b = "b";\n`,
               },
             ],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -649,8 +647,7 @@ Deno.test({
             item: {
               format: DependencyFormat.Script,
               input: a,
-              source:
-                `import { b } from "./b.ts";${newline}console.log(b);${newline}`,
+              source: `import { b } from "./b.ts";\nconsole.log(b);\n`,
               type: DependencyType.ImportExport,
             },
             dependencyItems: [
@@ -659,13 +656,13 @@ Deno.test({
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
                 source:
-                  `import { c } from "./c.ts";${newline}console.log(c);${newline}export const b = "b";${newline}`,
+                  `import { c } from "./c.ts";\nconsole.log(c);\nexport const b = "b";\n`,
               },
               {
                 input: c,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const c = "c";${newline}`,
+                source: `export const c = "c";\n`,
               },
             ],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -695,7 +692,7 @@ Deno.test({
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
               source:
-                `import { b } from "./b.ts";${newline}import { c } from "./c.ts";${newline}console.log(b, c);${newline}`,
+                `import { b } from "./b.ts";\nimport { c } from "./c.ts";\nconsole.log(b, c);\n`,
             },
             dependencyItems: [
               {
@@ -703,13 +700,13 @@ Deno.test({
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
                 source:
-                  `import { c } from "./c.ts";${newline}console.log(c);${newline}export const b = "b";${newline}`,
+                  `import { c } from "./c.ts";\nconsole.log(c);\nexport const b = "b";\n`,
               },
               {
                 input: c,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const c = "c";${newline}`,
+                source: `export const c = "c";\n`,
               },
             ],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -739,7 +736,7 @@ Deno.test({
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
               source:
-                `import { b } from "./b.ts";${newline}import { c } from "./c.ts";${newline}console.log(b, c);${newline}`,
+                `import { b } from "./b.ts";\nimport { c } from "./c.ts";\nconsole.log(b, c);\n`,
             },
             dependencyItems: [],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -750,7 +747,7 @@ Deno.test({
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
               source:
-                `import { c } from "./c.ts";${newline}console.log(c);${newline}export const b = "b";${newline}`,
+                `import { c } from "./c.ts";\nconsole.log(c);\nexport const b = "b";\n`,
             },
             dependencyItems: [],
             output: await typescriptPlugin.createOutput(b, "dist", ".js"),
@@ -760,7 +757,7 @@ Deno.test({
               input: c,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source: `export const c = "c";${newline}`,
+              source: `export const c = "c";\n`,
             },
             dependencyItems: [],
             output: await typescriptPlugin.createOutput(c, "dist", ".js"),
@@ -786,8 +783,7 @@ Deno.test({
               input: a,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `const b = await fetch("./b.ts");${newline}console.log(b);${newline}`,
+              source: `const b = await fetch("./b.ts");\nconsole.log(b);\n`,
             },
             dependencyItems: [],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -797,7 +793,7 @@ Deno.test({
               input: b,
               type: DependencyType.Fetch,
               format: DependencyFormat.Script,
-              source: `export const b = "b";${newline}`,
+              source: `export const b = "b";\n`,
             },
             dependencyItems: [],
             output: await typescriptPlugin.createOutput(b, "dist", ".js"),
@@ -835,15 +831,14 @@ Deno.test({
               input: a,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `import { b } from "b";${newline}console.log(b);${newline}`,
+              source: `import { b } from "b";\nconsole.log(b);\n`,
             },
             dependencyItems: [
               {
                 input: b,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const b = "b";${newline}`,
+                source: `export const b = "b";\n`,
               },
             ],
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
@@ -870,7 +865,7 @@ Deno.test({
 
         assertEquals(bundles, [{
           output: await typescriptPlugin.createOutput(a, "dist", ".js"),
-          source: `const b = "b";${newline}console.log(b);${newline}`,
+          source: `const b = "b";\nconsole.log(b);\n`,
         }]);
       },
     });
@@ -890,7 +885,7 @@ Deno.test({
           {
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
             source:
-              `const b = new CSSStyleSheet();${newline}b.replaceSync(\`h1 {${newline}  font-family: Helvetica;${newline}}\`);${newline}console.log(b);${newline}`,
+              `const b = new CSSStyleSheet();\nb.replaceSync(\`h1 {\n  font-family: Helvetica;\n}\`);\nconsole.log(b);\n`,
           },
         ]);
       },
@@ -911,7 +906,7 @@ Deno.test({
           {
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
             source:
-              `const b = JSON.parse(\`{${newline}  "foo": "bar"${newline}}${newline}\`);${newline}console.log(b);${newline}`,
+              `const b = JSON.parse(\`{\n  "foo": "bar"\n}\n\`);\nconsole.log(b);\n`,
           },
         ]);
       },
@@ -942,10 +937,9 @@ Deno.test({
 
         assertEquals(bundles[0], {
           output: output,
-          source:
-            `<html>${newline}  <head>${newline}    <link rel="manifest" href="/${
-              path.relative(path.dirname(output), manifestOutput)
-            }">${newline}  </head>${newline}  <body>${newline}  </body>${newline}</html>`,
+          source: `<html>\n  <head>\n    <link rel="manifest" href="/${
+            path.relative(path.dirname(output), manifestOutput)
+          }">\n  </head>\n  <body>\n  </body>\n</html>`,
         });
 
         const imageOutput1 = await filePlugin
@@ -1015,7 +1009,7 @@ Deno.test({
         assertEquals(bundles, [{
           output: await typescriptPlugin.createOutput(a, "dist", ".js"),
           source:
-            `const c = "c";${newline}console.log(c);${newline}const b = "b";${newline}console.log(b);${newline}`,
+            `const c = "c";\nconsole.log(c);\nconst b = "b";\nconsole.log(b);\n`,
         }]);
       },
     });
@@ -1032,7 +1026,7 @@ Deno.test({
 
         assertEquals(bundles, [{
           output: await typescriptPlugin.createOutput(a, "dist", ".js"),
-          source: `const b = "b";${newline}console.log(b, b);${newline}`,
+          source: `const b = "b";\nconsole.log(b, b);\n`,
         }]);
       },
     });
@@ -1049,7 +1043,7 @@ Deno.test({
 
         assertEquals(bundles, [{
           output: await typescriptPlugin.createOutput(a, "dist", ".js"),
-          source: `const b = "b";${newline}export { b, b as c };${newline}`,
+          source: `const b = "b";\nexport { b, b as c };\n`,
         }]);
       },
     });
@@ -1066,8 +1060,7 @@ Deno.test({
 
         assertEquals(bundles, [{
           output: await typescriptPlugin.createOutput(a, "dist", ".js"),
-          source:
-            `const b = "b";${newline}console.log(b);${newline}export { b as c };${newline}`,
+          source: `const b = "b";\nconsole.log(b);\nexport { b as c };\n`,
         }]);
       },
     });
@@ -1093,7 +1086,7 @@ Deno.test({
 
         assertEquals(bundles, [{
           output: await typescriptPlugin.createOutput(a, "dist", ".js"),
-          source: `const b = "b";${newline}console.log(b);${newline}`,
+          source: `const b = "b";\nconsole.log(b);\n`,
         }]);
       },
     });

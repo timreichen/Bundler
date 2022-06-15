@@ -14,9 +14,16 @@ const testdataDir = path.resolve(moduleDir, "../../testdata");
 Deno.test({
   name: "test",
   fn() {
-    assertEquals(plugin.test(".json", DependencyType.WebManifest), true);
-    assertEquals(plugin.test(".webmanifest", DependencyType.WebManifest), true);
-    assertEquals(plugin.test(".json", DependencyType.ImportExport), false);
+    assertEquals(plugin.test("file.json", DependencyType.WebManifest), true);
+    assertEquals(
+      plugin.test("file.webmanifest", DependencyType.WebManifest),
+      true,
+    );
+    assertEquals(
+      plugin.test("file.webmanifest", DependencyType.ImportExport),
+      false,
+    );
+    assertEquals(plugin.test("file.json", DependencyType.ImportExport), false);
   },
 });
 
@@ -26,7 +33,11 @@ Deno.test({
     const a =
       path.toFileUrl(path.join(testdataDir, "json/webmanifest.json")).href;
 
-    const asset = await bundler.createAsset(a, DependencyType.WebManifest);
+    const asset = await bundler.createAsset(
+      a,
+      DependencyType.WebManifest,
+      DependencyFormat.Unknown,
+    );
 
     assertEquals(asset, {
       input: a,
@@ -95,7 +106,11 @@ Deno.test({
     const a =
       path.toFileUrl(path.join(testdataDir, "json/webmanifest.json")).href;
 
-    const asset = await bundler.createAsset(a, DependencyType.WebManifest);
+    const asset = await bundler.createAsset(
+      a,
+      DependencyType.WebManifest,
+      DependencyFormat.Unknown,
+    );
     const chunkAssets: Set<Asset> = new Set();
     const chunk = await bundler.createChunk(asset, chunkAssets);
     assertEquals(chunk, {
@@ -118,7 +133,11 @@ Deno.test({
     await t.step("bundle", async () => {
       const a =
         path.toFileUrl(path.join(testdataDir, "json/webmanifest.json")).href;
-      const asset = await bundler.createAsset(a, DependencyType.WebManifest);
+      const asset = await bundler.createAsset(
+        a,
+        DependencyType.WebManifest,
+        DependencyFormat.Unknown,
+      );
       const chunkAssets: Set<Asset> = new Set();
       const chunk = await bundler.createChunk(asset, chunkAssets);
       const chunks: Chunk[] = [
@@ -213,7 +232,11 @@ Deno.test({
       const a =
         path.toFileUrl(path.join(testdataDir, "json/webmanifest.json")).href;
 
-      const asset = await bundler.createAsset(a, DependencyType.WebManifest);
+      const asset = await bundler.createAsset(
+        a,
+        DependencyType.WebManifest,
+        DependencyFormat.Unknown,
+      );
       const chunkAssets: Set<Asset> = new Set();
       const chunk = await bundler.createChunk(asset, chunkAssets);
       const chunks: Chunk[] = [

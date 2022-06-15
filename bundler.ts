@@ -13,7 +13,6 @@ import {
   Item,
   Plugin,
   Source,
-  TransformAssetContext,
 } from "./plugins/plugin.ts";
 import { timestamp } from "./_util.ts";
 import { getAsset, getDependencyFormat } from "./plugins/_util.ts";
@@ -38,6 +37,7 @@ export class Bundler {
   async createAsset(
     input: string,
     type: DependencyType,
+    format: DependencyFormat,
     { assets = [], importMap, reload }: Partial<CreateAssetContext> = {},
   ) {
     this.logger.debug(
@@ -55,7 +55,7 @@ export class Bundler {
     for (const plugin of this.plugins) {
       if (
         plugin.createAsset instanceof Function &&
-        await plugin.test(input, type)
+        await plugin.test(input, type, format)
       ) {
         const asset = await plugin.createAsset(input, type, context);
         for (const dependency of asset.dependencies) {
@@ -128,8 +128,7 @@ export class Bundler {
           colors.dim(format),
         );
       } else {
-        asset = await this.createAsset(input, type, context);
-        asset.source = await this.transformAsset(asset, context);
+        asset = await this.createAsset(input, type, format, context);
         assets.push(asset);
         newAssets.push(asset);
       }
@@ -161,11 +160,11 @@ export class Bundler {
     asset: Asset,
     context: CreateChunkContext,
   ) {
-    const { input, type } = asset;
+    const { input, type, format } = asset;
     for (const plugin of this.plugins) {
       if (
         plugin.splitAssetDependencies instanceof Function &&
-        await plugin.test(input, type)
+        await plugin.test(input, type, format)
       ) {
         const items = await plugin.splitAssetDependencies(
           asset,
@@ -194,7 +193,7 @@ export class Bundler {
       colors.dim(asset.type),
       colors.dim(asset.format),
     );
-    const { input, type } = asset;
+    const { input, type, format } = asset;
     const context = {
       assets,
       importMap,
@@ -206,7 +205,7 @@ export class Bundler {
     for (const plugin of this.plugins) {
       if (
         plugin.createChunk instanceof Function &&
-        await plugin.test(input, type)
+        await plugin.test(input, type, format)
       ) {
         const chunk = await plugin.createChunk(asset, chunkAssets, context);
 
@@ -406,7 +405,7 @@ export class Bundler {
     for (const plugin of this.plugins) {
       if (
         plugin.createBundle instanceof Function &&
-        await plugin.test(input, type)
+        await plugin.test(input, type, format)
       ) {
         const bundle = await plugin.createBundle(chunk, context);
 
@@ -434,34 +433,12 @@ export class Bundler {
     );
   }
 
-  async transformAsset(asset: Asset, context: TransformAssetContext) {
-    let { input, type, format, source } = asset;
-
-    for (const plugin of this.plugins) {
-      if (
-        plugin.transformAsset instanceof Function &&
-        await plugin.test(input, type)
-      ) {
-        const time = performance.now();
-        source = await plugin.transformAsset(input, source, context);
-        this.logger.debug(
-          colors.yellow("Transform Asset"),
-          colors.dim(plugin.constructor.name),
-          colors.dim(type),
-          colors.dim(format),
-          colors.dim(colors.italic(`(${timestamp(time)})`)),
-        );
-      }
-    }
-    return source;
-  }
-
   async optimizeSource(chunk: Chunk, source: Source) {
     const { input, type, format } = chunk.item;
     for (const plugin of this.plugins) {
       if (
         plugin.optimizeSource instanceof Function &&
-        await plugin.test(input, type)
+        await plugin.test(input, type, format)
       ) {
         const time = performance.now();
         source = await plugin.optimizeSource(source);

@@ -1,10 +1,10 @@
 import { ImportMap, path } from "../../deps.ts";
 import { isFileURL, isURL } from "../../_util.ts";
-import { DependencyType, Plugin } from "../plugin.ts";
+import { DependencyFormat, DependencyType, Plugin } from "../plugin.ts";
 
 export class TextFilePlugin extends Plugin {
-  test(_input: string, _type: DependencyType) {
-    return false;
+  test(_input: string, _type: DependencyType, _format: DependencyFormat) {
+    return true;
   }
 
   protected async readSource(

@@ -14,9 +14,42 @@ const testdataDir = path.resolve(moduleDir, "../../testdata");
 Deno.test({
   name: "test",
   fn() {
-    assertEquals(plugin.test(".json", DependencyType.ImportExport), true);
-    assertEquals(plugin.test(".bson", DependencyType.ImportExport), false);
-    assertEquals(plugin.test(".json", DependencyType.WebManifest), false);
+    assertEquals(
+      plugin.test(
+        "file.json",
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      ),
+      true,
+    );
+    assertEquals(
+      plugin.test(
+        "file.jsonc",
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      ),
+      false,
+    );
+    assertEquals(
+      plugin.test(
+        "file.json",
+        DependencyType.WebManifest,
+        DependencyFormat.Unknown,
+      ),
+      false,
+    );
+    assertEquals(
+      plugin.test(
+        "file.json",
+        DependencyType.WebManifest,
+        DependencyFormat.Json,
+      ),
+      false,
+    );
+    assertEquals(
+      plugin.test("file.jsonc", DependencyType.Fetch, DependencyFormat.Json),
+      true,
+    );
   },
 });
 
@@ -24,7 +57,11 @@ Deno.test({
   name: "createAsset",
   async fn() {
     const a = path.toFileUrl(path.join(testdataDir, "/json/a.json")).href;
-    const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+    const asset = await bundler.createAsset(
+      a,
+      DependencyType.ImportExport,
+      DependencyFormat.Unknown,
+    );
     assertEquals(asset, {
       input: a,
       type: DependencyType.ImportExport,
@@ -40,7 +77,11 @@ Deno.test({
   name: "createChunk",
   async fn() {
     const a = path.toFileUrl(path.join(testdataDir, "/json/a.json")).href;
-    const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+    const asset = await bundler.createAsset(
+      a,
+      DependencyType.ImportExport,
+      DependencyFormat.Unknown,
+    );
     const chunkAssets: Set<Asset> = new Set();
     const chunk = await bundler.createChunk(asset, chunkAssets);
     assertEquals(chunk, {
@@ -62,7 +103,11 @@ Deno.test({
     await t.step("bundle", async () => {
       const a = path.toFileUrl(path.join(testdataDir, "/json/a.json")).href;
 
-      const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+      const asset = await bundler.createAsset(
+        a,
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      );
       const chunkAssets: Set<Asset> = new Set();
       const chunk = await bundler.createChunk(asset, chunkAssets);
       const bundle = await bundler.createBundle(chunk);
@@ -74,7 +119,11 @@ Deno.test({
     await t.step("optimize", async () => {
       const a = path.toFileUrl(path.join(testdataDir, "/json/a.json")).href;
 
-      const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+      const asset = await bundler.createAsset(
+        a,
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      );
       const chunkAssets: Set<Asset> = new Set();
       const chunk = await bundler.createChunk(asset, chunkAssets);
       const bundle = await bundler.createBundle(chunk, { optimize: true });

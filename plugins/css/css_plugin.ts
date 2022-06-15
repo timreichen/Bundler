@@ -10,10 +10,8 @@ import {
   DependencyFormat,
   DependencyType,
   Item,
-  Source,
-  TransformAssetContext,
 } from "../plugin.ts";
-import { getAsset } from "../_util.ts";
+import { getAsset, getDependencyFormat } from "../_util.ts";
 import { extractDependencies } from "./postcss/extract_dependencies.ts";
 import {
   postcssInjectDependenciesPlugin,
@@ -26,21 +24,15 @@ const postcssPresetEnvPlugin = postcssPresetEnv({
 }) as postcss.Plugin;
 
 export class CSSPlugin extends TextFilePlugin {
-  test(input: string, _type: DependencyType) {
-    return /\.css$/.test(input);
-  }
-
-  async transformAsset(
-    input: string,
-    source: Source,
-    _context: TransformAssetContext,
-  ) {
-    const processor = postcss.default([
-      postcssPresetEnvPlugin,
-    ]);
-    const { css: result } = await processor.process(source, { from: input });
-
-    return result;
+  test(input: string, _type: DependencyType, format: DependencyFormat) {
+    switch (format) {
+      case DependencyFormat.Style:
+        return true;
+      case DependencyFormat.Unknown:
+        return getDependencyFormat(input) === DependencyFormat.Style;
+      default:
+        return false;
+    }
   }
 
   async createAsset(
@@ -48,12 +40,19 @@ export class CSSPlugin extends TextFilePlugin {
     type: DependencyType,
     context: CreateAssetContext,
   ) {
-    const source = await this.createSource(input, context) as string;
+    let source = await this.createSource(input, context) as string;
     const { dependencies, exports } = await extractDependencies(
       input,
       source,
       context.importMap,
     );
+
+    const processor = postcss.default([
+      postcssPresetEnvPlugin,
+    ]);
+    const { css: result } = await processor.process(source, { from: input });
+    source = result;
+
     return {
       input,
       type,

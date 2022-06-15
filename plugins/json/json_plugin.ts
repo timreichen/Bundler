@@ -10,10 +10,19 @@ import {
   DependencyType,
   Source,
 } from "../plugin.ts";
+import { getDependencyFormat } from "../_util.ts";
 
 export class JSONPlugin extends TextFilePlugin {
-  test(input: string, type: DependencyType) {
-    return type !== DependencyType.WebManifest && /\.json$/.test(input);
+  test(input: string, type: DependencyType, format: DependencyFormat) {
+    switch (format) {
+      case DependencyFormat.Json:
+        return type !== DependencyType.WebManifest;
+      case DependencyFormat.Unknown:
+        return type !== DependencyType.WebManifest &&
+          getDependencyFormat(input) === DependencyFormat.Json;
+      default:
+        return false;
+    }
   }
 
   async createAsset(

@@ -12,13 +12,11 @@ import {
   CreateChunkContext,
   DependencyFormat,
   DependencyType,
-  Source,
-  TransformAssetContext,
 } from "../plugin.ts";
-import { colors, ts } from "../../deps.ts";
+import { colors, path, ts } from "../../deps.ts";
 import { isURL, timestamp } from "../../_util.ts";
 import { cache, resolve } from "../../cache/cache.ts";
-import { getAsset } from "../_util.ts";
+import { getAsset, getDependencyFormat } from "../_util.ts";
 
 const defaultCompilerOptions: ts.CompilerOptions = {
   allowJs: true,
@@ -42,14 +40,22 @@ export class TypescriptPlugin extends TextFilePlugin {
     super();
     this.#compilerOptions = compilerOptions;
   }
-  test(input: string, _type: DependencyType) {
-    return /\.(t|j)sx?$/.test(input) ||
-      (
-        /^https?:\/\//.test(input) &&
-        !/([\.][a-zA-Z]\w*)$/.test(
-          input,
-        )
-      ); /* handle url without extension as script files */
+  test(input: string, _type: DependencyType, format: DependencyFormat) {
+    switch (format) {
+      case DependencyFormat.Script:
+        return true;
+      case DependencyFormat.Unknown: {
+        return getDependencyFormat(input) === DependencyFormat.Script ||
+          (
+            /^https?:\/\//.test(input) &&
+            !/([\.][a-zA-Z]\w*)$/.test(
+              input,
+            )
+          ); /* handle url without extension as script files */
+      }
+      default:
+        return false;
+    }
   }
 
   protected async readSource(
@@ -73,7 +79,7 @@ export class TypescriptPlugin extends TextFilePlugin {
     type: DependencyType,
     context: CreateAssetContext,
   ) {
-    const source = await this.createSource(input, context) as string;
+    let source = await this.createSource(input, context) as string;
     const { importMap } = context;
     const tsCompilerOptions: ts.CompilerOptions = {
       ...defaultCompilerOptions,
@@ -85,6 +91,26 @@ export class TypescriptPlugin extends TextFilePlugin {
       source,
       { importMap, compilerOptions: tsCompilerOptions },
     );
+
+    if (/\.tsx?$/.test(input)) {
+      const time = performance.now();
+
+      const tsCompilerOptions: ts.CompilerOptions = {
+        ...defaultCompilerOptions,
+        ...this.#compilerOptions,
+      };
+
+      source = ts.transpile(
+        source as string,
+        tsCompilerOptions,
+        input,
+      );
+      context.bundler.logger.debug(
+        colors.yellow("Transpile"),
+        `ts → js`,
+        colors.dim(colors.italic(`(${timestamp(time)})`)),
+      );
+    }
 
     return {
       input,
@@ -194,6 +220,13 @@ export class TypescriptPlugin extends TextFilePlugin {
       }
     }
 
+    let extname = path.extname(asset.input);
+
+    const { input } = asset;
+    if (/\.tsx?$/.test(input)) {
+      extname = ".js";
+    }
+
     return {
       item: {
         input: asset.input,
@@ -202,30 +235,8 @@ export class TypescriptPlugin extends TextFilePlugin {
         source: asset.source,
       },
       dependencyItems,
-      output: await this.createOutput(asset.input, context.root, ".js"),
+      output: await this.createOutput(asset.input, context.root, extname),
     };
-  }
-
-  transformAsset(
-    input: string,
-    source: Source,
-    context: TransformAssetContext,
-  ) {
-    const time = performance.now();
-    if (/\.tsx?$/.test(input)) {
-      const tsCompilerOptions: ts.CompilerOptions = {
-        ...defaultCompilerOptions,
-        ...this.#compilerOptions,
-      };
-
-      source = ts.transpile(source as string, tsCompilerOptions, input);
-      context.bundler.logger.debug(
-        colors.yellow("Transpile"),
-        `ts → js`,
-        colors.dim(colors.italic(`(${timestamp(time)})`)),
-      );
-    }
-    return source;
   }
 
   createBundle(chunk: Chunk, context: CreateBundleContext) {

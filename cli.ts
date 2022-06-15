@@ -71,8 +71,6 @@ function parseBundleArgs(args: flags.Args) {
     config,
   } = args;
 
-  const { inputs, outputMap } = parsePaths(_, root);
-
   if (reload) {
     if (reload && Array.isArray(reload)) {
       // reload = reload.map((filepath) =>
@@ -80,6 +78,8 @@ function parseBundleArgs(args: flags.Args) {
       // );
     }
   }
+
+  const { inputs, outputMap } = parsePaths(_, root);
 
   let logLevel;
   switch (logLevelString) {

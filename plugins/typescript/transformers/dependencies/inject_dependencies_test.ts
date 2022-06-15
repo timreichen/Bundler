@@ -1,3 +1,4 @@
+import { ts } from "../../../../deps.ts";
 import { ConsoleLogger } from "../../../../log/console_logger.ts";
 import { assertEquals } from "../../../../test_deps.ts";
 
@@ -6,6 +7,10 @@ import { injectDependencies } from "./inject_dependencies.ts";
 
 const logger = new ConsoleLogger(ConsoleLogger.logLevels.debug);
 logger.quiet = true;
+
+const compilerOptions: ts.CompilerOptions = {
+  newLine: ts.NewLineKind.LineFeed,
+};
 
 Deno.test({
   name: "update import moduleSpecifier",
@@ -44,6 +49,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(result, ``);
@@ -82,6 +88,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(result, `import * as a from "/b.js";\n`);
@@ -120,6 +127,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(result, `import { a, b } from "/b.js";\n`);
@@ -352,6 +360,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(result, `console.log("hello world");\n`);
@@ -423,6 +432,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(result, `console.log("hello world");\n`);
@@ -456,6 +466,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(result, `type a = string;\ntype b = a;\n`);
@@ -489,6 +500,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -531,6 +543,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -573,6 +586,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -615,6 +629,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -657,6 +672,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -694,6 +710,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -730,6 +747,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -766,6 +784,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -808,6 +827,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -850,6 +870,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -886,6 +907,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -927,6 +949,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -968,6 +991,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1009,6 +1033,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1045,6 +1070,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1081,6 +1107,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1116,6 +1143,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1587,6 +1615,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1623,6 +1652,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(result, `const b = "b";\nexport { b };\n`);
@@ -1656,6 +1686,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1692,6 +1723,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1728,6 +1760,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1764,6 +1797,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1806,6 +1840,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1842,6 +1877,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1878,6 +1914,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1919,6 +1956,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1960,6 +1998,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -1996,6 +2035,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -2031,6 +2071,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -2067,6 +2108,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -2102,6 +2144,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -2137,6 +2180,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
 
         assertEquals(
@@ -2330,6 +2374,7 @@ Deno.test({
           root,
           chunks,
           logger,
+          compilerOptions,
         });
         assertEquals(
           result,

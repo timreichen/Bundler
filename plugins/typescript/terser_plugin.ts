@@ -9,8 +9,15 @@ export class TerserPlugin extends TextFilePlugin {
     super();
     this.options = options;
   }
-  test(input: string, _type: DependencyType) {
-    return getDependencyFormat(input) === DependencyFormat.Script;
+  test(input: string, _type: DependencyType, format: DependencyFormat) {
+    switch (format) {
+      case DependencyFormat.Script:
+        return true;
+      case DependencyFormat.Unknown:
+        return getDependencyFormat(input) === DependencyFormat.Script;
+      default:
+        return false;
+    }
   }
   async optimizeSource(source: string) {
     const { code } = await terser.minify(source, this.options);

@@ -15,9 +15,26 @@ const testdataDir = path.resolve(moduleDir, "../../testdata");
 Deno.test({
   name: "test",
   fn() {
-    assertEquals(plugin.test(".html", DependencyType.ImportExport), true);
-    assertEquals(plugin.test(".html", DependencyType.Fetch), true);
-    assertEquals(plugin.test(".xml", DependencyType.Fetch), false);
+    assertEquals(
+      plugin.test(
+        "file.html",
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      ),
+      true,
+    );
+    assertEquals(
+      plugin.test("file.html", DependencyType.Fetch, DependencyFormat.Unknown),
+      true,
+    );
+    assertEquals(
+      plugin.test("file.xml", DependencyType.Fetch, DependencyFormat.Unknown),
+      false,
+    );
+    assertEquals(
+      plugin.test("file.xml", DependencyType.Fetch, DependencyFormat.Html),
+      true,
+    );
   },
 });
 
@@ -33,7 +50,11 @@ Deno.test({
         const b = path.toFileUrl(
           path.join(testdataDir, "html/script/index.ts"),
         ).href;
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
         assertEquals(asset, {
           input: a,
           type: DependencyType.ImportExport,
@@ -61,7 +82,11 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "html/link/style.css")).href;
 
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
         assertEquals(asset, {
           input: a,
           type: DependencyType.ImportExport,
@@ -92,7 +117,11 @@ Deno.test({
           path.join(testdataDir, "html/script/index.html"),
         ).href;
 
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
 
         const chunkAssets: Set<Asset> = new Set();
         const chunk = await bundler.createChunk(asset, chunkAssets);
@@ -117,7 +146,11 @@ Deno.test({
           path.join(testdataDir, "html/link/index.html"),
         ).href;
 
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
 
         const chunkAssets: Set<Asset> = new Set();
         const chunk = await bundler.createChunk(asset, chunkAssets);
@@ -150,7 +183,11 @@ Deno.test({
           path.join(testdataDir, "html/script/index.ts"),
         ).href;
 
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
         const chunkAssets: Set<Asset> = new Set();
         const chunk = await bundler.createChunk(asset, chunkAssets);
         const chunkB = {

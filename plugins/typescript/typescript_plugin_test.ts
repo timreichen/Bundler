@@ -15,11 +15,62 @@ const testdataDir = path.resolve(moduleDir, "../../testdata");
 Deno.test({
   name: "test",
   fn() {
-    assertEquals(plugin.test(".js", DependencyType.ImportExport), true);
-    assertEquals(plugin.test(".ts", DependencyType.ImportExport), true);
-    assertEquals(plugin.test(".jsx", DependencyType.ImportExport), true);
-    assertEquals(plugin.test(".tsx", DependencyType.ImportExport), true);
-    assertEquals(plugin.test(".json", DependencyType.ImportExport), false);
+    assertEquals(
+      plugin.test(
+        "file.js",
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      ),
+      true,
+    );
+    assertEquals(
+      plugin.test(
+        "file.ts",
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      ),
+      true,
+    );
+    assertEquals(
+      plugin.test(
+        "file.mjs",
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      ),
+      false,
+    );
+    assertEquals(
+      plugin.test(
+        "file.mjs",
+        DependencyType.ImportExport,
+        DependencyFormat.Script,
+      ),
+      true,
+    );
+    assertEquals(
+      plugin.test(
+        "file.jsx",
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      ),
+      true,
+    );
+    assertEquals(
+      plugin.test(
+        "file.tsx",
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      ),
+      true,
+    );
+    assertEquals(
+      plugin.test(
+        "file.json",
+        DependencyType.ImportExport,
+        DependencyFormat.Unknown,
+      ),
+      false,
+    );
   },
 });
 
@@ -34,7 +85,11 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/linear/b.ts")).href;
 
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
         assertEquals(asset, {
           input: a,
           type: DependencyType.ImportExport,
@@ -51,7 +106,7 @@ Deno.test({
           ],
           exports: {},
           source:
-            `import { b } from "./b.ts";${newline}${newline}console.log(b);${newline}`,
+            `import { b } from "./b.ts";${newline}console.log(b);${newline}`,
         });
       },
     });
@@ -66,7 +121,11 @@ Deno.test({
           path.toFileUrl(path.join(testdataDir, "typescript/circular/b.ts"))
             .href;
 
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
         assertEquals(asset, {
           input: a,
           type: DependencyType.ImportExport,
@@ -87,7 +146,7 @@ Deno.test({
             },
           },
           source:
-            `import { b } from "./b.ts";${newline}${newline}console.log(b);${newline}${newline}export const a = "a";${newline}`,
+            `import { b } from "./b.ts";${newline}console.log(b);${newline}export const a = "a";${newline}`,
         });
       },
     });
@@ -102,7 +161,11 @@ Deno.test({
           path.toFileUrl(path.join(testdataDir, "typescript/circular/b.ts"))
             .href;
 
-        const asset = await bundler.createAsset(b, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          b,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
         assertEquals(asset, {
           input: b,
           type: DependencyType.ImportExport,
@@ -123,7 +186,7 @@ Deno.test({
             },
           },
           source:
-            `import { a } from "./a.ts";${newline}${newline}console.log(a);${newline}${newline}export const b = "b";${newline}`,
+            `import { a } from "./a.ts";${newline}console.log(a);${newline}export const b = "b";${newline}`,
         });
       },
     });
@@ -137,7 +200,11 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/double/b.ts")).href;
 
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
         assertEquals(asset, {
           input: a,
           type: DependencyType.ImportExport,
@@ -162,7 +229,7 @@ Deno.test({
           ],
           exports: {},
           source:
-            `import { b } from "./b.ts";${newline}import { b as c } from "./b.ts";${newline}${newline}console.log(b, c);${newline}`,
+            `import { b } from "./b.ts";${newline}import { b as c } from "./b.ts";${newline}console.log(b, c);${newline}`,
         });
       },
     });
@@ -175,7 +242,11 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/double/b.ts")).href;
 
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
         assertEquals(asset, {
           input: a,
           type: DependencyType.ImportExport,
@@ -213,7 +284,11 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/fetch/b.ts")).href;
 
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
         assertEquals(asset, {
           input: a,
           type: DependencyType.ImportExport,
@@ -245,11 +320,16 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/linear/b.ts")).href;
 
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
 
         const assetB = await bundler.createAsset(
           b,
           DependencyType.ImportExport,
+          DependencyFormat.Unknown,
         );
         const chunkAssets: Set<Asset> = new Set();
         const chunk = await bundler.createChunk(asset, chunkAssets, {
@@ -264,7 +344,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             source:
-              `import { b } from "./b.ts";${newline}${newline}console.log(b);${newline}`,
+              `import { b } from "./b.ts";${newline}console.log(b);${newline}`,
           },
           dependencyItems: [
             {
@@ -288,14 +368,20 @@ Deno.test({
           path.toFileUrl(path.join(testdataDir, "typescript/chain/b.ts")).href;
         const c =
           path.toFileUrl(path.join(testdataDir, "typescript/chain/c.ts")).href;
-        const asset = await bundler.createAsset(a, DependencyType.ImportExport);
+        const asset = await bundler.createAsset(
+          a,
+          DependencyType.ImportExport,
+          DependencyFormat.Unknown,
+        );
         const assetB = await bundler.createAsset(
           b,
           DependencyType.ImportExport,
+          DependencyFormat.Unknown,
         );
         const assetC = await bundler.createAsset(
           c,
           DependencyType.ImportExport,
+          DependencyFormat.Unknown,
         );
         const chunkAssets: Set<Asset> = new Set();
         const chunk = await bundler.createChunk(asset, chunkAssets, {
@@ -310,7 +396,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             source:
-              `import { b } from "./b.ts";${newline}${newline}console.log(b);${newline}`,
+              `import { b } from "./b.ts";${newline}console.log(b);${newline}`,
           },
           dependencyItems: [
             {
@@ -318,7 +404,7 @@ Deno.test({
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
               source:
-                `import { c } from "./c.ts";${newline}${newline}console.log(c);${newline}${newline}export const b = "b";${newline}`,
+                `import { c } from "./c.ts";${newline}console.log(c);${newline}export const b = "b";${newline}`,
             },
             {
               format: DependencyFormat.Script,
@@ -345,10 +431,12 @@ Deno.test({
         const assetA = await bundler.createAsset(
           a,
           DependencyType.ImportExport,
+          DependencyFormat.Unknown,
         );
         const assetB = await bundler.createAsset(
           b,
           DependencyType.ImportExport,
+          DependencyFormat.Unknown,
         );
 
         const chunkContext = {
@@ -369,7 +457,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             source:
-              `import { b } from "./b.ts";${newline}${newline}console.log(b);${newline}${newline}export const a = "a";${newline}`,
+              `import { b } from "./b.ts";${newline}console.log(b);${newline}export const a = "a";${newline}`,
           },
           dependencyItems: [
             {
@@ -377,7 +465,7 @@ Deno.test({
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
               source:
-                `import { a } from "./a.ts";${newline}${newline}console.log(a);${newline}${newline}export const b = "b";${newline}`,
+                `import { a } from "./a.ts";${newline}console.log(a);${newline}export const b = "b";${newline}`,
             },
           ],
           output: await plugin.createOutput(a, "dist", ".js"),
@@ -398,10 +486,12 @@ Deno.test({
         const assetA = await bundler.createAsset(
           a,
           DependencyType.ImportExport,
+          DependencyFormat.Unknown,
         );
         const assetB = await bundler.createAsset(
           b,
           DependencyType.ImportExport,
+          DependencyFormat.Unknown,
         );
 
         const chunkContext = {
@@ -422,7 +512,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             source:
-              `import { a } from "./a.ts";${newline}${newline}console.log(a);${newline}${newline}export const b = "b";${newline}`,
+              `import { a } from "./a.ts";${newline}console.log(a);${newline}export const b = "b";${newline}`,
           },
           dependencyItems: [
             {
@@ -430,7 +520,7 @@ Deno.test({
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
               source:
-                `import { b } from "./b.ts";${newline}${newline}console.log(b);${newline}${newline}export const a = "a";${newline}`,
+                `import { b } from "./b.ts";${newline}console.log(b);${newline}export const a = "a";${newline}`,
             },
           ],
           output: await plugin.createOutput(b, "dist", ".js"),
@@ -450,10 +540,12 @@ Deno.test({
         const assetA = await bundler.createAsset(
           a,
           DependencyType.ImportExport,
+          DependencyFormat.Unknown,
         );
         const assetB = await bundler.createAsset(
           b,
           DependencyType.ImportExport,
+          DependencyFormat.Unknown,
         );
 
         const chunkContext = {
@@ -474,7 +566,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             source:
-              `import { b } from "./b.ts";${newline}import { b as c } from "./b.ts";${newline}${newline}console.log(b, c);${newline}`,
+              `import { b } from "./b.ts";${newline}import { b as c } from "./b.ts";${newline}console.log(b, c);${newline}`,
           },
           dependencyItems: [
             {
@@ -500,8 +592,13 @@ Deno.test({
         const assetA = await bundler.createAsset(
           a,
           DependencyType.ImportExport,
+          DependencyFormat.Unknown,
         );
-        const assetB = await bundler.createAsset(b, DependencyType.Fetch);
+        const assetB = await bundler.createAsset(
+          b,
+          DependencyType.Fetch,
+          DependencyFormat.Unknown,
+        );
 
         const chunkContext = {
           bundler,

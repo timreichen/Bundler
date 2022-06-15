@@ -12,7 +12,7 @@ import {
 } from "../plugin.ts";
 
 export class FilePlugin extends Plugin {
-  test(_input: string, _type: DependencyType) {
+  test(_input: string, _type: DependencyType, _format: DependencyFormat) {
     return true;
   }
   async readSource(input: string) {

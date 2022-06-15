@@ -246,7 +246,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Json,
             exports: {},
-            source: `{\n  "foo": "bar"\n}\n`,
+            source: `{${newline}  "foo": "bar"${newline}}${newline}`,
           },
         ]);
       },

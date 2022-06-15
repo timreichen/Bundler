@@ -246,7 +246,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Json,
             exports: {},
-            source: `{${newline}  "foo": "bar"${newline}}${newline}`,
+            source: `{\n  "foo": "bar"\n}\n`,
           },
         ]);
       },
@@ -286,7 +286,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Style,
             exports: {},
-            source: `h1 {${newline}  font-family: Helvetica;${newline}}`,
+            source: `h1 {\n  font-family: Helvetica;\n}`,
           },
         ]);
       },
@@ -308,7 +308,7 @@ Deno.test({
 
         const importMap = resolveImportMap(
           JSON.parse(await Deno.readTextFile(importmapPath)),
-          new URL(importmapPath, "file://"),
+          path.toFileUrl(importmapPath),
         );
 
         const asset = await bundler.createAssets([a], { importMap });
@@ -823,7 +823,7 @@ Deno.test({
 
         const importMap = resolveImportMap(
           JSON.parse(await Deno.readTextFile(importmapPath)),
-          new URL(importmapPath, "file://"),
+          path.toFileUrl(importmapPath),
         );
 
         const assets = await bundler.createAssets([a], { importMap });
@@ -890,7 +890,7 @@ Deno.test({
           {
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
             source:
-              `const b = new CSSStyleSheet();${newline}b.replaceSync(\`h1 {${newline}  font-family: Helvetica;${newline}}\`);${newline}console.log(b);${newline}`,
+              `const b = new CSSStyleSheet();${newline}b.replaceSync(\`h1 {\n  font-family: Helvetica;\n}\`);${newline}console.log(b);${newline}`,
           },
         ]);
       },
@@ -911,7 +911,7 @@ Deno.test({
           {
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
             source:
-              `const b = JSON.parse(\`{${newline}  "foo": "bar"${newline}}${newline}\`);${newline}console.log(b);${newline}`,
+              `const b = JSON.parse(\`{\n  "foo": "bar"\n}\n\`);${newline}console.log(b);${newline}`,
           },
         ]);
       },
@@ -942,10 +942,9 @@ Deno.test({
 
         assertEquals(bundles[0], {
           output: output,
-          source:
-            `<html>${newline}  <head>${newline}    <link rel="manifest" href="/${
-              path.relative(path.dirname(output), manifestOutput)
-            }">${newline}  </head>${newline}  <body>${newline}  </body>${newline}</html>`,
+          source: `<html>\n  <head>\n    <link rel="manifest" href="/${
+            path.relative(path.dirname(output), manifestOutput)
+          }">\n  </head>\n  <body>\n  </body>\n</html>`,
         });
 
         const imageOutput1 = await filePlugin
@@ -1085,7 +1084,7 @@ Deno.test({
 
         const importMap = resolveImportMap(
           JSON.parse(await Deno.readTextFile(importmapPath)),
-          new URL(importmapPath, "file://"),
+          path.toFileUrl(importmapPath),
         );
         const assets = await bundler.createAssets([a], { importMap });
         const chunks = await bundler.createChunks([a], assets, { importMap });

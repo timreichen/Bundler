@@ -173,7 +173,7 @@ async function bundleCommand(args: flags.Args) {
     const resolvedImportMapPath = path.resolve(Deno.cwd(), importMapPath);
     importMap = resolveImportMap(
       JSON.parse(await Deno.readTextFile(resolvedImportMapPath)),
-      new URL(resolvedImportMapPath, "file://"),
+      path.toFileUrl(resolvedImportMapPath),
     );
   }
 

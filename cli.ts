@@ -33,7 +33,7 @@ async function writeBundles(bundler: Bundler, bundles: Bundle[]) {
   const time = performance.now();
   for (const bundle of bundles) {
     const time = performance.now();
-    const output = path.join(Deno.cwd(), path.fromFileUrl(bundle.output));
+    const output = path.fromFileUrl(bundle.output);
     const source = typeof bundle.source === "string"
       ? new TextEncoder().encode(bundle.source)
       : new Uint8Array(bundle.source);

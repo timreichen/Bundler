@@ -23,7 +23,7 @@ import {
   createSha256,
   formatBytes,
   isFileURL,
-  isURL,
+  parsePaths,
   timestamp,
 } from "./_util.ts";
 import { Asset, Bundle, Chunk } from "./plugins/plugin.ts";
@@ -71,15 +71,7 @@ function parseBundleArgs(args: flags.Args) {
     config,
   } = args;
 
-  const regex = /^(?<input>.+?)(?:\=(["']?)(?<output>[\w\-. ]+)\2)?$/;
-  const outputMap = Object.fromEntries(_.map((entry) => {
-    let { input, output } = regex.exec(entry as string)?.groups || {};
-    if (!isURL(input)) {
-      input = path.toFileUrl(path.resolve(Deno.cwd(), input)).href;
-    }
-    if (output) output = path.toFileUrl(path.join(root, output)).href;
-    return [input, output];
-  }));
+  const { inputs, outputMap } = parsePaths(_, root);
 
   if (reload) {
     if (reload && Array.isArray(reload)) {
@@ -88,8 +80,6 @@ function parseBundleArgs(args: flags.Args) {
       // );
     }
   }
-
-  const inputs = Object.keys(outputMap);
 
   let logLevel;
   switch (logLevelString) {
@@ -120,7 +110,7 @@ function parseBundleArgs(args: flags.Args) {
   };
 }
 
-const cacheDir = path.resolve(Deno.cwd(), ".cache");
+const cacheDir = path.resolve(Deno.cwd(), ".bundler");
 const cacheAssetsDir = path.join(cacheDir, "assets");
 
 async function exists(filename: string) {
@@ -277,6 +267,9 @@ async function bundleCommand(args: flags.Args) {
 
     bundler.logger.info(
       colors.green(`Done`),
+      `${assets.length} assets,`,
+      `${chunks.length} chunks,`,
+      `${bundles.length} bundles`,
       colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
 

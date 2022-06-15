@@ -59,7 +59,7 @@ duplication and allows multiple bundle files to share code.
 
 - built in file watcher with `--watch` option
 - built in code optimization and minification with `--optimize` option
-- uses cache dir `.cache` for faster re-bundlings
+- uses cache dir `.bundler` for faster reloads
 
 ## Installation
 
@@ -87,7 +87,7 @@ bundles and write the output files into an directory (default `dist`).
 | -c, --config \<FILE> | The configuration file can be used to configure different aspects of<br>deno including TypeScript, linting, and code formatting. Typically<br>the configuration file will be called `deno.json` or `deno.jsonc`<br>and automatically detected; in that case this flag is not necessary.<br>See<br>https://deno.land/manual@v1.22.0/getting_started/configuration_file | {}      |
 |     --out-dir \<DIR> | Name of out_dir                                                                                                                                                                                                                                                                                                                                                       | "dist"  |
 |           -h, --help | Prints help information                                                                                                                                                                                                                                                                                                                                               |         |
-| --import-map \<FILE> | Load import map file from local file or remote URL.<br>Docs:<br>https://deno.land/manual@v1.22.0/linking_to_external_code/import_maps<br>Specification: https://wicg.github.io/import-maps/<br>Examples: https://github.com/WICG<br>import-maps#the-import-mapfile                                                                                                    | {}      |
+| --import-map \<FILE> | Load import map file from local file or remote URL.<br>Docs:<br>https://deno.land/manual@v1.22.0/linking_to_external_code/import_maps<br>Specification: https://wicg.github.io/import-maps/<br>Examples: https://github.com/WICG/import-maps#the-import-mapfile                                                                                                       | {}      |
 |           --optimize | Optimize source code                                                                                                                                                                                                                                                                                                                                                  | false   |
 |      -L, --log-level | Set log level [possible values: debug, info]                                                                                                                                                                                                                                                                                                                          | debug   |
 |          -q, --quiet | Suppress diagnostic output                                                                                                                                                                                                                                                                                                                                            | false   |

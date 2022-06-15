@@ -1,3 +1,5 @@
+import { path } from "./deps.ts";
+
 type OSType = "windows" | "linux" | "darwin";
 
 const osType: OSType = (() => {
@@ -72,4 +74,26 @@ export async function createSha256(input: string) {
   const hex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 
   return hex;
+}
+
+export function parsePaths(paths: (string | number)[], root: string) {
+  const regex = /^(?<input>.+?)(?:(?:\=)(["']?)(?<output>.+)\2)?$/;
+  const inputs: string[] = [];
+  const outputMap: Record<string, string> = {};
+  paths.forEach((entry) => {
+    let { input, output } = regex.exec(entry as string)?.groups || {};
+    if (!isFileURL(input) && !isURL(input)) {
+      input = path.toFileUrl(path.resolve(Deno.cwd(), input)).href;
+    }
+    inputs.push(input);
+    if (output) {
+      if (!isURL(output)) {
+        output =
+          path.toFileUrl(path.resolve(Deno.cwd(), path.join(root, output)))
+            .href;
+      }
+      outputMap[input] = output;
+    }
+  });
+  return { inputs, outputMap };
 }

@@ -20,8 +20,6 @@ function removeNodeModifiers(
   );
 }
 
-const printer: ts.Printer = ts.createPrinter({ removeComments: false });
-
 export function removeModifiers(
   fileName: string,
   source: string,
@@ -39,6 +37,11 @@ export function removeModifiers(
     [removeModifiersTransformer(exportMap, blacklistIdentifiers)],
     compilerOptions,
   );
+  const printer: ts.Printer = ts.createPrinter({
+    removeComments: false,
+    newLine: compilerOptions?.newLine,
+  });
+
   return printer.printFile(transformed[0] as ts.SourceFile);
 }
 

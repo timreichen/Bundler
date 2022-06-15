@@ -54,8 +54,6 @@ function transform(
   return transformed[0];
 }
 
-const printer: ts.Printer = ts.createPrinter({ removeComments: false });
-
 // replace import moduleSpecifier with chunk output
 function updateImportSpecifier(
   node: ts.ImportDeclaration,
@@ -786,6 +784,11 @@ export function injectDependenciesFromSourceFile(
       createExportDeclaration(exportMap),
     );
   }
+
+  const printer: ts.Printer = ts.createPrinter({
+    removeComments: false,
+    newLine: context.compilerOptions?.newLine,
+  });
 
   return printer.printFile(
     ts.factory.createSourceFile(

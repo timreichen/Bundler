@@ -68,9 +68,8 @@ export function parsePaths(paths: (string | number)[], root: string) {
     inputs.push(input);
     if (output) {
       if (!isURL(output)) {
-        output =
-          path.toFileUrl(path.resolve(Deno.cwd(), path.join(root, output)))
-            .href;
+        output = path.toFileUrl(path.join(root, output))
+          .href;
       }
       outputMap[input] = output;
     }

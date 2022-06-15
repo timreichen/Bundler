@@ -75,9 +75,9 @@ function parseBundleArgs(args: flags.Args) {
   const outputMap = Object.fromEntries(_.map((entry) => {
     let { input, output } = regex.exec(entry as string)?.groups || {};
     if (!isURL(input)) {
-      input = new URL(path.resolve(Deno.cwd(), input), "file://").href;
+      input = path.toFileUrl(path.resolve(Deno.cwd(), input)).href;
     }
-    if (output) output = new URL(path.join(root, output), "file://").href;
+    if (output) output = path.toFileUrl(path.join(root, output)).href;
     return [input, output];
   }));
 

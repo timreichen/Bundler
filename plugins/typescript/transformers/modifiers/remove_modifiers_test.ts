@@ -1,8 +1,5 @@
-import { isWindows } from "https://deno.land/std@0.143.0/_util/os.ts";
 import { assertEquals } from "../../../../test_deps.ts";
 import { removeModifiers } from "./remove_modifiers.ts";
-
-const newline = isWindows ? "\r\n" : "\n";
 
 Deno.test({
   name: "export",
@@ -22,7 +19,7 @@ Deno.test({
         );
         assertEquals(
           transformedSource,
-          `const a = "a";${newline}`,
+          `const a = "a";\n`,
         );
         assertEquals(exportSpecifiers, { a: "a" });
       },
@@ -85,7 +82,7 @@ Deno.test({
         );
         assertEquals(
           transformedSource,
-          `export * from "./x.ts";${newline}`,
+          `export * from "./x.ts";\n`,
         );
         assertEquals(exportSpecifiers, {});
       },
@@ -106,7 +103,7 @@ Deno.test({
         );
         assertEquals(
           transformedSource,
-          `export * as X from "./x.ts";${newline}`,
+          `export * as X from "./x.ts";\n`,
         );
         assertEquals(exportSpecifiers, {});
       },
@@ -127,7 +124,7 @@ Deno.test({
         );
         assertEquals(
           transformedSource,
-          `function x() { }${newline}`,
+          `function x() { }\n`,
         );
         assertEquals(exportSpecifiers, { x: "x" });
       },
@@ -148,7 +145,7 @@ Deno.test({
         );
         assertEquals(
           transformedSource,
-          `function x() { }${newline}`,
+          `function x() { }\n`,
         );
         assertEquals(exportSpecifiers, { default: "x" });
       },
@@ -167,7 +164,7 @@ Deno.test({
           exportSpecifiers,
           blacklistIdentifiers,
         );
-        assertEquals(transformedSource, `class X {${newline}}${newline}`);
+        assertEquals(transformedSource, `class X {\n}\n`);
         assertEquals(exportSpecifiers, { X: "X" });
       },
     });
@@ -185,7 +182,7 @@ Deno.test({
           exportSpecifiers,
           blacklistIdentifiers,
         );
-        assertEquals(transformedSource, `class X {${newline}}${newline}`);
+        assertEquals(transformedSource, `class X {\n}\n`);
         assertEquals(exportSpecifiers, { default: "X" });
       },
     });
@@ -206,7 +203,7 @@ Deno.test({
 
         assertEquals(
           transformedSource,
-          `console.log("OK");${newline}enum X {${newline}}${newline}`,
+          `console.log("OK");\nenum X {\n}\n`,
         );
         assertEquals(exportSpecifiers, { X: "X" });
       },

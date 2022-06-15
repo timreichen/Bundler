@@ -3,7 +3,6 @@ import { Bundler } from "../../bundler.ts";
 import { Asset, DependencyFormat, DependencyType } from "../plugin.ts";
 import { JSONPlugin } from "./json_plugin.ts";
 import { path } from "../../deps.ts";
-import { newline } from "../../_util.ts";
 
 const plugin = new JSONPlugin();
 const bundler = new Bundler({ plugins: [plugin], quiet: true });
@@ -68,7 +67,7 @@ Deno.test({
       format: DependencyFormat.Json,
       dependencies: [],
       exports: {},
-      source: `{${newline}  "foo": "bar"${newline}}${newline}`,
+      source: `{\n  "foo": "bar"\n}\n`,
     });
   },
 });
@@ -89,7 +88,7 @@ Deno.test({
       item: {
         format: DependencyFormat.Json,
         input: a,
-        source: `{${newline}  "foo": "bar"${newline}}${newline}`,
+        source: `{\n  "foo": "bar"\n}\n`,
         type: DependencyType.ImportExport,
       },
       output: await plugin.createOutput(a, "dist", ".json"),
@@ -112,7 +111,7 @@ Deno.test({
       const chunk = await bundler.createChunk(asset, chunkAssets);
       const bundle = await bundler.createBundle(chunk);
       assertEquals(bundle, {
-        source: `{${newline}  "foo": "bar"${newline}}${newline}`,
+        source: `{\n  "foo": "bar"\n}\n`,
         output: await plugin.createOutput(a, "dist", ".json"),
       });
     });

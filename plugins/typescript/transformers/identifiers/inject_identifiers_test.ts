@@ -1,5 +1,10 @@
+import { ts } from "../../../../deps.ts";
 import { assertEquals } from "../../../../test_deps.ts";
 import { injectIdentifiers } from "./inject_identifiers.ts";
+
+const compilerOptions: ts.CompilerOptions = {
+  newLine: ts.NewLineKind.LineFeed,
+};
 
 Deno.test({
   name: "variable declaration",
@@ -16,6 +21,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -36,6 +42,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -57,6 +64,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -77,6 +85,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -98,6 +107,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -118,6 +128,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -141,6 +152,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -161,6 +173,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -184,6 +197,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -204,6 +218,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -227,6 +242,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -247,6 +263,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -275,6 +292,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -295,6 +313,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -318,6 +337,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -338,6 +358,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -366,6 +387,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -386,6 +408,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -408,6 +431,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -429,6 +453,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -452,6 +477,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -474,6 +500,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -502,6 +529,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -522,6 +550,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -544,6 +573,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -566,6 +596,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -588,6 +619,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -610,6 +642,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -632,6 +665,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -654,6 +688,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -676,6 +711,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -704,6 +740,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
         assertEquals(
           source,
@@ -725,6 +762,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -745,6 +783,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -773,6 +812,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
         assertEquals(
           source,
@@ -794,6 +834,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -814,6 +855,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -842,6 +884,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
         assertEquals(
           source,
@@ -863,6 +906,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -883,6 +927,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -911,6 +956,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -933,6 +979,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -953,6 +1000,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -981,6 +1029,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1009,6 +1058,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1029,6 +1079,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1057,6 +1108,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1080,6 +1132,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1103,6 +1156,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1126,6 +1180,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1149,6 +1204,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1172,6 +1228,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1195,6 +1252,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1217,6 +1275,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1239,6 +1298,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1261,6 +1321,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1283,6 +1344,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1305,6 +1367,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1327,6 +1390,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1350,6 +1414,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1373,6 +1438,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1396,6 +1462,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1423,6 +1490,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1445,6 +1513,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1468,6 +1537,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1490,6 +1560,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1513,6 +1584,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1541,6 +1613,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1563,6 +1636,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1585,6 +1659,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1607,6 +1682,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1630,6 +1706,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1653,6 +1730,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1676,6 +1754,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1696,6 +1775,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1719,6 +1799,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1742,6 +1823,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1770,6 +1852,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(
@@ -1790,6 +1873,7 @@ Deno.test({
           sourceText,
           identifierMap,
           blacklistIdentifiers,
+          compilerOptions,
         );
 
         assertEquals(

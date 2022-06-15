@@ -286,7 +286,7 @@ Deno.test({
             type: DependencyType.ImportExport,
             format: DependencyFormat.Style,
             exports: {},
-            source: `h1 {\n  font-family: Helvetica;\n}`,
+            source: `h1 {${newline}  font-family: Helvetica;${newline}}`,
           },
         ]);
       },
@@ -890,7 +890,7 @@ Deno.test({
           {
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
             source:
-              `const b = new CSSStyleSheet();${newline}b.replaceSync(\`h1 {\n  font-family: Helvetica;\n}\`);${newline}console.log(b);${newline}`,
+              `const b = new CSSStyleSheet();${newline}b.replaceSync(\`h1 {${newline}  font-family: Helvetica;${newline}}\`);${newline}console.log(b);${newline}`,
           },
         ]);
       },
@@ -911,7 +911,7 @@ Deno.test({
           {
             output: await typescriptPlugin.createOutput(a, "dist", ".js"),
             source:
-              `const b = JSON.parse(\`{\n  "foo": "bar"\n}\n\`);${newline}console.log(b);${newline}`,
+              `const b = JSON.parse(\`{${newline}  "foo": "bar"${newline}}${newline}\`);${newline}console.log(b);${newline}`,
           },
         ]);
       },
@@ -942,9 +942,10 @@ Deno.test({
 
         assertEquals(bundles[0], {
           output: output,
-          source: `<html>\n  <head>\n    <link rel="manifest" href="/${
-            path.relative(path.dirname(output), manifestOutput)
-          }">\n  </head>\n  <body>\n  </body>\n</html>`,
+          source:
+            `<html>${newline}  <head>${newline}    <link rel="manifest" href="/${
+              path.relative(path.dirname(output), manifestOutput)
+            }">${newline}  </head>${newline}  <body>${newline}  </body>${newline}</html>`,
         });
 
         const imageOutput1 = await filePlugin

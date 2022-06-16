@@ -1,9 +1,13 @@
-<svg width="724" height="296" viewBox="0 0 724 296"
+<svg width="714" height="296" viewBox="0 0 714 296"
     xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink">
     <style>
-    text { fill: #000; }
-    @media (prefers-color-scheme: dark) { text { fill: #fff; } }
+    text { fill: rgb(50, 50, 50); }
+    #border { fill: rgb(50, 50, 50); }
+    @media (prefers-color-scheme: dark) {
+        text { fill: rgb(245, 245, 245); }
+        #border { fill: rgb(245, 245, 245); }
+    }
     </style>
     <defs>
         <polygon id="a" points="275 148 201 275 53 275 -21 148 53 21 201 21"/>
@@ -12,15 +16,15 @@
         <polygon id="d" points="274 231.90686 149.333333 232 87 125 211.666667 125"/>
     </defs>
     <g fill="none" fill-rule="evenodd">
-        <g transform="translate(266 46)" fill="#fff" font-family="HelveticaNeue-UltraLight, Helvetica Neue" font-weight="200">
-            <text font-size="150">
+        <g transform="translate(256 48)" font-family="HelveticaNeue-UltraLight, Helvetica Neue" font-weight="200">
+            <text fill-rule="nonzero" font-size="150">
                 <tspan x="0" y="140">Bundler</tspan>
             </text>
             <text font-size="30.5">
-                <tspan x="6" y="172">Deno bundler with the web in mind</tspan>
+                <tspan x="7" y="168">Deno bundler with the web in mind</tspan>
             </text>
         </g>
-        <use fill="#323232" transform="rotate(90 127 148)" xlink:href="#a"/>
+        <use id="border" transform="rotate(90 127 148)" xlink:href="#a"/>
         <use fill="#33A9DC" transform="rotate(90 73.5 178.5)" xlink:href="#b"/>
         <use fill="#F1652A" transform="rotate(90 127.5 85.5)" xlink:href="#c"/>
         <use fill="#F7DF1D" transform="rotate(90 180.5 178.5)" xlink:href="#d"/>

@@ -78,7 +78,7 @@ bundler bundle index.html=index.html
 ```
 
 This will analyze the entry file `index.html` and its dependencies, generate
-bundles and write the output files into an directory (default `dist`).
+bundles and write the output files into an directory.
 
 #### Options <!-- omit in toc -->
 
@@ -95,13 +95,17 @@ bundles and write the output files into an directory (default `dist`).
 
 ### API
 
+#### Example <!-- omit in toc -->
+
 ```ts
 import { bundle } from "https://deno.land/x/bundler/mod.ts";
 
 const input = "src/index.html";
+
+const inputs = [input];
 const outputMap = { [input]: "index.html" };
 
-const { bundles } = await bundle([input], { outputMap });
+const { bundles } = await bundle(inputs, { outputMap });
 ```
 
 #### Advanced Example <!-- omit in toc -->
@@ -114,6 +118,8 @@ import {
 } from "https://deno.land/x/bundler/mod.ts";
 
 const input = "src/index.html";
+
+const inputs = [input];
 const outputMap = { [input]: "index.html" };
 
 const plugins = [
@@ -123,9 +129,9 @@ const plugins = [
 
 const bundler = new Bundler(plugins);
 
-const graph = await bundler.createGraph([input], { outputMap });
-const chunks = await bundler.createChunks(inputs, graph);
-const bundles = await bundler.createBundles(chunks, graph);
+const assets = await bundler.createAssets(inputs);
+const chunks = await bundler.createChunks(inputs, assets, { outputMap });
+const bundles = await bundler.createBundles(chunks);
 ```
 
 ## Unstable

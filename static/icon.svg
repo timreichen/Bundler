@@ -1,28 +1,28 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="658px" height="296px" viewBox="0 0 658 296" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>Icon</title>
+<svg width="724" height="296" viewBox="0 0 724 296"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
+    <style>
+    text { fill: #000; }
+    @media (prefers-color-scheme: dark) { text { fill: #fff; } }
+    </style>
     <defs>
-        <polygon id="path-1" points="275.801669 147.801669 201.900834 275.801669 54.0991655 275.801669 -19.8016689 147.801669 54.0991655 19.8016689 201.900834 19.8016689"></polygon>
+        <polygon id="a" points="275 148 201 275 53 275 -21 148 53 21 201 21"/>
+        <polygon id="b" points="167 125.093059 104.666667 232 -20 232 42.3333333 125"/>
+        <polygon id="c" points="190 85.4064245 127.5 193 65 85.5 127.5 -22"/>
+        <polygon id="d" points="274 231.90686 149.333333 232 87 125 211.666667 125"/>
     </defs>
-    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <g id="Group" transform="translate(0.000000, 0.000000)">
-            <g transform="translate(276.000000, 62.000000)" fill="#000000" font-family="HelveticaNeue-UltraLight, Helvetica Neue" font-weight="200">
-                <text id="Bundler" font-size="125">
-                    <tspan x="0" y="116">Bundler</tspan>
-                </text>
-                <text id="Deno-bundler-with-th" font-size="25">
-                    <tspan x="5" y="143">Deno bundler with the web in mind</tspan>
-                </text>
-            </g>
-            <mask id="mask-2" fill="white">
-                <use xlink:href="#path-1"></use>
-            </mask>
-            <use id="Mask" fill="#323232" transform="translate(128.000000, 147.801669) rotate(-270.000000) translate(-128.000000, -147.801669) " xlink:href="#path-1"></use>
-            <g mask="url(#mask-2)" id="Globe">
-                <g transform="translate(31.614156, 52.004552)">
-                    <path d="M161.846811,101.647642 L191.951274,101.647381 C189.314061,146.839115 155.697442,183.674822 112.113381,191.060135 C140.7155,171.205969 159.956504,138.727229 161.846811,101.647642 Z M30.1531895,101.647642 C32.043474,138.726795 51.2840502,171.205209 79.8840883,191.060717 C36.3019902,183.674199 2.68591647,146.838733 0.0487262263,101.647381 Z M89.9999371,101.646152 L89.9981968,183.341861 C62.7247674,165.913264 44.1282438,136.017444 42.1710703,101.64807 L89.9999371,101.646152 Z M101.999937,101.646152 L149.82893,101.64807 C147.87178,136.017025 129.275686,165.912535 102.002801,183.341224 L101.999937,101.646152 Z M-0.000173654241,91.0938204 L-0.000173654241,100.736476 C-0.078459548,99.1392689 -0.118062901,97.5318516 -0.118062901,95.9151481 C-0.118062901,94.2984446 -0.078459548,92.6910272 -0.000173654241,91.0938204 Z M192.001056,91.1118609 C192.078757,92.7031309 192.118063,94.3045313 192.118063,95.9151481 C192.118063,97.5257649 192.078757,99.1271653 192.001056,100.718435 L192.001056,91.1118609 Z M191.91548,89.599521 L161.846803,89.5992612 C159.981081,53.0028873 141.213936,20.8882413 113.228123,0.968208474 C156.082715,8.75162306 189.049144,45.0599921 191.91548,89.599521 Z M78.771877,0.968208474 C50.786064,20.8882413 32.0189185,53.0028873 30.1531974,89.5992612 L0.084520031,89.599521 C2.93826062,45.2557027 35.6281513,9.07086623 78.2072279,1.07019921 Z M89.9991945,7.90456005 L89.9999371,89.5991516 L42.1710703,89.5989883 C44.1282677,55.2291958 62.7252209,25.3330657 89.9991945,7.90456005 Z M102.001803,7.90519758 C129.275233,25.3337948 147.871756,55.2296149 149.82893,89.5989883 L101.999937,89.5991516 Z" id="Combined-Shape" fill="#64C8FF"></path>
-                </g>
-            </g>
+    <g fill="none" fill-rule="evenodd">
+        <g transform="translate(266 46)" fill="#fff" font-family="HelveticaNeue-UltraLight, Helvetica Neue" font-weight="200">
+            <text font-size="150">
+                <tspan x="0" y="140">Bundler</tspan>
+            </text>
+            <text font-size="30.5">
+                <tspan x="6" y="172">Deno bundler with the web in mind</tspan>
+            </text>
         </g>
+        <use fill="#323232" transform="rotate(90 127 148)" xlink:href="#a"/>
+        <use fill="#33A9DC" transform="rotate(90 73.5 178.5)" xlink:href="#b"/>
+        <use fill="#F1652A" transform="rotate(90 127.5 85.5)" xlink:href="#c"/>
+        <use fill="#F7DF1D" transform="rotate(90 180.5 178.5)" xlink:href="#d"/>
     </g>
 </svg>

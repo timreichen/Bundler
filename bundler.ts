@@ -168,7 +168,9 @@ export class Bundler {
         return items;
       }
     }
-    throw new Error(`no plugin for 'splitAssetDependencies' found: ${input} ${type}`);
+    throw new Error(
+      `no plugin for 'splitAssetDependencies' found: ${input} ${type}`,
+    );
   }
 
   async createChunk(

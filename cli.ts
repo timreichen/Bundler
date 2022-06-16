@@ -23,6 +23,7 @@ import {
   createSha256,
   formatBytes,
   isFileURL,
+  isURL,
   parsePaths,
   timestamp,
 } from "./_util.ts";
@@ -33,7 +34,7 @@ async function writeBundles(bundler: Bundler, bundles: Bundle[]) {
   const time = performance.now();
   for (const bundle of bundles) {
     const time = performance.now();
-    const output = path.join(Deno.cwd(), path.fromFileUrl(bundle.output));
+    const output = path.fromFileUrl(bundle.output);
     const source = typeof bundle.source === "string"
       ? new TextEncoder().encode(bundle.source)
       : new Uint8Array(bundle.source);
@@ -63,7 +64,7 @@ function parseBundleArgs(args: flags.Args) {
     _,
     quiet = false,
     "log-level": logLevelString = "info",
-    "out-dir": root = "dist",
+    "out-dir": dist = "dist",
     optimize = false,
     watch = false,
     reload = false,
@@ -78,7 +79,7 @@ function parseBundleArgs(args: flags.Args) {
       // );
     }
   }
-
+  const root = isFileURL(dist) ? dist : path.resolve(Deno.cwd(), dist);
   const { inputs, outputMap } = parsePaths(_, root);
 
   let logLevel;
@@ -160,10 +161,17 @@ async function bundleCommand(args: flags.Args) {
   }
 
   if (importMapPath) {
-    const resolvedImportMapPath = path.resolve(Deno.cwd(), importMapPath);
+    let source: string;
+    if (isURL(importMapPath)) {
+      importMapPath = path.resolve(Deno.cwd(), importMapPath);
+      source = await Deno.readTextFile(importMapPath);
+    } else {
+      source = await fetch(importMapPath).then((data) => data.text());
+    }
+
     importMap = resolveImportMap(
-      JSON.parse(await Deno.readTextFile(resolvedImportMapPath)),
-      path.toFileUrl(resolvedImportMapPath),
+      JSON.parse(source),
+      path.toFileUrl(importMapPath),
     );
   }
 

@@ -62,14 +62,15 @@ export function parsePaths(paths: (string | number)[], root: string) {
   const outputMap: Record<string, string> = {};
   paths.forEach((entry) => {
     let { input, output } = regex.exec(entry as string)?.groups || {};
-    if (!isFileURL(input) && !isURL(input)) {
+    if (!isURL(input)) {
       input = path.toFileUrl(path.resolve(Deno.cwd(), input)).href;
     }
     inputs.push(input);
     if (output) {
       if (!isURL(output)) {
-        output = path.toFileUrl(path.join(root, output))
-          .href;
+        output =
+          path.toFileUrl(path.join(path.resolve(Deno.cwd(), root), output))
+            .href;
       }
       outputMap[input] = output;
     }

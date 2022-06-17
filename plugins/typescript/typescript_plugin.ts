@@ -235,7 +235,8 @@ export class TypescriptPlugin extends TextFilePlugin {
         source: asset.source,
       },
       dependencyItems,
-      output: await this.createOutput(asset.input, context.root, extname),
+      output: context.outputMap[asset.input] ||
+        await this.createOutput(asset.input, context.root, extname),
     };
   }
 

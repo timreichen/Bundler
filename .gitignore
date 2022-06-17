@@ -1,5 +1,5 @@
 .vscode
 examples/**/dist
-examples/**/.cache
+examples/**/.bundler
 .DS_Store
 .gitignore

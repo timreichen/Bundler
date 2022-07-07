@@ -74,7 +74,7 @@ export class HTMLPlugin extends TextFilePlugin {
         source: asset.source,
       },
       dependencyItems,
-      output: context.outputMap[asset.input] ||
+      output: context.outputMap[asset.input] ??
         await this.createOutput(asset.input, context.root, ".html"),
     };
   }

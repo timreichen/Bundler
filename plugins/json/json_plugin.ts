@@ -54,7 +54,7 @@ export class JSONPlugin extends TextFilePlugin {
         source: asset.source,
       },
       dependencyItems: [],
-      output: context.outputMap[asset.input] || await this.createOutput(
+      output: context.outputMap[asset.input] ?? await this.createOutput(
         asset.input,
         context.root,
         path.extname(asset.input),

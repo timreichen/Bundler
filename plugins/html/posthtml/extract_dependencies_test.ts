@@ -142,6 +142,29 @@ Deno.test({
 });
 
 Deno.test({
+  name: "video",
+  async fn(t) {
+    await t.step({
+      name: "poster",
+      async fn() {
+        const input = "a.html";
+        const source =
+          `<html><head><video poster="b.png"></video></head></html>`;
+        const dependencies = await extractDependencies(input, source);
+
+        assertEquals(dependencies, [
+          {
+            input: "file:///b.png",
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Binary,
+          },
+        ]);
+      },
+    });
+  },
+});
+
+Deno.test({
   name: "source",
   async fn() {
     const input = "a.html";

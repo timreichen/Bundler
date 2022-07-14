@@ -273,6 +273,59 @@ Deno.test({
     });
   },
 });
+
+Deno.test({
+  name: "video",
+  async fn(t) {
+    await t.step({
+      name: "poster",
+      async fn() {
+        const input = "/src/a.html";
+        const root = "dist";
+        const source =
+          `<html><head><video poster="b.png"></video></head></html>`;
+        const chunks: Chunk[] = [
+          {
+            item: {
+              input,
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Script,
+              source,
+            },
+            dependencyItems: [
+              {
+                input: "file:///src/b.png",
+                type: DependencyType.ImportExport,
+                format: DependencyFormat.Binary,
+                source: ``,
+              },
+            ],
+            output: "file:///dist/a.html",
+          },
+          {
+            item: {
+              input: "file:///src/b.png",
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Binary,
+              source,
+            },
+            dependencyItems: [],
+            output: "file:///dist/output.png",
+          },
+        ];
+        const result = await injectDependencies(input, source, {
+          root,
+          chunks,
+        });
+        assertEquals(
+          result,
+          `<html><head><video poster="/output.png"></video></head></html>`,
+        );
+      },
+    });
+  },
+});
+
 Deno.test({
   name: "link",
   async fn() {

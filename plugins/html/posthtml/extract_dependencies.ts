@@ -44,6 +44,21 @@ function posthtmlExtractDependencies(dependencies: Dependency[]) {
             }
             break;
           }
+          case "video": {
+            let poster = node.attrs?.poster;
+            if (poster) {
+              poster = resolveBase(poster, base);
+              if (!isURL(poster)) {
+                poster = resolveDependency(input, poster, importMap);
+              }
+              dependencies.push({
+                input: poster,
+                type: DependencyType.ImportExport,
+                format: DependencyFormat.Binary,
+              });
+            }
+            break;
+          }
           case "img":
           case "source": {
             let src = node.attrs?.src;

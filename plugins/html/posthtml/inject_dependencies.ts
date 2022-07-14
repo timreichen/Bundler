@@ -56,6 +56,25 @@ function posthtmlInjectDependencies(
           }
           break;
         }
+        case "video": {
+          let poster = node.attrs?.poster;
+          if (poster) {
+            poster = resolveBase(poster, base);
+            if (!isURL(poster)) {
+              poster = resolveDependency(input, poster, importMap);
+            }
+            const chunk = getChunk(
+              chunks,
+              poster,
+              DependencyType.ImportExport,
+              DependencyFormat.Binary,
+            );
+
+            const attrs = node.attrs as Record<string, string>;
+            attrs.poster = createRelativeOutput(chunk.output, root);
+          }
+          break;
+        }
         case "img":
         case "source": {
           let src = node.attrs?.src;

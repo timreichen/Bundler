@@ -146,35 +146,71 @@ Deno.test({
         "index.ts",
       );
 
-      await Deno.writeTextFile(
+      const indexJavascriptFilePath = path.join(
+        testDir,
+        "index.js",
+      );
+
+      Deno.writeTextFileSync(
         indexTypescriptFilePath,
         `console.log("initial");`,
       );
 
-      const process = await run(
-        "--quiet",
-        "--watch",
-        `--out-dir=${testDir}`,
-        `${indexTypescriptFilePath}=index.js`,
+      Deno.writeTextFileSync(
+        indexJavascriptFilePath,
+        `exists for fs watch. Must be overwritten.`,
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      let process: Deno.Process;
+      // deno-lint-ignore no-async-promise-executor
+      await new Promise<void>(async (resolve) => {
+        const watcher = Deno.watchFs(indexJavascriptFilePath);
 
-      await Deno.writeTextFile(
-        indexTypescriptFilePath,
-        `console.log("overwrite");`,
-      );
+        setTimeout(async () => {
+          process = await run(
+            "--quiet",
+            "--watch",
+            `--out-dir=${testDir}`,
+            `${indexTypescriptFilePath}=index.js`,
+          );
+        });
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+        for await (const event of watcher) {
+          if (event.kind === "create") {
+            watcher.close();
+            resolve();
+          }
+        }
+      });
 
-      assertEquals(
-        await Deno.readTextFile(path.join(testDir, "index.js")),
-        `console.log("overwrite");\n`,
-      );
+      // deno-lint-ignore no-async-promise-executor
+      await new Promise<void>(async (resolve) => {
+        const watcher = Deno.watchFs(indexJavascriptFilePath);
 
-      await process.stdout.close();
-      await process.stderr.close();
-      await process.close();
+        setTimeout(() => {
+          Deno.writeTextFileSync(
+            indexTypescriptFilePath,
+            `console.log("overwrite");`,
+          );
+        });
+
+        for await (const event of watcher) {
+          if (event.kind === "modify") {
+            watcher.close();
+
+            assertEquals(
+              await Deno.readTextFile(path.join(testDir, "index.js")),
+              `console.log("overwrite");\n`,
+            );
+
+            await process.stdout?.close();
+            await process.stderr?.close();
+            await process.close();
+
+            resolve();
+          }
+        }
+      });
     } catch (error) {
       console.error(error);
       unreachable();
@@ -215,7 +251,7 @@ Deno.test({
       await process.status();
 
       assertEquals(
-        await Deno.readTextFile(path.join(testDir, "index.js")),
+        Deno.readTextFileSync(path.join(testDir, "index.js")),
         `const world = "World";\nconsole.log(world);\n`,
       );
 
@@ -287,7 +323,7 @@ Deno.test({
       await process.close();
 
       assertEquals(
-        await Deno.readTextFile(path.join(testDir, "index.js")),
+        Deno.readTextFileSync(path.join(testDir, "index.js")),
         `const world = "World";\nconsole.log(world);\n`,
       );
     } catch (error) {

@@ -256,13 +256,17 @@ export class Bundler {
     const checkTime = performance.now();
 
     const checkedAssets: Set<Asset> = new Set();
+
+    const checkedChunkItems: Set<Asset> = new Set();
     for (const chunkItem of chunkItems) {
       const time = performance.now();
       const { input, type, format } = chunkItem;
-
       const asset = getAsset(assets, input, type, format);
+      if (checkedChunkItems.has(asset)) continue;
+      checkedChunkItems.add(asset);
 
       const splitItems = await this.splitAssetDependencies(asset, context);
+
       chunkItems.push(...splitItems);
       chunkAssets.add(asset);
 
@@ -314,6 +318,7 @@ export class Bundler {
             }
             checkedAssets.add(depdendencyAsset);
           }
+
           checkedAssets.add(asset);
 
           this.logger.info(

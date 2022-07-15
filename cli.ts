@@ -127,7 +127,7 @@ async function exists(filename: string) {
 }
 
 async function bundleCommand(args: flags.Args) {
-  let {
+  const {
     inputs,
     outputMap,
     logLevel,
@@ -149,30 +149,57 @@ async function bundleCommand(args: flags.Args) {
     (await exists(denoJsonPath) && denoJsonPath) ??
     (await exists(denoJsoncPath) && denoJsoncPath);
 
+  let importMapFilePath = importMapPath;
   if (configPath) {
-    const data = await Deno.readTextFile(configPath);
-    const json = JSON.parse(data);
-    importMapPath = importMapPath ?? json.importMap;
-    compilerOptions = (json && json.compilerOptions) ??
-      ts.convertCompilerOptionsFromJson(
-        json.compilerOptions,
-        Deno.cwd(),
-      ).options;
-  }
-
-  if (importMapPath) {
-    let source: string;
-    if (isURL(importMapPath)) {
-      importMapPath = path.resolve(Deno.cwd(), importMapPath);
-      source = await Deno.readTextFile(importMapPath);
-    } else {
-      source = await fetch(importMapPath).then((data) => data.text());
+    try {
+      let source: string;
+      if (isFileURL(configPath) || !isURL(configPath)) {
+        source = await Deno.readTextFile(configPath);
+      } else {
+        source = await fetch(configPath).then((data) => data.text());
+      }
+      const json = JSON.parse(source);
+      importMapFilePath = importMapFilePath ?? json.importMap;
+      compilerOptions = (json && json.compilerOptions) ??
+        ts.convertCompilerOptionsFromJson(
+          json.compilerOptions,
+          Deno.cwd(),
+        ).options;
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) {
+        console.error(
+          colors.red("error"),
+          `could not find the config file: ${configPath}`,
+        );
+        return;
+      }
+      throw error;
     }
+  }
+  if (importMapFilePath) {
+    try {
+      let source: string;
+      if (isFileURL(importMapFilePath) || !isURL(importMapFilePath)) {
+        importMapFilePath = path.resolve(Deno.cwd(), importMapFilePath);
+        source = await Deno.readTextFile(importMapFilePath);
+      } else {
+        source = await fetch(importMapFilePath).then((data) => data.text());
+      }
 
-    importMap = resolveImportMap(
-      JSON.parse(source),
-      path.toFileUrl(importMapPath),
-    );
+      importMap = resolveImportMap(
+        JSON.parse(source),
+        path.toFileUrl(importMapFilePath),
+      );
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) {
+        console.error(
+          colors.red("error"),
+          `could not find import map file: ${importMapPath}`,
+        );
+        return;
+      }
+      throw error;
+    }
   }
 
   const plugins = [

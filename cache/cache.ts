@@ -181,7 +181,7 @@ async function exists(filePath: string) {
     if (error instanceof Deno.errors.NotFound) {
       return false;
     } else {
-      throw new Error();
+      throw error;
     }
   }
 }

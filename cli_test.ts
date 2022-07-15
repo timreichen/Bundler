@@ -46,7 +46,7 @@ Deno.test({
 Deno.test({
   name: "custom output",
   async fn() {
-    await fs.emptyDir(testDir);
+    fs.emptyDirSync(testDir);
 
     const projectDir = path.resolve(
       testdataDir,
@@ -83,14 +83,14 @@ Deno.test({
       ],
     );
 
-    await Deno.remove(testDir, { recursive: true });
+    Deno.removeSync(testDir, { recursive: true });
   },
 });
 Deno.test({
   name: "custom output split",
   async fn() {
     try {
-      await fs.emptyDir(testDir);
+      fs.emptyDirSync(testDir);
 
       const projectDir = path.resolve(
         testdataDir,
@@ -131,7 +131,7 @@ Deno.test({
       console.error(error);
       unreachable();
     }
-    await Deno.remove(testDir, { recursive: true });
+    Deno.removeSync(testDir, { recursive: true });
   },
 });
 
@@ -139,7 +139,7 @@ Deno.test({
   name: "watch",
   async fn() {
     try {
-      await fs.emptyDir(testDir);
+      fs.emptyDirSync(testDir);
 
       const indexTypescriptFilePath = path.join(
         testDir,
@@ -172,14 +172,14 @@ Deno.test({
         `console.log("overwrite");\n`,
       );
 
-      process.stdout?.close();
-      process.stderr?.close();
+      await process.stdout.close();
+      await process.stderr.close();
       await process.close();
     } catch (error) {
       console.error(error);
       unreachable();
     }
-    await Deno.remove(testDir, { recursive: true });
+    Deno.removeSync(testDir, { recursive: true });
   },
 });
 
@@ -187,7 +187,7 @@ Deno.test({
   name: "importmap",
   async fn() {
     try {
-      await fs.emptyDir(testDir);
+      fs.emptyDirSync(testDir);
 
       const projectDir = path.resolve(
         testdataDir,
@@ -225,13 +225,13 @@ Deno.test({
       unreachable();
     }
 
-    await Deno.remove(testDir, { recursive: true });
+    Deno.removeSync(testDir, { recursive: true });
   },
 });
 Deno.test({
   name: "importmap not found",
   async fn() {
-    await fs.emptyDir(testDir);
+    fs.emptyDirSync(testDir);
     const notFoundPath = "/not/found/import_map.json";
     const process = await run(
       "--quiet",
@@ -248,7 +248,7 @@ Deno.test({
       `\x1B[31merror\x1B[39m could not find import map file: /not/found/import_map.json\n`,
     );
 
-    await Deno.remove(testDir, { recursive: true });
+    Deno.removeSync(testDir, { recursive: true });
   },
 });
 
@@ -256,7 +256,7 @@ Deno.test({
   name: "config file",
   async fn() {
     try {
-      await fs.emptyDir(testDir);
+      fs.emptyDirSync(testDir);
 
       const projectDir = path.resolve(
         testdataDir,
@@ -294,13 +294,13 @@ Deno.test({
       console.error(error);
       unreachable();
     }
-    await Deno.remove(testDir, { recursive: true });
+    Deno.removeSync(testDir, { recursive: true });
   },
 });
 Deno.test({
   name: "config file not found",
   async fn() {
-    await fs.emptyDir(testDir);
+    fs.emptyDirSync(testDir);
     const notFoundPath = "/not/found/deno.json";
     const process = await run(
       "--quiet",
@@ -316,6 +316,6 @@ Deno.test({
       new TextDecoder().decode(error),
       `\x1B[31merror\x1B[39m could not find the config file: /not/found/deno.json\n`,
     );
-    await Deno.remove(testDir, { recursive: true });
+    Deno.removeSync(testDir, { recursive: true });
   },
 });

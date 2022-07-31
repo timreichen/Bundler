@@ -220,13 +220,6 @@ async function bundleCommand(args: flags.Args) {
   try {
     for await (const dirEntry of Deno.readDir(cacheAssetsDir)) {
       const cachedAssetFilepath = path.join(cacheAssetsDir, dirEntry.name);
-      // if (
-      //   reload === true ||
-      //   Array.isArray(reload) && reload.includes(cachedAssetFilepath)
-      // ) {
-      //   await Deno.remove(cachedAssetFilepath);
-      //   continue;
-      // }
       const source = await Deno.readTextFile(cachedAssetFilepath);
       const asset: Asset = JSON.parse(source);
 
@@ -277,9 +270,9 @@ async function bundleCommand(args: flags.Args) {
       optimize,
       reload,
       root,
+      importMap,
       assets: Object.values(cachedAssets),
       chunks: Object.values(cachedChunks),
-      importMap,
     });
 
     cachedAssets = {
@@ -288,6 +281,7 @@ async function bundleCommand(args: flags.Args) {
         assets.map((asset) => [asset.input, asset]),
       ),
     };
+
     cachedChunks = {
       ...cachedChunks,
       ...Object.fromEntries(
@@ -302,9 +296,9 @@ async function bundleCommand(args: flags.Args) {
 
     bundler.logger.info(
       colors.green(`Done`),
-      `${assets.length} assets,`,
-      `${chunks.length} chunks,`,
-      `${bundles.length} bundles`,
+      `${assets.length} asset${assets.length > 1 ? "s" : ""},`,
+      `${chunks.length} chunk${chunks.length > 1 ? "s" : ""},`,
+      `${bundles.length} bundle${bundle.length > 1 ? "s" : ""}`,
       colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
 

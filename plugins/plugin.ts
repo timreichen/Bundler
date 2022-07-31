@@ -90,6 +90,7 @@ export interface CreateBundlesContext extends Context {
   root: string;
   importMap?: ImportMap;
   optimize?: boolean;
+  chunks?: Chunk[];
 }
 
 export interface CreateBundleContext extends CreateBundlesContext {

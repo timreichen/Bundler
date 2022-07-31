@@ -1,6 +1,5 @@
 import {
   Asset,
-  Bundle,
   Chunk,
   CreateAssetContext,
   CreateAssetsContext,
@@ -78,12 +77,12 @@ export class Bundler {
     {
       importMap,
       reload,
-      assets: cachedAssets = [],
+      assets = [],
     }: Partial<CreateAssetsContext> = {},
   ) {
     const time = performance.now();
 
-    const assets: Asset[] = [...cachedAssets];
+    assets = [...assets];
 
     const newAssets: Asset[] = [];
 
@@ -232,7 +231,7 @@ export class Bundler {
       importMap,
       outputMap = {},
       root = "file:///dist/",
-      chunks: cachedChunks = [],
+      chunks = [],
     }: Partial<
       CreateChunksContext
     > = {},
@@ -345,7 +344,7 @@ export class Bundler {
 
     const time = performance.now();
 
-    const chunks: Chunk[] = [...cachedChunks];
+    chunks = [...chunks];
     const newChunks: Chunk[] = [];
 
     for (const asset of chunkAssets) {
@@ -449,11 +448,13 @@ export class Bundler {
   }
 
   async createBundles(
-    chunks: Chunk[],
-    { root = "file:///dist/", importMap, optimize }: Partial<
+    newChunks: Chunk[],
+    { root = "file:///dist/", importMap, optimize, chunks = [] }: Partial<
       CreateBundlesContext
     > = {},
   ) {
+    chunks = [...newChunks, ...chunks];
+
     const time = performance.now();
     const bundles = [];
     const context = {
@@ -463,8 +464,11 @@ export class Bundler {
       optimize,
       bundler: this,
     };
-    for (const chunk of chunks) {
-      const bundle = await this.createBundle(chunk, context);
+    for (const chunk of newChunks) {
+      const bundle = await this.createBundle(chunk, {
+        ...context,
+        chunks,
+      });
       bundles.push(bundle);
     }
 
@@ -484,21 +488,14 @@ export class Bundler {
       CreateAssetsContext & CreateChunksContext & CreateBundlesContext
     > = {},
   ) {
-    const assets = await this.createAssets(inputs, options);
+    const newAssets = await this.createAssets(inputs, options);
+    const newChunks = await this.createChunks(inputs, [
+      ...options.assets ?? [],
+      ...newAssets,
+    ], options);
 
-    let chunks: Chunk[] = [];
-    if (assets.length) {
-      chunks = await this.createChunks(inputs, [
-        ...options.assets || [],
-        ...assets,
-      ], options);
-    }
+    const newBundles = await this.createBundles(newChunks, options);
 
-    let bundles: Bundle[] = [];
-    if (chunks.length) {
-      bundles = await this.createBundles(chunks, options);
-    }
-
-    return { assets, chunks, bundles };
+    return { assets: newAssets, chunks: newChunks, bundles: newBundles };
   }
 }

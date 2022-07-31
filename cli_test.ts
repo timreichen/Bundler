@@ -138,6 +138,8 @@ Deno.test({
 Deno.test({
   name: "watch",
   async fn() {
+    // wait instead of using file watcher (issue https://github.com/denoland/deno/issues/14684)
+
     try {
       fs.emptyDirSync(testDir);
 
@@ -161,56 +163,30 @@ Deno.test({
         `exists for fs watch. Must be overwritten.`,
       );
 
-      let process: Deno.Process;
-      // deno-lint-ignore no-async-promise-executor
-      await new Promise<void>(async (resolve) => {
-        const watcher = Deno.watchFs(indexJavascriptFilePath);
+      const process = await run(
+        "--quiet",
+        "--watch",
+        `--out-dir=${testDir}`,
+        `${indexTypescriptFilePath}=index.js`,
+      );
 
-        setTimeout(async () => {
-          process = await run(
-            "--quiet",
-            "--watch",
-            `--out-dir=${testDir}`,
-            `${indexTypescriptFilePath}=index.js`,
-          );
-        });
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-        for await (const event of watcher) {
-          if (event.kind === "create") {
-            watcher.close();
-            resolve();
-          }
-        }
-      });
+      Deno.writeTextFileSync(
+        indexTypescriptFilePath,
+        `console.log("overwrite");`,
+      );
 
-      // deno-lint-ignore no-async-promise-executor
-      await new Promise<void>(async (resolve) => {
-        const watcher = Deno.watchFs(indexJavascriptFilePath);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-        setTimeout(() => {
-          Deno.writeTextFileSync(
-            indexTypescriptFilePath,
-            `console.log("overwrite");`,
-          );
-        });
+      assertEquals(
+        await Deno.readTextFile(path.join(testDir, "index.js")),
+        `console.log("overwrite");\n`,
+      );
 
-        for await (const event of watcher) {
-          if (event.kind === "modify") {
-            watcher.close();
-
-            assertEquals(
-              await Deno.readTextFile(path.join(testDir, "index.js")),
-              `console.log("overwrite");\n`,
-            );
-
-            await process.stdout?.close();
-            await process.stderr?.close();
-            await process.close();
-
-            resolve();
-          }
-        }
-      });
+      await process.stdout?.close();
+      await process.stderr?.close();
+      await process.close();
     } catch (error) {
       console.error(error);
       unreachable();

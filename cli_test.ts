@@ -3,11 +3,10 @@ import { assertArrayIncludes, assertEquals } from "./test_deps.ts";
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "testdata");
-
 const testDir = path.join(moduleDir, ".test");
 
-async function run(...cmds: string[]) {
-  await fs.ensureDir(testDir);
+function runBundle(...cmds: string[]) {
+  fs.ensureDirSync(testDir);
   const process = Deno.run({
     cwd: testDir,
     cmd: [
@@ -18,6 +17,7 @@ async function run(...cmds: string[]) {
       "--allow-write",
       path.join(Deno.cwd(), "cli.ts"),
       "bundle",
+      "--quiet",
       ...cmds,
     ],
     stdout: "piped",
@@ -29,16 +29,21 @@ async function run(...cmds: string[]) {
 Deno.test({
   name: "empty",
   async fn() {
-    const process = await run(
-      "--quiet",
-    );
+    const process = runBundle();
 
-    await process.output();
-    const error = await process.stderrOutput();
-    await process.status();
-    await process.close();
+    const [_, stdout, stderr] = await Promise.all([
+      process.status(),
+      process.output(),
+      process.stderrOutput(),
+    ]);
+    process.close();
+
     assertEquals(
-      new TextDecoder().decode(error),
+      new TextDecoder().decode(stdout),
+      ``,
+    );
+    assertEquals(
+      new TextDecoder().decode(stderr),
       ``,
     );
   },
@@ -59,16 +64,17 @@ Deno.test({
       "index.ts",
     );
 
-    const process = await run(
-      "--quiet",
+    const process = runBundle(
       `${indexHtmlFilePath}=index.html`,
       `${indexTypescriptFilePath}=index.js`,
     );
 
-    await process.output();
-    await process.stderrOutput();
-    await process.status();
-    await process.close();
+    await Promise.all([
+      process.status(),
+      process.output(),
+      process.stderrOutput(),
+    ]);
+    process.close();
 
     const distDir = path.join(testDir, "dist");
 
@@ -102,17 +108,17 @@ Deno.test({
       "world.ts",
     );
 
-    const process = await run(
-      "--quiet",
+    const process = runBundle(
       `${indexHtmlFilePath}=index.html`,
       `${worldTypescriptFilePath}=world.js`,
     );
 
-    await process.output();
-    await process.stderrOutput();
-    await process.status();
-
-    await process.close();
+    await Promise.all([
+      process.status(),
+      process.output(),
+      process.stderrOutput(),
+    ]);
+    process.close();
 
     const distDir = path.join(testDir, "dist");
 
@@ -158,8 +164,7 @@ Deno.test({
       `exists for fs watch. Must be overwritten.`,
     );
 
-    const process = await run(
-      "--quiet",
+    const process = runBundle(
       "--watch",
       `--out-dir=${testDir}`,
       `${indexTypescriptFilePath}=index.js`,
@@ -206,8 +211,7 @@ Deno.test({
       "import_map.json",
     );
 
-    const process = await run(
-      "--quiet",
+    const process = runBundle(
       `--import-map=${importMapFilePath}`,
       `--out-dir=${testDir}`,
       `${indexTypescriptFilePath}=index.js`,
@@ -232,8 +236,7 @@ Deno.test({
   async fn() {
     fs.emptyDirSync(testDir);
     const notFoundPath = "/not/found/import_map.json";
-    const process = await run(
-      "--quiet",
+    const process = runBundle(
       `--import-map=${notFoundPath}`,
       "index.html",
     );
@@ -271,18 +274,18 @@ Deno.test({
       "index.ts",
     );
 
-    const process = await run(
-      "--quiet",
+    const process = runBundle(
       `--config=${configFilePath}`,
       `--out-dir=${testDir}`,
       `${indexTypescriptFilePath}=index.js`,
     );
 
-    await process.output();
-    await process.stderrOutput();
-    await process.status();
-
-    await process.close();
+    await Promise.all([
+      process.status(),
+      process.output(),
+      process.stderrOutput(),
+    ]);
+    process.close();
 
     assertEquals(
       Deno.readTextFileSync(path.join(testDir, "index.js")),
@@ -297,8 +300,7 @@ Deno.test({
   async fn() {
     fs.emptyDirSync(testDir);
     const notFoundPath = "/not/found/deno.json";
-    const process = await run(
-      "--quiet",
+    const process = runBundle(
       `--config=${notFoundPath}`,
       "index.html",
     );

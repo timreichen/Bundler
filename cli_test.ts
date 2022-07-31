@@ -1,5 +1,5 @@
 import { fs, path } from "./deps.ts";
-import { assertArrayIncludes, assertEquals, unreachable } from "./test_deps.ts";
+import { assertArrayIncludes, assertEquals } from "./test_deps.ts";
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "testdata");
@@ -89,48 +89,44 @@ Deno.test({
 Deno.test({
   name: "custom output split",
   async fn() {
-    try {
-      fs.emptyDirSync(testDir);
+    fs.emptyDirSync(testDir);
 
-      const projectDir = path.resolve(
-        testdataDir,
-        path.join("cli", "hello_world"),
-      );
+    const projectDir = path.resolve(
+      testdataDir,
+      path.join("cli", "hello_world"),
+    );
 
-      const indexHtmlFilePath = path.join(projectDir, "index.html");
-      const worldTypescriptFilePath = path.join(
-        projectDir,
-        "world.ts",
-      );
+    const indexHtmlFilePath = path.join(projectDir, "index.html");
+    const worldTypescriptFilePath = path.join(
+      projectDir,
+      "world.ts",
+    );
 
-      const process = await run(
-        "--quiet",
-        `${indexHtmlFilePath}=index.html`,
-        `${worldTypescriptFilePath}=world.js`,
-      );
+    const process = await run(
+      "--quiet",
+      `${indexHtmlFilePath}=index.html`,
+      `${worldTypescriptFilePath}=world.js`,
+    );
 
-      await process.output();
-      await process.stderrOutput();
-      await process.status();
+    await process.output();
+    await process.stderrOutput();
+    await process.status();
 
-      await process.close();
+    await process.close();
 
-      const distDir = path.join(testDir, "dist");
+    const distDir = path.join(testDir, "dist");
 
-      const entries = [...Deno.readDirSync(distDir)]
-        .map((entry) => entry.name);
-      assertArrayIncludes(
-        entries,
-        [
-          "index.html",
-          "world.js",
-        ],
-      );
-      assertEquals(entries.length, 3);
-    } catch (error) {
-      console.error(error);
-      unreachable();
-    }
+    const entries = [...Deno.readDirSync(distDir)]
+      .map((entry) => entry.name);
+    assertArrayIncludes(
+      entries,
+      [
+        "index.html",
+        "world.js",
+      ],
+    );
+    assertEquals(entries.length, 3);
+
     Deno.removeSync(testDir, { recursive: true });
   },
 });
@@ -140,57 +136,53 @@ Deno.test({
   async fn() {
     // wait instead of using file watcher (issue https://github.com/denoland/deno/issues/14684)
 
-    try {
-      fs.emptyDirSync(testDir);
+    fs.emptyDirSync(testDir);
 
-      const indexTypescriptFilePath = path.join(
-        testDir,
-        "index.ts",
-      );
+    const indexTypescriptFilePath = path.join(
+      testDir,
+      "index.ts",
+    );
 
-      const indexJavascriptFilePath = path.join(
-        testDir,
-        "index.js",
-      );
+    const indexJavascriptFilePath = path.join(
+      testDir,
+      "index.js",
+    );
 
-      Deno.writeTextFileSync(
-        indexTypescriptFilePath,
-        `console.log("initial");`,
-      );
+    Deno.writeTextFileSync(
+      indexTypescriptFilePath,
+      `console.log("initial");`,
+    );
 
-      Deno.writeTextFileSync(
-        indexJavascriptFilePath,
-        `exists for fs watch. Must be overwritten.`,
-      );
+    Deno.writeTextFileSync(
+      indexJavascriptFilePath,
+      `exists for fs watch. Must be overwritten.`,
+    );
 
-      const process = await run(
-        "--quiet",
-        "--watch",
-        `--out-dir=${testDir}`,
-        `${indexTypescriptFilePath}=index.js`,
-      );
+    const process = await run(
+      "--quiet",
+      "--watch",
+      `--out-dir=${testDir}`,
+      `${indexTypescriptFilePath}=index.js`,
+    );
 
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      Deno.writeTextFileSync(
-        indexTypescriptFilePath,
-        `console.log("overwrite");`,
-      );
+    Deno.writeTextFileSync(
+      indexTypescriptFilePath,
+      `console.log("overwrite");`,
+    );
 
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      assertEquals(
-        await Deno.readTextFile(path.join(testDir, "index.js")),
-        `console.log("overwrite");\n`,
-      );
+    assertEquals(
+      await Deno.readTextFile(path.join(testDir, "index.js")),
+      `console.log("overwrite");\n`,
+    );
 
-      await process.stdout?.close();
-      await process.stderr?.close();
-      await process.close();
-    } catch (error) {
-      console.error(error);
-      unreachable();
-    }
+    await process.stdout?.close();
+    await process.stderr?.close();
+    await process.close();
+
     Deno.removeSync(testDir, { recursive: true });
   },
 });
@@ -198,44 +190,39 @@ Deno.test({
 Deno.test({
   name: "importmap",
   async fn() {
-    try {
-      fs.emptyDirSync(testDir);
+    fs.emptyDirSync(testDir);
 
-      const projectDir = path.resolve(
-        testdataDir,
-        path.join("cli", "importmap"),
-      );
+    const projectDir = path.resolve(
+      testdataDir,
+      path.join("cli", "importmap"),
+    );
 
-      const indexTypescriptFilePath = path.join(
-        projectDir,
-        "index.ts",
-      );
-      const importMapFilePath = path.join(
-        projectDir,
-        "import_map.json",
-      );
+    const indexTypescriptFilePath = path.join(
+      projectDir,
+      "index.ts",
+    );
+    const importMapFilePath = path.join(
+      projectDir,
+      "import_map.json",
+    );
 
-      const process = await run(
-        "--quiet",
-        `--import-map=${importMapFilePath}`,
-        `--out-dir=${testDir}`,
-        `${indexTypescriptFilePath}=index.js`,
-      );
+    const process = await run(
+      "--quiet",
+      `--import-map=${importMapFilePath}`,
+      `--out-dir=${testDir}`,
+      `${indexTypescriptFilePath}=index.js`,
+    );
 
-      await process.output();
-      await process.stderrOutput();
-      await process.status();
+    await process.output();
+    await process.stderrOutput();
+    await process.status();
 
-      assertEquals(
-        Deno.readTextFileSync(path.join(testDir, "index.js")),
-        `const world = "World";\nconsole.log(world);\n`,
-      );
+    assertEquals(
+      Deno.readTextFileSync(path.join(testDir, "index.js")),
+      `const world = "World";\nconsole.log(world);\n`,
+    );
 
-      await process.close();
-    } catch (error) {
-      console.error(error);
-      unreachable();
-    }
+    await process.close();
 
     Deno.removeSync(testDir, { recursive: true });
   },
@@ -267,45 +254,41 @@ Deno.test({
 Deno.test({
   name: "config file",
   async fn() {
-    try {
-      fs.emptyDirSync(testDir);
+    fs.emptyDirSync(testDir);
 
-      const projectDir = path.resolve(
-        testdataDir,
-        path.join("cli", "config"),
-      );
+    const projectDir = path.resolve(
+      testdataDir,
+      path.join("cli", "config"),
+    );
 
-      const configFilePath = path.join(
-        projectDir,
-        "deno.json",
-      );
+    const configFilePath = path.join(
+      projectDir,
+      "deno.json",
+    );
 
-      const indexTypescriptFilePath = path.join(
-        projectDir,
-        "index.ts",
-      );
+    const indexTypescriptFilePath = path.join(
+      projectDir,
+      "index.ts",
+    );
 
-      const process = await run(
-        "--quiet",
-        `--config=${configFilePath}`,
-        `--out-dir=${testDir}`,
-        `${indexTypescriptFilePath}=index.js`,
-      );
+    const process = await run(
+      "--quiet",
+      `--config=${configFilePath}`,
+      `--out-dir=${testDir}`,
+      `${indexTypescriptFilePath}=index.js`,
+    );
 
-      await process.output();
-      await process.stderrOutput();
-      await process.status();
+    await process.output();
+    await process.stderrOutput();
+    await process.status();
 
-      await process.close();
+    await process.close();
 
-      assertEquals(
-        Deno.readTextFileSync(path.join(testDir, "index.js")),
-        `const world = "World";\nconsole.log(world);\n`,
-      );
-    } catch (error) {
-      console.error(error);
-      unreachable();
-    }
+    assertEquals(
+      Deno.readTextFileSync(path.join(testDir, "index.js")),
+      `const world = "World";\nconsole.log(world);\n`,
+    );
+
     Deno.removeSync(testDir, { recursive: true });
   },
 });

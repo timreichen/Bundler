@@ -1,15 +1,19 @@
+import { Bundler } from "../../bundler.ts";
 import { path } from "../../deps.ts";
 import { isURL } from "../../_util.ts";
 import {
-  Asset,
-  Chunk,
-  CreateAssetContext,
-  CreateBundleContext,
-  CreateChunkContext,
-  DependencyFormat,
-  DependencyType,
+  CreateAssetOptions,
+  CreateBundleOptions,
+  CreateChunkOptions,
   Plugin,
 } from "../plugin.ts";
+import {
+  Asset,
+  Chunk,
+  DependencyFormat,
+  DependencyType,
+  Source,
+} from "../_util.ts";
 
 export class FilePlugin extends Plugin {
   test(_input: string, _type: DependencyType, _format: DependencyFormat) {
@@ -31,9 +35,10 @@ export class FilePlugin extends Plugin {
   async createAsset(
     input: string,
     type: DependencyType,
-    context: CreateAssetContext,
+    bundler: Bundler,
+    options: CreateAssetOptions,
   ) {
-    const source = await this.createSource(input, context);
+    const source = await this.createSource(input, bundler, options);
     return {
       input: input,
       type,
@@ -47,26 +52,30 @@ export class FilePlugin extends Plugin {
   async createChunk(
     asset: Asset,
     _chunkAssets: Set<Asset>,
-    context: CreateChunkContext,
+    _bundler?: Bundler,
+    { root = ".", outputMap }: CreateChunkOptions = {},
   ) {
     return {
       item: {
         input: asset.input,
         type: asset.type,
         format: asset.format,
-        source: asset.source,
       },
       dependencyItems: [],
-      output: context.outputMap[asset.input] ?? await this.createOutput(
+      output: outputMap?.[asset.input] ?? await this.createOutput(
         asset.input,
-        context.root,
+        root,
         path.extname(asset.input),
       ),
     };
   }
 
-  createBundle(chunk: Chunk, _context: CreateBundleContext) {
-    const { source } = chunk.item;
+  createBundle(
+    chunk: Chunk,
+    source: Source,
+    _bundler: Bundler,
+    _options: CreateBundleOptions,
+  ) {
     return {
       source,
       output: chunk.output,

@@ -1,5 +1,5 @@
-import { html, LitElement } from "https://cdn.skypack.dev/lit";
-import { customElement } from "https://cdn.skypack.dev/lit/decorators";
+import { html, LitElement } from "https://esm.sh/lit";
+import { customElement } from "https://esm.sh/lit/decorators";
 
 import styles from "./AppElement.css" assert { type: "css" };
 
@@ -7,8 +7,7 @@ import styles from "./AppElement.css" assert { type: "css" };
 export class AppElement extends LitElement {
   static styles = styles;
 
-  // @ts-ignore <lit>
   render() {
-    return html`<h1>Hello from LitElement!</h1>`;
+    return html`<h1>Hello from Lit Element!</h1>`;
   }
 }

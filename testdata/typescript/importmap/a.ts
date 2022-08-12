@@ -1,3 +1,3 @@
 import { b } from "b";
 
-console.log(b);
+console.info(b);

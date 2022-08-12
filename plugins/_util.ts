@@ -1,10 +1,49 @@
 import {
   ImportMap,
   path,
-  resolveModuleSpecifier as resolveImportMapModuleSpecifier,
+  resolveImportMapModuleSpecifier,
   ts,
 } from "../deps.ts";
-import { Asset, Chunk, DependencyFormat, DependencyType } from "./plugin.ts";
+
+export enum DependencyType {
+  ImportExport = "ImportExport",
+  DynamicImport = "DynamicImport",
+  Fetch = "Fetch",
+  WebWorker = "WebWorker",
+  ServiceWorker = "ServiceWorker",
+  WebManifest = "WebManifest",
+}
+export enum DependencyFormat {
+  Unknown = "Unknown",
+  Html = "Html",
+  Style = "Style",
+  Script = "Script",
+  Json = "Json",
+  Wasm = "Wasm",
+  Binary = "Binary",
+}
+
+// deno-lint-ignore no-explicit-any
+export type Source = any;
+
+export interface Item {
+  input: string;
+  type: DependencyType;
+  format: DependencyFormat;
+}
+
+export interface Asset extends Item {
+  dependencies: Item[];
+}
+export interface Chunk {
+  item: Item;
+  output: string;
+  dependencyItems: Item[];
+}
+export interface Bundle {
+  output: string;
+  source: Source;
+}
 
 export function getDependencyFormat(url: string): DependencyFormat | undefined {
   const extname = path.extname(url);
@@ -94,7 +133,6 @@ export function getAsset(
 
   return asset;
 }
-
 export function getChunk(
   chunks: Chunk[],
   input: string,
@@ -105,9 +143,15 @@ export function getChunk(
     item.input === input &&
     item.type === type &&
     item.format === format
-  ) as Chunk;
+  );
   if (!chunk) {
     throw new Error(`Chunk was not found: ${input} ${type} ${format}`);
   }
   return chunk;
 }
+
+export type CreateSourceFn = (
+  input: string,
+  type: DependencyType,
+  format: DependencyFormat,
+) => Promise<Source>;

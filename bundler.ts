@@ -1,98 +1,119 @@
+import { colors, ImportMap } from "./deps.ts";
+import { ConsoleLogger } from "./log/console_logger.ts";
+import {
+  CreateAssetOptions,
+  CreateBundleOptions,
+  CreateChunkOptions,
+  Plugin,
+} from "./plugins/plugin.ts";
+import { SourceMap } from "./plugins/source_map.ts";
 import {
   Asset,
   Bundle,
   Chunk,
-  CreateAssetContext,
-  CreateAssetsContext,
-  CreateBundleContext,
-  CreateBundlesContext,
-  CreateChunkContext,
-  CreateChunksContext,
   DependencyFormat,
   DependencyType,
   Item,
-  Plugin,
   Source,
 } from "./plugins/plugin.ts";
 import { timestamp } from "./_util.ts";
 import { getAsset, getDependencyFormat } from "./plugins/_util.ts";
-import { colors } from "./deps.ts";
-import { DetailLogger } from "./log/detail_logger.ts";
 
 export class Bundler {
   plugins: Plugin[];
-  logger: DetailLogger;
+  sourceMap: SourceMap;
+  logger: ConsoleLogger<unknown[]>;
+
   constructor(
-    { plugins, logLevel = DetailLogger.logLevels.trace, quiet = false }: {
+    {
+      plugins,
+      sourceMap = new SourceMap(),
+      logLevel = ConsoleLogger.logLevels.debug,
+      quiet = false,
+    }: {
       plugins: Plugin[];
+      sourceMap?: SourceMap;
       logLevel?: number;
       quiet?: boolean;
     },
   ) {
     this.plugins = plugins;
-    this.logger = new DetailLogger(logLevel);
+    this.sourceMap = sourceMap;
+    this.logger = new ConsoleLogger(logLevel);
     this.logger.quiet = quiet;
+  }
+
+  async createSource(
+    input: string,
+    type: DependencyType,
+    format: DependencyFormat,
+    bundler?: Bundler,
+    { reload, importMap }: { reload?: boolean; importMap?: ImportMap } = {},
+  ) {
+    if (!this.sourceMap.has(input, type, format)) {
+      for (const plugin of this.plugins) {
+        if (
+          plugin.createSource instanceof Function &&
+          await plugin.test(input, type, format)
+        ) {
+          const source = await plugin.createSource(input, bundler, {
+            importMap,
+            reload,
+          });
+          this.sourceMap.set(input, type, format, source);
+          return source;
+        }
+      }
+      throw new Error(
+        `no plugin for 'createSource' found: ${input} ${type} ${format}`,
+      );
+    }
+    return this.sourceMap.get(input, type, format);
   }
 
   async createAsset(
     input: string,
     type: DependencyType,
-    format: DependencyFormat,
-    { assets = [], importMap, reload }: Partial<CreateAssetContext> = {},
+    _bundler?: Bundler,
+    { importMap, reload }: CreateAssetOptions = {},
   ) {
-    const time = performance.now();
-    const context = {
-      assets,
-      importMap,
-      reload,
-      bundler: this,
-    };
+    const format = getDependencyFormat(input) ?? DependencyFormat.Unknown;
     for (const plugin of this.plugins) {
       if (
-        plugin.createAsset instanceof Function &&
-        await plugin.test(input, type, format)
+        await plugin.test(input, type, format) &&
+        plugin.createAsset instanceof Function
       ) {
-        const asset = await plugin.createAsset(input, type, context);
-        for (const dependency of asset.dependencies) {
-          this.logger.debug(
-            colors.yellow("Dependency"),
-            dependency.input,
-            colors.dim(dependency.type),
-            colors.dim(dependency.format),
-          );
-        }
+        const time = performance.now();
+        const asset = await plugin.createAsset(input, type, this, {
+          importMap,
+          reload,
+        });
         this.logger.info(
           colors.green("Create Asset"),
           input,
-          colors.dim(plugin.constructor.name),
           colors.dim(type),
+          colors.dim(format),
+          colors.dim(plugin.constructor.name),
           colors.dim(colors.italic(`(${timestamp(time)})`)),
         );
         return asset;
       }
     }
-    throw new Error(`no plugin for 'createAsset' found: ${input} ${type}`);
+    throw new Error(
+      `no plugin for 'createChunk' found: ${input} ${type} ${format}`,
+    );
   }
   async createAssets(
     inputs: string[],
-    {
-      importMap,
-      reload,
-      assets: cachedAssets = [],
-    }: Partial<CreateAssetsContext> = {},
+    { importMap, reload }: CreateAssetOptions = {},
   ) {
     const time = performance.now();
 
-    const assets: Asset[] = [...cachedAssets];
+    const assets: Asset[] = [];
 
     const newAssets: Asset[] = [];
 
-    const context: CreateAssetContext = {
-      assets,
-      importMap,
-      reload,
-      bundler: this,
-    };
+    const options: CreateAssetOptions = { importMap, reload };
 
     const itemList: Item[] = inputs.map((
       input,
@@ -123,7 +144,7 @@ export class Bundler {
           colors.dim(format),
         );
       } else {
-        asset = await this.createAsset(input, type, format, context);
+        asset = await this.createAsset(input, type, this, options);
         assets.push(asset);
         newAssets.push(asset);
       }
@@ -151,100 +172,72 @@ export class Bundler {
     return newAssets;
   }
 
-  async splitAssetDependencies(
+  async splitDependencies(
     asset: Asset,
-    context: CreateChunkContext,
+    bundler: Bundler,
+    options: CreateChunkOptions,
   ) {
     const { input, type, format } = asset;
     for (const plugin of this.plugins) {
       if (
-        plugin.splitAssetDependencies instanceof Function &&
+        plugin.splitDependencies instanceof Function &&
         await plugin.test(input, type, format)
       ) {
-        const items = await plugin.splitAssetDependencies(
-          asset,
-          context,
+        const time = performance.now();
+        const items = await plugin.splitDependencies(asset, bundler, options);
+        this.logger.debug(
+          colors.yellow(`Split Dependencies`),
+          colors.dim(type),
+          colors.dim(format),
+          colors.dim(plugin.constructor.name),
+          timestamp(time),
         );
         return items;
       }
     }
     throw new Error(
-      `no plugin for 'splitAssetDependencies' found: ${input} ${type}`,
+      `no plugin for 'splitDependencies' found: ${input} ${type} ${format}`,
     );
   }
 
   async createChunk(
     asset: Asset,
     chunkAssets: Set<Asset>,
-    {
-      assets = [],
-      outputMap = {},
-      root = "file:///dist/",
-      importMap,
-    }: Partial<CreateChunkContext> = {},
+    _bundler?: Bundler,
+    { root, outputMap, assets }: CreateChunkOptions = {},
   ) {
-    const time = performance.now();
-
     const { input, type, format } = asset;
-    const context = {
-      assets,
-      importMap,
-      outputMap,
-      root,
-      bundler: this,
-    };
-
     for (const plugin of this.plugins) {
       if (
-        plugin.createChunk instanceof Function &&
-        await plugin.test(input, type, format)
+        await plugin.test(input, type, format) &&
+        plugin.createChunk instanceof Function
       ) {
-        const chunk = await plugin.createChunk(asset, chunkAssets, context);
-        this.logger.debug(colors.yellow("Output"), chunk.output);
-
-        for (const dependencyItem of chunk.dependencyItems) {
-          this.logger.debug(
-            colors.yellow("Inline"),
-            dependencyItem.input,
-            colors.dim(dependencyItem.type),
-            colors.dim(dependencyItem.format),
-          );
-        }
-
+        const time = performance.now();
+        const chunk = await plugin.createChunk(asset, chunkAssets, this, {
+          root,
+          outputMap,
+          assets,
+        });
         this.logger.info(
           colors.green("Create Chunk"),
-          chunk.item.input,
+          input,
+          colors.dim(type),
+          colors.dim(format),
           colors.dim(plugin.constructor.name),
-          colors.dim(chunk.item.type),
-          colors.dim(chunk.item.format),
           colors.dim(colors.italic(`(${timestamp(time)})`)),
         );
         return chunk;
       }
     }
-    throw new Error(`no plugin for 'createChunk' found: ${input} ${type}`);
+    throw new Error(
+      `no plugin for 'createChunk' found: ${input} ${type} ${format}`,
+    );
   }
-
   async createChunks(
     inputs: string[],
     assets: Asset[],
-    {
-      importMap,
-      outputMap = {},
-      root = "file:///dist/",
-      chunks: cachedChunks = [],
-    }: Partial<
-      CreateChunksContext
-    > = {},
+    { root = ".", outputMap = {} }: CreateChunkOptions = {},
   ): Promise<Chunk[]> {
-    const context = {
-      importMap,
-      outputMap,
-      root,
-      assets,
-      bundler: this,
-    };
-
     const chunkItems: Item[] = inputs.map((input) => ({
       input: new URL(input, "file://").href,
       type: DependencyType.ImportExport,
@@ -256,13 +249,20 @@ export class Bundler {
     const checkTime = performance.now();
 
     const checkedAssets: Set<Asset> = new Set();
+
+    const checkedChunkItems: Set<Asset> = new Set();
     for (const chunkItem of chunkItems) {
       const time = performance.now();
       const { input, type, format } = chunkItem;
-
       const asset = getAsset(assets, input, type, format);
+      if (checkedChunkItems.has(asset)) continue;
+      checkedChunkItems.add(asset);
 
-      const splitItems = await this.splitAssetDependencies(asset, context);
+      const splitItems = await this.splitDependencies(asset, this, {
+        root,
+        outputMap,
+      });
+
       chunkItems.push(...splitItems);
       chunkAssets.add(asset);
 
@@ -314,6 +314,7 @@ export class Bundler {
             }
             checkedAssets.add(depdendencyAsset);
           }
+
           checkedAssets.add(asset);
 
           this.logger.info(
@@ -340,7 +341,7 @@ export class Bundler {
 
     const time = performance.now();
 
-    const chunks: Chunk[] = [...cachedChunks];
+    const chunks: Chunk[] = [];
     const newChunks: Chunk[] = [];
 
     for (const asset of chunkAssets) {
@@ -357,7 +358,11 @@ export class Bundler {
           colors.dim(asset.format),
         );
       } else {
-        chunk = await this.createChunk(asset, chunkAssets, context);
+        chunk = await this.createChunk(asset, chunkAssets, this, {
+          assets,
+          root,
+          outputMap,
+        });
         chunks.push(chunk);
         newChunks.push(chunk);
       }
@@ -377,89 +382,74 @@ export class Bundler {
 
   async createBundle(
     chunk: Chunk,
-    {
-      root = "file:///dist/",
-      importMap,
-      optimize,
-      chunks = [],
-    }: Partial<
-      CreateBundleContext
-    > = {},
-  ) {
-    const context = {
-      root,
-      importMap,
-      optimize,
-      chunks,
-      bundler: this,
-    };
-    const time = performance.now();
+    source: Source,
+    _bundler?: Bundler,
+    options: CreateBundleOptions = {},
+  ): Promise<Bundle> {
     const { input, type, format } = chunk.item;
-
     for (const plugin of this.plugins) {
       if (
         plugin.createBundle instanceof Function &&
         await plugin.test(input, type, format)
       ) {
-        const bundle = await plugin.createBundle(chunk, context);
-
-        if (context.optimize) {
-          bundle.source = await this.optimizeSource(chunk, bundle.source);
-        }
+        const time = performance.now();
+        let bundle = await plugin.createBundle(chunk, source, this, options);
         this.logger.info(
-          colors.green("Create Bundle"),
-          input,
-          colors.dim(plugin.constructor.name),
+          colors.green(`Create Bundle`),
           colors.dim(type),
           colors.dim(format),
-          colors.dim(colors.italic(`(${timestamp(time)})`)),
+          colors.dim(plugin.constructor.name),
+          timestamp(time),
         );
+        if (options.optimize) bundle = await this.optimizeBundle(chunk, bundle);
         return bundle;
       }
     }
     throw new Error(
-      `no plugin for 'createBundle' found: ${input} ${type}`,
+      `no plugin for 'createBundle' found: ${input} ${type} ${format}`,
     );
   }
 
-  async optimizeSource(chunk: Chunk, source: Source) {
+  async optimizeBundle(chunk: Chunk, bundle: Bundle) {
     const { input, type, format } = chunk.item;
     for (const plugin of this.plugins) {
       if (
-        plugin.optimizeSource instanceof Function &&
+        plugin.optimizeBundle instanceof Function &&
         await plugin.test(input, type, format)
       ) {
         const time = performance.now();
-        source = await plugin.optimizeSource(source);
+        bundle.source = await plugin.optimizeBundle(bundle.source);
         this.logger.debug(
-          colors.yellow("Optimize"),
-          colors.dim(plugin.constructor.name),
+          colors.yellow(`Optimize Bundle`),
           colors.dim(type),
           colors.dim(format),
-          colors.dim(colors.italic(`(${timestamp(time)})`)),
+          colors.dim(plugin.constructor.name),
+          timestamp(time),
         );
       }
     }
-    return source;
+    return bundle;
   }
 
   async createBundles(
     chunks: Chunk[],
-    { root = "file:///dist/", importMap, optimize }: Partial<
-      CreateBundlesContext
-    > = {},
+    { root = ".", importMap, reload, optimize }: CreateBundleOptions = {},
   ) {
     const time = performance.now();
     const bundles = [];
-    const context = {
-      root,
-      importMap,
-      chunks,
-      optimize,
-      bundler: this,
-    };
+
     for (const chunk of chunks) {
-      const bundle = await this.createBundle(chunk, context);
+      const { input, type, format } = chunk.item;
+      const source = await this.createSource(input, type, format, this, {
+        importMap,
+        reload,
+      });
+      const bundle = await this.createBundle(chunk, source, this, {
+        chunks,
+        root,
+        importMap,
+        optimize,
+      });
       bundles.push(bundle);
     }
 
@@ -475,25 +465,28 @@ export class Bundler {
 
   async bundle(
     inputs: string[],
-    options: Partial<
-      CreateAssetsContext & CreateChunksContext & CreateBundlesContext
-    > = {},
+    { assets = [], chunks = [], importMap, reload, root, outputMap, optimize }:
+      & CreateAssetOptions
+      & CreateChunkOptions
+      & CreateBundleOptions = {},
   ) {
-    const assets = await this.createAssets(inputs, options);
+    const newAssets = await this.createAssets(inputs, { importMap, reload });
 
-    let chunks: Chunk[] = [];
-    if (assets.length) {
-      chunks = await this.createChunks(inputs, [
-        ...options.assets || [],
-        ...assets,
-      ], options);
-    }
+    const newChunks = await this.createChunks(
+      inputs,
+      [...assets, ...newAssets],
+      { root, outputMap },
+    );
 
-    let bundles: Bundle[] = [];
-    if (chunks.length) {
-      bundles = await this.createBundles(chunks, options);
-    }
+    const newBundles = await this.createBundles(
+      [...chunks, ...newChunks],
+      { root, importMap, optimize, reload },
+    );
 
-    return { assets, chunks, bundles };
+    return {
+      assets: newAssets,
+      chunks: newChunks,
+      bundles: newBundles,
+    };
   }
 }

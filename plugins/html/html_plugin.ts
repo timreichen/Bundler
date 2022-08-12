@@ -1,18 +1,22 @@
+import { Bundler } from "../../bundler.ts";
 import { TextFilePlugin } from "../file/text_file.ts";
+import {
+  CreateAssetOptions,
+  CreateBundleOptions,
+  CreateChunkOptions,
+} from "../plugin.ts";
 import {
   Asset,
   Chunk,
-  ChunkItem,
-  CreateAssetContext,
-  CreateBundleContext,
-  CreateChunkContext,
   DependencyFormat,
   DependencyType,
+  getDependencyFormat,
   Item,
-} from "../plugin.ts";
-import { getDependencyFormat } from "../_util.ts";
-import { extractDependencies } from "./posthtml/extract_dependencies.ts";
-import { injectDependencies } from "./posthtml/inject_dependencies.ts";
+  Source,
+} from "../_util.ts";
+import { extractDependencies } from "./extract_dependencies.ts";
+import { injectDependencies } from "./inject_dependencies.ts";
+import { parse, stringify } from "./_util.ts";
 
 export class HTMLPlugin extends TextFilePlugin {
   test(input: string, _type: DependencyType, format: DependencyFormat) {
@@ -26,27 +30,55 @@ export class HTMLPlugin extends TextFilePlugin {
     }
   }
 
+  async createSource(
+    input: string,
+    bundler?: Bundler,
+    { importMap }: CreateAssetOptions = {},
+  ) {
+    const source = await super.createSource(input, bundler, { importMap });
+    return parse(source);
+  }
+
   async createAsset(
     input: string,
     type: DependencyType,
-    context: CreateAssetContext,
+    bundler?: Bundler,
+    { importMap }: CreateAssetOptions = {},
   ) {
-    const source = await this.createSource(input, context) as string;
-    const dependencies = await extractDependencies(input, source);
+    const format = DependencyFormat.Html;
+
+    const source = await this.createSource(input, bundler, { importMap });
+
+    const dependencies = await this.createDependencies(input, source, {
+      importMap,
+    });
 
     return {
       input,
       type,
-      format: DependencyFormat.Html,
+      format,
       dependencies,
-      exports: {},
-      source,
     };
   }
 
-  splitAssetDependencies(
+  async createDependencies(
+    input: string,
+    source: Source,
+    { importMap }: CreateAssetOptions,
+  ) {
+    const dependencies = await extractDependencies(
+      input,
+      source,
+      { importMap },
+    );
+
+    return dependencies;
+  }
+
+  splitDependencies(
     asset: Asset,
-    _context: CreateChunkContext,
+    _bundler: Bundler,
+    _options: CreateChunkOptions,
   ) {
     const items: Item[] = [];
     for (const { input, type, format } of asset.dependencies) {
@@ -63,27 +95,39 @@ export class HTMLPlugin extends TextFilePlugin {
   async createChunk(
     asset: Asset,
     _chunkAssets: Set<Asset>,
-    context: CreateChunkContext,
+    _bundler?: Bundler,
+    { root = ".", outputMap }: CreateChunkOptions = {},
   ) {
-    const dependencyItems: ChunkItem[] = [];
     return {
       item: {
         input: asset.input,
         type: asset.type,
         format: asset.format,
-        source: asset.source,
       },
-      dependencyItems,
-      output: context.outputMap[asset.input] ??
-        await this.createOutput(asset.input, context.root, ".html"),
+      dependencyItems: [],
+      output: outputMap?.[asset.input] ??
+        await this.createOutput(asset.input, root, ".html"),
     };
   }
 
-  async createBundle(chunk: Chunk, context: CreateBundleContext) {
-    const source = chunk.item.source as string;
-    const result = await injectDependencies(chunk.item.input, source, context);
+  async createBundle(
+    chunk: Chunk,
+    ast: Source,
+    bundler: Bundler,
+    { chunks = [], root = ".", importMap }: CreateBundleOptions,
+  ) {
+    const { input } = chunk.item;
+    const result = await injectDependencies(
+      input,
+      chunk.dependencyItems,
+      ast,
+      chunks,
+      bundler,
+      { root, importMap },
+    );
+
     return {
-      source: result,
+      source: stringify(result),
       output: chunk.output,
     };
   }

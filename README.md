@@ -39,9 +39,9 @@ Bundler is a zero configuration bundler with the web in mind.
 
 ### HTML
 
-- handles `<link>`, `<script>`, `<style>`, `<source>` and `<img>` tags
+- handles `<link>`, `<script>`, `<style>`, `<source>`, `<img>` and `<video>`
+  tags
 - handles `style` attributes
-- handles `webmanifest` files
 
 ### CSS
 
@@ -127,7 +127,7 @@ const plugins = [
   new TypescriptPlugin(),
 ];
 
-const bundler = new Bundler(plugins);
+const bundler = new Bundler({ plugins });
 
 const assets = await bundler.createAssets(inputs);
 const chunks = await bundler.createChunks(inputs, assets, { outputMap });

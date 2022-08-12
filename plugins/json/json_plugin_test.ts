@@ -1,8 +1,8 @@
 import { assertEquals } from "../../test_deps.ts";
 import { Bundler } from "../../bundler.ts";
-import { Asset, DependencyFormat, DependencyType } from "../plugin.ts";
 import { JSONPlugin } from "./json_plugin.ts";
 import { path } from "../../deps.ts";
+import { Asset, DependencyFormat, DependencyType } from "../plugin.ts";
 
 const plugin = new JSONPlugin();
 const bundler = new Bundler({ plugins: [plugin], quiet: true });
@@ -56,18 +56,12 @@ Deno.test({
   name: "createAsset",
   async fn() {
     const a = path.toFileUrl(path.join(testdataDir, "/json/a.json")).href;
-    const asset = await bundler.createAsset(
-      a,
-      DependencyType.ImportExport,
-      DependencyFormat.Unknown,
-    );
+    const asset = await bundler.createAsset(a, DependencyType.ImportExport);
     assertEquals(asset, {
       input: a,
       type: DependencyType.ImportExport,
       format: DependencyFormat.Json,
       dependencies: [],
-      exports: {},
-      source: `{\n  "foo": "bar"\n}\n`,
     });
   },
 });
@@ -76,20 +70,17 @@ Deno.test({
   name: "createChunk",
   async fn() {
     const a = path.toFileUrl(path.join(testdataDir, "/json/a.json")).href;
-    const asset = await bundler.createAsset(
-      a,
-      DependencyType.ImportExport,
-      DependencyFormat.Unknown,
-    );
+    const asset = await bundler.createAsset(a, DependencyType.ImportExport);
     const chunkAssets: Set<Asset> = new Set();
-    const chunk = await bundler.createChunk(asset, chunkAssets);
+    const chunk = await bundler.createChunk(asset, chunkAssets, undefined, {
+      root: "dist",
+    });
     assertEquals(chunk, {
       dependencyItems: [],
       item: {
-        format: DependencyFormat.Json,
         input: a,
-        source: `{\n  "foo": "bar"\n}\n`,
         type: DependencyType.ImportExport,
+        format: DependencyFormat.Json,
       },
       output: await plugin.createOutput(a, "dist", ".json"),
     });
@@ -100,32 +91,41 @@ Deno.test({
   name: "createBundle",
   async fn(t) {
     await t.step("bundle", async () => {
-      const a = path.toFileUrl(path.join(testdataDir, "/json/a.json")).href;
+      const root = "dist";
 
-      const asset = await bundler.createAsset(
-        a,
-        DependencyType.ImportExport,
-        DependencyFormat.Unknown,
-      );
+      const a = path.toFileUrl(path.join(testdataDir, "/json/a.json")).href;
+      const asset = await bundler.createAsset(a, DependencyType.ImportExport);
       const chunkAssets: Set<Asset> = new Set();
-      const chunk = await bundler.createChunk(asset, chunkAssets);
-      const bundle = await bundler.createBundle(chunk);
+      const chunk = await bundler.createChunk(asset, chunkAssets, undefined, {
+        root,
+      });
+      const { input, type, format } = chunk.item;
+      const json = await bundler.createSource(input, type, format);
+      const bundle = await bundler.createBundle(chunk, json, undefined, {
+        root,
+      });
       assertEquals(bundle, {
-        source: `{\n  "foo": "bar"\n}\n`,
-        output: await plugin.createOutput(a, "dist", ".json"),
+        source: `{\n "foo": "bar"\n}`,
+        output: await plugin.createOutput(a, root, ".json"),
       });
     });
+
     await t.step("optimize", async () => {
+      const root = "dist";
+
       const a = path.toFileUrl(path.join(testdataDir, "/json/a.json")).href;
 
-      const asset = await bundler.createAsset(
-        a,
-        DependencyType.ImportExport,
-        DependencyFormat.Unknown,
-      );
+      const asset = await bundler.createAsset(a, DependencyType.ImportExport);
       const chunkAssets: Set<Asset> = new Set();
-      const chunk = await bundler.createChunk(asset, chunkAssets);
-      const bundle = await bundler.createBundle(chunk, { optimize: true });
+      const chunk = await bundler.createChunk(asset, chunkAssets, undefined, {
+        root,
+      });
+      const { input, type, format } = chunk.item;
+      const json = await bundler.createSource(input, type, format);
+      const bundle = await bundler.createBundle(chunk, json, undefined, {
+        root,
+        optimize: true,
+      });
       assertEquals(bundle, {
         source: `{"foo":"bar"}`,
         output: await plugin.createOutput(a, "dist", ".json"),

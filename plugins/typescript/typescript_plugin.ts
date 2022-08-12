@@ -1,44 +1,70 @@
-import {
-  injectDependencies,
-} from "./transformers/dependencies/inject_dependencies.ts";
-import { extractDependencies } from "./transformers/dependencies/extract_dependencies.ts";
-import { TextFilePlugin } from "../file/text_file.ts";
+import { colors, ImportMap, path, ts } from "../../deps.ts";
 import {
   Asset,
   Chunk,
-  ChunkItem,
-  CreateAssetContext,
-  CreateBundleContext,
-  CreateChunkContext,
   DependencyFormat,
   DependencyType,
+  Item,
+  Source,
 } from "../plugin.ts";
-import { colors, path, ts } from "../../deps.ts";
-import { isURL, timestamp } from "../../_util.ts";
 import { cache, resolve } from "../../cache/cache.ts";
+import { TextFilePlugin } from "../file/text_file.ts";
+import { extractDependencies } from "./extract_dependencies.ts";
+import {
+  CreateAssetOptions,
+  CreateBundleOptions,
+  CreateChunkOptions,
+} from "../plugin.ts";
+import { parse, stringify } from "./_util.ts";
+import { timestamp } from "../../_util.ts";
+import { injectDependencies } from "./inject_dependencies.ts";
+import { Bundler } from "../../bundler.ts";
 import { getAsset, getDependencyFormat } from "../_util.ts";
 
 const defaultCompilerOptions: ts.CompilerOptions = {
   allowJs: true,
-  esModuleInterop: true,
-  experimentalDecorators: true,
-  // inlineSourceMap: true,
-  // isolatedModules: true,
-  lib: ["deno.window"],
-  // strict: true,
-  useDefineForClassFields: true,
+  allowUnreachableCode: false,
+  allowUnusedLabels: false,
+  checkJs: false,
+  jsx: ts.JsxEmit.React,
   jsxFactory: "React.createElement",
   jsxFragmentFactory: "React.Fragment",
-  jsx: ts.JsxEmit.React,
+  keyofStringsOnly: false,
+  lib: ["deno.window"],
+  noFallthroughCasesInSwitch: false,
+  noImplicitAny: true,
+  noImplicitReturns: false,
+  noImplicitThis: true,
+  noImplicitUseStrict: true,
+  noStrictGenericChecks: false,
+  noUnusedLocals: false,
+  noUnusedParameters: false,
+  noUncheckedIndexedAccess: false,
+  reactNamespace: "React",
+  // strict: true,
+  strictBindCallApply: true,
+  strictFunctionTypes: true,
+  strictPropertyInitialization: true,
+  strictNullChecks: true,
+  suppressExcessPropertyErrors: false,
+  suppressImplicitAnyIndexErrors: false,
+  useUnknownInCatchVariables: false,
   target: ts.ScriptTarget.ESNext,
   module: ts.ModuleKind.ESNext,
 };
+
+function isUrlWithoutExtension(input: string) {
+  return (/^https?:\/\//.test(input) && !/([\.][a-zA-Z]\w*)$/.test(input));
+}
 
 export class TypescriptPlugin extends TextFilePlugin {
   #compilerOptions: ts.CompilerOptions;
   constructor(compilerOptions: ts.CompilerOptions = {}) {
     super();
-    this.#compilerOptions = compilerOptions;
+    this.#compilerOptions = {
+      ...defaultCompilerOptions,
+      ...compilerOptions,
+    };
   }
   test(input: string, _type: DependencyType, format: DependencyFormat) {
     switch (format) {
@@ -47,22 +73,21 @@ export class TypescriptPlugin extends TextFilePlugin {
       case DependencyFormat.Unknown: {
         return getDependencyFormat(input) === DependencyFormat.Script ||
           (
-            /^https?:\/\//.test(input) &&
-            !/([\.][a-zA-Z]\w*)$/.test(
-              input,
-            )
-          ); /* handle url without extension as script files */
+            /* handle url without extension as script files */
+            isUrlWithoutExtension(input)
+          );
       }
       default:
         return false;
     }
   }
 
-  protected async readSource(
+  async readSource(
     input: string,
-    { importMap, reload }: CreateAssetContext,
+    bundler?: Bundler,
+    { importMap, reload }: { importMap?: ImportMap; reload?: boolean } = {},
   ) {
-    if (isURL(input) && /^https?\:/.test(new URL(input).protocol)) {
+    if (/^https?\:\/\//.test(input)) {
       const resolvedInput = resolve(input);
       try {
         await cache(input, { importMap, reload });
@@ -71,60 +96,78 @@ export class TypescriptPlugin extends TextFilePlugin {
       }
       input = resolvedInput;
     }
-    return super.readSource(input, { importMap });
+    return super.readSource(input, bundler, { importMap });
+  }
+
+  async createSource(
+    input: string,
+    bundler?: Bundler,
+    { importMap }: CreateAssetOptions = {},
+  ) {
+    let source = await super.createSource(input, bundler, { importMap });
+
+    if (/\.tsx?$/.test(input)) {
+      const time = performance.now();
+
+      source = await ts.transpile(
+        source,
+        this.#compilerOptions,
+      );
+
+      bundler?.logger.debug(
+        colors.yellow("Transpile"),
+        `ts → js`,
+        input,
+        colors.dim(colors.italic(`(${timestamp(time)})`)),
+      );
+    }
+
+    const sourceFile = parse(source);
+    sourceFile.fileName = input;
+    return sourceFile;
   }
 
   async createAsset(
     input: string,
     type: DependencyType,
-    context: CreateAssetContext,
+    bundler?: Bundler,
+    { importMap, reload }: CreateAssetOptions = {},
   ) {
-    let source = await this.createSource(input, context) as string;
-    const { importMap } = context;
-    const tsCompilerOptions: ts.CompilerOptions = {
-      ...defaultCompilerOptions,
-      ...this.#compilerOptions,
-    };
+    const format = DependencyFormat.Script;
 
-    const { dependencies, exports } = await extractDependencies(
-      input,
-      source,
-      { importMap, compilerOptions: tsCompilerOptions },
-    );
-
-    if (/\.tsx?$/.test(input)) {
-      const time = performance.now();
-
-      const tsCompilerOptions: ts.CompilerOptions = {
-        ...defaultCompilerOptions,
-        ...this.#compilerOptions,
-      };
-
-      source = ts.transpile(
-        source as string,
-        tsCompilerOptions,
-        input,
-      );
-      context.bundler.logger.debug(
-        colors.yellow("Transpile"),
-        `ts → js`,
-        colors.dim(colors.italic(`(${timestamp(time)})`)),
-      );
-    }
+    const source = await this.createSource(input, bundler, { importMap });
 
     return {
       input,
       type,
-      format: DependencyFormat.Script,
-      dependencies: dependencies,
-      exports: exports,
-      source,
+      format,
+      dependencies: await this.getDependencies(input, type, format, source, {
+        importMap,
+        reload,
+      }),
     };
   }
 
-  splitAssetDependencies(
+  async getDependencies(
+    input: string,
+    _type: DependencyType,
+    _format: DependencyFormat,
+    source: Source,
+    options: CreateAssetOptions = {},
+  ) {
+    const dependencies = await extractDependencies(
+      input,
+      source,
+      options,
+    );
+
+    return dependencies;
+  }
+
+  splitDependencies(
     asset: Asset,
-    _context: CreateChunkContext,
+    _bundler: Bundler,
+    _options: CreateChunkOptions,
   ) {
     const items = [];
     for (const dependency of asset.dependencies) {
@@ -199,14 +242,15 @@ export class TypescriptPlugin extends TextFilePlugin {
   async createChunk(
     asset: Asset,
     chunkAssets: Set<Asset>,
-    context: CreateChunkContext,
+    _bundler?: Bundler,
+    { assets = [], root = ".", outputMap }: CreateChunkOptions = {},
   ): Promise<Chunk> {
-    const dependencyItems: ChunkItem[] = [];
+    const dependencyItems: Item[] = [];
     const dependencies = [...asset.dependencies];
     const checkedAssets = new Set();
     for (const dependency of dependencies) {
       const { input, type, format } = dependency;
-      const dependencyAsset = getAsset(context.assets, input, type, format);
+      const dependencyAsset = getAsset(assets, input, type, format);
       if (checkedAssets.has(dependencyAsset)) continue;
       checkedAssets.add(dependencyAsset);
       if (!chunkAssets.has(dependencyAsset) && dependencyAsset !== asset) {
@@ -214,7 +258,6 @@ export class TypescriptPlugin extends TextFilePlugin {
           input: dependencyAsset.input,
           type: dependencyAsset.type,
           format: dependencyAsset.format,
-          source: dependencyAsset.source,
         });
         dependencies.push(...dependencyAsset.dependencies);
       }
@@ -223,39 +266,40 @@ export class TypescriptPlugin extends TextFilePlugin {
     let extname = path.extname(asset.input);
 
     const { input } = asset;
-    if (/\.tsx?$/.test(input)) {
+    if (/\.tsx?$/.test(input) || isUrlWithoutExtension(input)) {
       extname = ".js";
     }
+
+    const output = outputMap?.[asset.input] ??
+      await this.createOutput(asset.input, root, extname);
 
     return {
       item: {
         input: asset.input,
         type: asset.type,
         format: asset.format,
-        source: asset.source,
       },
       dependencyItems,
-      output: context.outputMap[asset.input] ??
-        await this.createOutput(asset.input, context.root, extname),
+      output,
     };
   }
 
-  createBundle(chunk: Chunk, context: CreateBundleContext) {
-    let source = chunk.item.source as string;
-
-    const tsCompilerOptions: ts.CompilerOptions = {
-      ...defaultCompilerOptions,
-      ...this.#compilerOptions,
-    };
-
-    source = injectDependencies(
-      chunk,
-      {
-        ...context,
-        logger: context.bundler.logger,
-        compilerOptions: tsCompilerOptions,
-      },
+  async createBundle(
+    chunk: Chunk,
+    ast: Source,
+    bundler: Bundler,
+    { chunks = [], root = ".", importMap }: CreateBundleOptions = {},
+  ) {
+    ast = await injectDependencies(
+      chunk.item.input,
+      chunk.dependencyItems,
+      ast,
+      chunks,
+      bundler,
+      { root, importMap, compilerOptions: this.#compilerOptions },
     );
+
+    const source = stringify(ast);
 
     return {
       source,

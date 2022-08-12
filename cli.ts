@@ -18,7 +18,7 @@ import {
   resolveImportMap,
   ts,
 } from "./deps.ts";
-import { parse, Program } from "./program.ts";
+import { parse, Program } from "./program/program.ts";
 import {
   createSha256,
   formatBytes,
@@ -55,6 +55,23 @@ async function writeBundles(bundler: Bundler, bundles: Bundle[]) {
       "Files",
       colors.dim(`${length} file${length === 1 ? "" : "s"}`),
       colors.dim(colors.italic(`(${timestamp(time)})`)),
+    );
+  }
+}
+
+async function writeCacheAssets(
+  cachedAssets: Record<string, Asset>,
+  cacheAssetsDir: string,
+) {
+  for (const [input, cachedAsset] of Object.entries(cachedAssets)) {
+    Deno.mkdir(cacheAssetsDir, { recursive: true });
+    const cachedAssetFilepath = path.join(
+      cacheAssetsDir,
+      await createSha256(input),
+    );
+    await Deno.writeTextFile(
+      cachedAssetFilepath,
+      JSON.stringify(cachedAsset),
     );
   }
 }
@@ -111,9 +128,6 @@ function parseBundleArgs(args: flags.Args) {
   };
 }
 
-const cacheDir = path.resolve(Deno.cwd(), ".bundler");
-const cacheAssetsDir = path.join(cacheDir, "assets");
-
 async function exists(filename: string) {
   try {
     await Deno.stat(filename);
@@ -127,7 +141,7 @@ async function exists(filename: string) {
 }
 
 async function bundleCommand(args: flags.Args) {
-  let {
+  const {
     inputs,
     outputMap,
     logLevel,
@@ -140,6 +154,9 @@ async function bundleCommand(args: flags.Args) {
     config,
   } = parseBundleArgs(args);
 
+  const cacheDir = path.resolve(root, ".bundler");
+  const cacheAssetsDir = path.join(cacheDir, "assets");
+
   let compilerOptions: ts.CompilerOptions = {};
   let importMap: ImportMap;
 
@@ -149,30 +166,57 @@ async function bundleCommand(args: flags.Args) {
     (await exists(denoJsonPath) && denoJsonPath) ??
     (await exists(denoJsoncPath) && denoJsoncPath);
 
+  let importMapFilePath = importMapPath;
   if (configPath) {
-    const data = await Deno.readTextFile(configPath);
-    const json = JSON.parse(data);
-    importMapPath = importMapPath ?? json.importMap;
-    compilerOptions = (json && json.compilerOptions) ??
-      ts.convertCompilerOptionsFromJson(
-        json.compilerOptions,
-        Deno.cwd(),
-      ).options;
-  }
-
-  if (importMapPath) {
-    let source: string;
-    if (isURL(importMapPath)) {
-      importMapPath = path.resolve(Deno.cwd(), importMapPath);
-      source = await Deno.readTextFile(importMapPath);
-    } else {
-      source = await fetch(importMapPath).then((data) => data.text());
+    try {
+      let source: string;
+      if (isFileURL(configPath) || !isURL(configPath)) {
+        source = await Deno.readTextFile(configPath);
+      } else {
+        source = await fetch(configPath).then((data) => data.text());
+      }
+      const json = JSON.parse(source);
+      importMapFilePath = importMapFilePath ?? json.importMap;
+      compilerOptions = (json && json.compilerOptions) ??
+        ts.convertCompilerOptionsFromJson(
+          json.compilerOptions,
+          Deno.cwd(),
+        ).options;
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) {
+        console.error(
+          colors.red("error"),
+          `could not find the config file: ${configPath}`,
+        );
+        return;
+      }
+      throw error;
     }
+  }
+  if (importMapFilePath) {
+    try {
+      let source: string;
+      if (isFileURL(importMapFilePath) || !isURL(importMapFilePath)) {
+        importMapFilePath = path.resolve(Deno.cwd(), importMapFilePath);
+        source = await Deno.readTextFile(importMapFilePath);
+      } else {
+        source = await fetch(importMapFilePath).then((data) => data.text());
+      }
 
-    importMap = resolveImportMap(
-      JSON.parse(source),
-      path.toFileUrl(importMapPath),
-    );
+      importMap = resolveImportMap(
+        JSON.parse(source),
+        path.toFileUrl(importMapFilePath),
+      );
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) {
+        console.error(
+          colors.red("error"),
+          `could not find import map file: ${importMapPath}`,
+        );
+        return;
+      }
+      throw error;
+    }
   }
 
   const plugins = [
@@ -193,13 +237,6 @@ async function bundleCommand(args: flags.Args) {
   try {
     for await (const dirEntry of Deno.readDir(cacheAssetsDir)) {
       const cachedAssetFilepath = path.join(cacheAssetsDir, dirEntry.name);
-      // if (
-      //   reload === true ||
-      //   Array.isArray(reload) && reload.includes(cachedAssetFilepath)
-      // ) {
-      //   await Deno.remove(cachedAssetFilepath);
-      //   continue;
-      // }
       const source = await Deno.readTextFile(cachedAssetFilepath);
       const asset: Asset = JSON.parse(source);
 
@@ -221,11 +258,6 @@ async function bundleCommand(args: flags.Args) {
 
       if (!cacheExpired) {
         try {
-          if (asset.source === null) {
-            asset.source = await Deno.readFileSync(
-              path.fromFileUrl(asset.input),
-            ).buffer;
-          }
           cachedAssets[asset.input] = asset;
           continue;
         } catch (error) {
@@ -250,9 +282,9 @@ async function bundleCommand(args: flags.Args) {
       optimize,
       reload,
       root,
+      importMap,
       assets: Object.values(cachedAssets),
       chunks: Object.values(cachedChunks),
-      importMap,
     });
 
     cachedAssets = {
@@ -261,6 +293,7 @@ async function bundleCommand(args: flags.Args) {
         assets.map((asset) => [asset.input, asset]),
       ),
     };
+
     cachedChunks = {
       ...cachedChunks,
       ...Object.fromEntries(
@@ -275,9 +308,9 @@ async function bundleCommand(args: flags.Args) {
 
     bundler.logger.info(
       colors.green(`Done`),
-      `${assets.length} assets,`,
-      `${chunks.length} chunks,`,
-      `${bundles.length} bundles`,
+      `${assets.length} asset${assets.length > 1 ? "s" : ""},`,
+      `${chunks.length} chunk${chunks.length > 1 ? "s" : ""},`,
+      `${bundles.length} bundle${bundles.length > 1 ? "s" : ""}`,
       colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
 
@@ -334,24 +367,7 @@ async function bundleCommand(args: flags.Args) {
           }
         }
       }
-    }
-
-    for (const [input, cachedAsset] of Object.entries(cachedAssets)) {
-      const source = cachedAsset.source instanceof ArrayBuffer
-        ? null
-        : cachedAsset.source;
-      Deno.mkdir(cacheAssetsDir, { recursive: true });
-      const cachedAssetFilepath = path.join(
-        cacheAssetsDir,
-        await createSha256(input),
-      );
-      await Deno.writeTextFile(
-        cachedAssetFilepath,
-        JSON.stringify({
-          ...cachedAsset,
-          source,
-        }),
-      );
+      await writeCacheAssets(cachedAssets, cacheAssetsDir);
     }
   }
 

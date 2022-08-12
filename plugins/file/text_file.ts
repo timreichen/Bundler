@@ -1,14 +1,17 @@
+import { Bundler } from "../../bundler.ts";
 import { ImportMap, path } from "../../deps.ts";
 import { isFileURL, isURL } from "../../_util.ts";
-import { DependencyFormat, DependencyType, Plugin } from "../plugin.ts";
+import { Plugin } from "../plugin.ts";
+import { DependencyFormat, DependencyType } from "../_util.ts";
 
 export class TextFilePlugin extends Plugin {
   test(_input: string, _type: DependencyType, _format: DependencyFormat) {
     return true;
   }
 
-  protected async readSource(
+  async readSource(
     input: string,
+    _bundler?: Bundler,
     _options: { importMap?: ImportMap } = {},
   ) {
     try {

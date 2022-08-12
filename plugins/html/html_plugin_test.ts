@@ -1,12 +1,11 @@
 import { assertEquals } from "../../test_deps.ts";
-import { Bundler } from "../../bundler.ts";
-import { Asset, DependencyFormat, DependencyType } from "../plugin.ts";
 import { HTMLPlugin } from "./html_plugin.ts";
 import { path } from "../../deps.ts";
+import { Asset, Chunk, DependencyFormat, DependencyType } from "../_util.ts";
+import { stringify } from "./_util.ts";
+import { Bundler } from "../../bundler.ts";
 
 const plugin = new HTMLPlugin();
-
-const bundler = new Bundler({ plugins: [plugin], quiet: true });
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "../../testdata");
@@ -46,13 +45,18 @@ Deno.test({
         const a = path.toFileUrl(
           path.join(testdataDir, "html/script/index.html"),
         ).href;
+
+        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+
         const b = path.toFileUrl(
           path.join(testdataDir, "html/script/index.ts"),
         ).href;
-        const asset = await bundler.createAsset(
-          a,
-          DependencyType.ImportExport,
-          DependencyFormat.Unknown,
+
+        assertEquals(
+          stringify(
+            await plugin.createSource(asset.input),
+          ),
+          `<html>\n  <head>\n    <script src="index.ts"></script>\n  </head>\n  <body>\n  </body>\n</html>`,
         );
         assertEquals(asset, {
           input: a,
@@ -65,9 +69,6 @@ Deno.test({
               format: DependencyFormat.Script,
             },
           ],
-          exports: {},
-          source:
-            `<html>\n  <head>\n    <script src="index.ts"></script>\n  </head>\n  <body>\n  </body>\n</html>`,
         });
       },
     });
@@ -78,13 +79,17 @@ Deno.test({
         const a = path.toFileUrl(
           path.join(testdataDir, "html/link/index.html"),
         ).href;
+
         const b =
           path.toFileUrl(path.join(testdataDir, "html/link/style.css")).href;
 
-        const asset = await bundler.createAsset(
-          a,
-          DependencyType.ImportExport,
-          DependencyFormat.Unknown,
+        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+
+        assertEquals(
+          stringify(
+            await plugin.createSource(asset.input),
+          ),
+          `<html>\n  <head>\n    <link rel="stylesheet" href="style.css">\n  </head>\n  <body>\n  </body>\n</html>`,
         );
         assertEquals(asset, {
           input: a,
@@ -97,9 +102,6 @@ Deno.test({
               format: DependencyFormat.Style,
             },
           ],
-          exports: {},
-          source:
-            `<html>\n  <head>\n    <link rel="stylesheet" href="style.css">\n  </head>\n  <body>\n  </body>\n</html>`,
         });
       },
     });
@@ -116,22 +118,23 @@ Deno.test({
           path.join(testdataDir, "html/script/index.html"),
         ).href;
 
-        const asset = await bundler.createAsset(
-          a,
-          DependencyType.ImportExport,
-          DependencyFormat.Unknown,
-        );
+        const asset: Asset = {
+          input: a,
+          type: DependencyType.ImportExport,
+          format: DependencyFormat.Html,
+          dependencies: [],
+        };
 
         const chunkAssets: Set<Asset> = new Set();
-        const chunk = await bundler.createChunk(asset, chunkAssets);
+        const chunk = await plugin.createChunk(asset, chunkAssets, undefined, {
+          root: "dist",
+        });
         assertEquals(chunk, {
           dependencyItems: [],
           item: {
-            format: DependencyFormat.Html,
             input: a,
-            source:
-              `<html>\n  <head>\n    <script src="index.ts"></script>\n  </head>\n  <body>\n  </body>\n</html>`,
             type: DependencyType.ImportExport,
+            format: DependencyFormat.Html,
           },
           output: await plugin.createOutput(a, "dist", ".html"),
         });
@@ -145,21 +148,17 @@ Deno.test({
           path.join(testdataDir, "html/link/index.html"),
         ).href;
 
-        const asset = await bundler.createAsset(
-          a,
-          DependencyType.ImportExport,
-          DependencyFormat.Unknown,
-        );
+        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
 
         const chunkAssets: Set<Asset> = new Set();
-        const chunk = await bundler.createChunk(asset, chunkAssets);
+        const chunk = await plugin.createChunk(asset, chunkAssets, undefined, {
+          root: "dist",
+        });
         assertEquals(chunk, {
           dependencyItems: [],
           item: {
             format: DependencyFormat.Html,
             input: a,
-            source:
-              `<html>\n  <head>\n    <link rel="stylesheet" href="style.css">\n  </head>\n  <body>\n  </body>\n</html>`,
             type: DependencyType.ImportExport,
           },
           output: await plugin.createOutput(a, "dist", ".html"),
@@ -182,26 +181,30 @@ Deno.test({
           path.join(testdataDir, "html/script/index.ts"),
         ).href;
 
-        const asset = await bundler.createAsset(
-          a,
-          DependencyType.ImportExport,
-          DependencyFormat.Unknown,
-        );
+        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
         const chunkAssets: Set<Asset> = new Set();
-        const chunk = await bundler.createChunk(asset, chunkAssets);
-        const chunkB = {
+        const chunk = await plugin.createChunk(asset, chunkAssets, undefined, {
+          root: "dist",
+        });
+        const chunkB: Chunk = {
           item: {
             input: b,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
-            source: `console.log("hello world");`,
-            dependencies: [],
-            exports: {},
           },
           output: "file:///dist/index.js",
           dependencyItems: [],
         };
-        const bundle = await bundler.createBundle(chunk, { chunks: [chunkB] });
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const { input, type, format } = chunk.item;
+        const ast = await bundler.createSource(input, type, format);
+
+        const bundle = await plugin.createBundle(
+          chunk,
+          ast,
+          bundler,
+          { chunks: [chunkB], root: "dist" },
+        );
         assertEquals(bundle, {
           output: await plugin.createOutput(a, "dist", ".html"),
           source:

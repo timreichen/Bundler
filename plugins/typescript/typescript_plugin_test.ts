@@ -83,7 +83,12 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/linear/b.ts")).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         assertEquals(asset, {
           input: a,
@@ -111,7 +116,12 @@ Deno.test({
           path.toFileUrl(path.join(testdataDir, "typescript/circular/b.ts"))
             .href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         assertEquals(asset, {
           input: a,
@@ -139,9 +149,11 @@ Deno.test({
           path.toFileUrl(path.join(testdataDir, "typescript/circular/b.ts"))
             .href;
 
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
         const asset = await plugin.createAsset(
           b,
           DependencyType.ImportExport,
+          bundler,
         );
 
         assertEquals(asset, {
@@ -169,7 +181,12 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/double/b.ts")).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         assertEquals(asset, {
           input: a,
@@ -200,7 +217,12 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/double/b.ts")).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         assertEquals(asset, {
           input: a,
@@ -230,7 +252,12 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/fetch/b.ts")).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         assertEquals(asset, {
           input: a,
@@ -260,11 +287,17 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/linear/b.ts")).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         const assetB = await plugin.createAsset(
           b,
           DependencyType.ImportExport,
+          bundler,
         );
         const chunkAssets: Set<Asset> = new Set();
         const chunk = await plugin.createChunk(asset, chunkAssets, undefined, {
@@ -299,14 +332,21 @@ Deno.test({
           path.toFileUrl(path.join(testdataDir, "typescript/chain/b.ts")).href;
         const c =
           path.toFileUrl(path.join(testdataDir, "typescript/chain/c.ts")).href;
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
         const assetB = await plugin.createAsset(
           b,
           DependencyType.ImportExport,
+          bundler,
         );
         const assetC = await plugin.createAsset(
           c,
           DependencyType.ImportExport,
+          bundler,
         );
         const chunkAssets: Set<Asset> = new Set();
         const chunk = await plugin.createChunk(asset, chunkAssets, undefined, {
@@ -348,10 +388,16 @@ Deno.test({
           path.toFileUrl(path.join(testdataDir, "typescript/circular/b.ts"))
             .href;
 
-        const assetA = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const assetA = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
         const assetB = await plugin.createAsset(
           b,
           DependencyType.ImportExport,
+          bundler,
         );
 
         const chunkContext = {
@@ -395,10 +441,16 @@ Deno.test({
           path.toFileUrl(path.join(testdataDir, "typescript/circular/b.ts"))
             .href;
 
-        const assetA = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const assetA = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
         const assetB = await plugin.createAsset(
           b,
           DependencyType.ImportExport,
+          bundler,
         );
 
         const chunkContext = {
@@ -441,10 +493,17 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/double/b.ts")).href;
 
-        const assetA = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const assetA = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
+
         const assetB = await plugin.createAsset(
           b,
           DependencyType.ImportExport,
+          bundler,
         );
 
         const chunkContext = {
@@ -485,10 +544,16 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "typescript/fetch/b.ts")).href;
 
-        const assetA = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const assetA = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
         const assetB = await plugin.createAsset(
           b,
           DependencyType.Fetch,
+          bundler,
         );
 
         const chunkContext = {

@@ -237,8 +237,9 @@ async function bundleCommand(args: flags.Args) {
   try {
     for await (const dirEntry of Deno.readDir(cacheAssetsDir)) {
       const cachedAssetFilepath = path.join(cacheAssetsDir, dirEntry.name);
-      const source = await Deno.readTextFile(cachedAssetFilepath);
-      const asset: Asset = JSON.parse(source);
+      const asset: Asset = JSON.parse(
+        await Deno.readTextFile(cachedAssetFilepath),
+      );
 
       let cacheExpired = false;
       if (isFileURL(asset.input)) {
@@ -277,6 +278,7 @@ async function bundleCommand(args: flags.Args) {
 
   async function bundle() {
     const time = performance.now();
+
     const { assets, chunks, bundles } = await bundler.bundle(inputs, {
       outputMap,
       optimize,
@@ -334,6 +336,7 @@ async function bundleCommand(args: flags.Args) {
         colors.brightBlue(`Watcher`),
         "Process finished. Restarting on file change...",
       );
+
       for await (const event of watcher) {
         switch (event.kind) {
           case "modify":
@@ -346,6 +349,12 @@ async function bundleCommand(args: flags.Args) {
             for (const filepath of event.paths) {
               try {
                 const fileURL = path.toFileUrl(filepath).href;
+                const cachedAsset = cachedAssets[fileURL];
+                bundler.sourceMap.delete(
+                  cachedAsset.input,
+                  cachedAsset.type,
+                  cachedAsset.format,
+                );
                 delete cachedAssets[fileURL];
                 for (const [input, chunk] of Object.entries(cachedChunks)) {
                   if (
@@ -367,8 +376,8 @@ async function bundleCommand(args: flags.Args) {
           }
         }
       }
-      await writeCacheAssets(cachedAssets, cacheAssetsDir);
     }
+    await writeCacheAssets(cachedAssets, cacheAssetsDir);
   }
 
   await bundle();

@@ -130,12 +130,14 @@ export class TypescriptPlugin extends TextFilePlugin {
   async createAsset(
     input: string,
     type: DependencyType,
-    bundler?: Bundler,
+    bundler: Bundler,
     { importMap, reload }: CreateAssetOptions = {},
   ) {
     const format = DependencyFormat.Script;
 
-    const source = await this.createSource(input, bundler, { importMap });
+    const source = await bundler.createSource(input, type, format, {
+      importMap,
+    });
 
     return {
       input,

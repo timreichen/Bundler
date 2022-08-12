@@ -53,12 +53,12 @@ export class CSSPlugin extends TextFilePlugin {
   async createAsset(
     input: string,
     type: DependencyType,
-    bundler?: Bundler,
+    bundler: Bundler,
     options: CreateAssetOptions = {},
   ): Promise<Asset> {
     const format = DependencyFormat.Style;
 
-    const source = await this.createSource(input, bundler, options);
+    const source = await bundler.createSource(input, type, format, options);
 
     const dependencies = await this.createDependencies(
       input,

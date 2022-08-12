@@ -30,7 +30,6 @@ export class WebManifestPlugin extends JSONPlugin {
       input,
       type,
       asset.format,
-      bundler,
       options,
     );
     const icons = json.icons || [];

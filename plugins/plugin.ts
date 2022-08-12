@@ -16,11 +16,13 @@ export type { Asset, Bundle, Chunk, Item, Source };
 export interface CreateAssetOptions {
   importMap?: ImportMap;
   reload?: boolean;
+  assets?: Asset[];
 }
 
 export interface CreateChunkOptions {
   root?: string;
   assets?: Asset[];
+  chunks?: Chunk[];
   outputMap?: Record<string, string>;
 }
 

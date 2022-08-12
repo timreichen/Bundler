@@ -24,6 +24,9 @@ export async function injectDependencies(
     importMap?: ImportMap;
   },
 ) {
+  // avoid original ast mutations
+  ast = structuredClone(ast);
+
   const base = getBase(ast);
 
   let i = 0;

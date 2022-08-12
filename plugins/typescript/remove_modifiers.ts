@@ -1,5 +1,5 @@
-import { ts } from "../../../../deps.ts";
-import { createNextIdentifier } from "../_util.ts";
+import { ts } from "../../deps.ts";
+import { createNextIdentifier } from "./_util.ts";
 
 function hasNodeModifier(
   modifiers: ts.ModifiersArray,
@@ -24,17 +24,19 @@ export function removeModifiers(
   fileName: string,
   source: string,
   exportMap: Record<string, string>,
-  blacklistIdentifiers: Set<string>,
+  denyListIdentifiers: Set<string>,
   compilerOptions?: ts.CompilerOptions,
 ) {
   const sourceFile = ts.createSourceFile(
     fileName,
     source,
     ts.ScriptTarget.ESNext,
+    false,
+    ts.ScriptKind.Unknown,
   );
   const { transformed } = ts.transform(
     sourceFile,
-    [removeModifiersTransformer(exportMap, blacklistIdentifiers)],
+    [removeModifiersTransformer(exportMap, denyListIdentifiers)],
     compilerOptions,
   );
   const printer: ts.Printer = ts.createPrinter({
@@ -48,12 +50,12 @@ export function removeModifiers(
 export function removeModifiersFromSourceFile(
   sourceFile: ts.SourceFile,
   exportMap: Record<string, string>,
-  blacklistIdentifiers: Set<string>,
+  denyListIdentifiers: Set<string>,
   compilerOptions?: ts.CompilerOptions,
 ) {
   const { transformed } = ts.transform(
     sourceFile,
-    [removeModifiersTransformer(exportMap, blacklistIdentifiers)],
+    [removeModifiersTransformer(exportMap, denyListIdentifiers)],
     compilerOptions,
   );
   return transformed[0] as ts.SourceFile;
@@ -63,18 +65,20 @@ export function removeModifiersSourceFile(
   fileName: string,
   source: string,
   exportMap: Record<string, string>,
-  blacklistIdentifiers: Set<string>,
+  denyListIdentifiers: Set<string>,
   compilerOptions?: ts.CompilerOptions,
 ) {
   const sourceFile = ts.createSourceFile(
     fileName,
     source,
     ts.ScriptTarget.ESNext,
+    false,
+    ts.ScriptKind.Unknown,
   );
   return removeModifiersFromSourceFile(
     sourceFile,
     exportMap,
-    blacklistIdentifiers,
+    denyListIdentifiers,
     compilerOptions,
   );
 }
@@ -90,7 +94,7 @@ export interface Exports {
  */
 export function removeModifiersTransformer(
   exportMap: Record<string, string>,
-  blacklistIdentifiers: Set<string>,
+  denyListIdentifiers: Set<string>,
 ): ts.TransformerFactory<
   ts.SourceFile
 > {
@@ -125,7 +129,7 @@ export function removeModifiersTransformer(
           } else {
             const defaultIdentifier = createNextIdentifier(
               "_default",
-              blacklistIdentifiers,
+              denyListIdentifiers,
             );
             exportMap.default = defaultIdentifier;
             return ts.factory.createVariableStatement(

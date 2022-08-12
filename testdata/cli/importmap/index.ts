@@ -1,3 +1,3 @@
 import { world } from "world";
 
-console.log(world);
+console.info(world);

@@ -1,3 +1,3 @@
 import { world } from "./world.js";
 
-console.log(world);
+console.info(world);

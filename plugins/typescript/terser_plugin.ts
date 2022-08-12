@@ -19,7 +19,7 @@ export class TerserPlugin extends TextFilePlugin {
         return false;
     }
   }
-  async optimizeSource(source: string) {
+  async optimizeBundle(source: string) {
     const { code } = await terser.minify(source, this.options);
     if (code === undefined) {
       throw new Error(`code must not be undefined`);

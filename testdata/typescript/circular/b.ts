@@ -1,5 +1,5 @@
 import { a } from "./a.ts";
 
-console.log(a);
+console.info(a);
 
 export const b = "b";

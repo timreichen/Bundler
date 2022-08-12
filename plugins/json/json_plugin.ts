@@ -1,11 +1,15 @@
+import { Bundler } from "../../bundler.ts";
 import { path } from "../../deps.ts";
 import { TextFilePlugin } from "../file/text_file.ts";
 import {
+  CreateAssetOptions,
+  CreateBundleOptions,
+  CreateChunkOptions,
+} from "../plugin.ts";
+import {
   Asset,
+  Bundle,
   Chunk,
-  CreateAssetContext,
-  CreateBundleContext,
-  CreateChunkContext,
   DependencyFormat,
   DependencyType,
   Source,
@@ -25,45 +29,62 @@ export class JSONPlugin extends TextFilePlugin {
     }
   }
 
-  async createAsset(
+  async createSource(
+    input: string,
+    bundler?: Bundler | undefined,
+    options?: CreateAssetOptions,
+  ) {
+    const source = await super.createSource(input, bundler, options);
+    return JSON.parse(source);
+  }
+
+  createAsset(
     input: string,
     type: DependencyType,
-    context: CreateAssetContext,
-  ): Promise<Asset> {
-    const source = await this.createSource(input, context);
+    _bundler: Bundler,
+    _options: CreateAssetOptions = {},
+  ): Promise<Asset> | Asset {
+    const format = DependencyFormat.Json;
     return {
-      input: input,
+      input,
       type,
-      format: DependencyFormat.Json,
+      format,
       dependencies: [],
-      exports: {},
-      source,
     };
   }
 
   async createChunk(
     asset: Asset,
     _chunkAssets: Set<Asset>,
-    context: CreateChunkContext,
+    _bundler: Bundler,
+    { root = ".", outputMap }: CreateChunkOptions = {},
   ) {
     return {
       item: {
         input: asset.input,
         type: asset.type,
         format: asset.format,
-        source: asset.source,
       },
       dependencyItems: [],
-      output: context.outputMap[asset.input] ?? await this.createOutput(
+      output: outputMap?.[asset.input] ?? await this.createOutput(
         asset.input,
-        context.root,
+        root,
         path.extname(asset.input),
       ),
     };
   }
 
-  createBundle(chunk: Chunk, _context: CreateBundleContext) {
-    const { source } = chunk.item;
+  createBundle(
+    chunk: Chunk,
+    source: Source,
+    _bundler: Bundler,
+    { optimize }: CreateBundleOptions = {},
+  ): Promise<Bundle> | Bundle {
+    if (optimize) {
+      source = this.optimizeSource(source);
+    } else {
+      source = JSON.stringify(source, null, " ");
+    }
     return {
       source,
       output: chunk.output,
@@ -71,6 +92,6 @@ export class JSONPlugin extends TextFilePlugin {
   }
 
   optimizeSource(source: Source) {
-    return JSON.stringify(JSON.parse(source as string));
+    return JSON.stringify(source);
   }
 }

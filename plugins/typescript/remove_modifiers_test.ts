@@ -1,5 +1,5 @@
-import { ts } from "../../../../deps.ts";
-import { assertEquals } from "../../../../test_deps.ts";
+import { ts } from "../../deps.ts";
+import { assertEquals } from "../../test_deps.ts";
 import { removeModifiers } from "./remove_modifiers.ts";
 
 const compilerOptions: ts.CompilerOptions = {
@@ -15,12 +15,12 @@ Deno.test({
         const fileName = "src/a.ts";
         const source = `export const a = "a"`;
         const exportSpecifiers: Record<string, string> = {};
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const transformedSource = removeModifiers(
           fileName,
           source,
           exportSpecifiers,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(
@@ -37,12 +37,12 @@ Deno.test({
         const fileName = "src/a.ts";
         const source = `export { a };`;
         const exportSpecifiers: Record<string, string> = {};
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const transformedSource = removeModifiers(
           fileName,
           source,
           exportSpecifiers,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(
@@ -59,12 +59,12 @@ Deno.test({
         const fileName = "src/a.ts";
         const source = `export { a as b }`;
         const exportSpecifiers: Record<string, string> = {};
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const transformedSource = removeModifiers(
           fileName,
           source,
           exportSpecifiers,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(
@@ -81,12 +81,12 @@ Deno.test({
         const fileName = "src/a.ts";
         const source = `export * from "./x.ts"`;
         const exportSpecifiers: Record<string, string> = {};
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const transformedSource = removeModifiers(
           fileName,
           source,
           exportSpecifiers,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(
@@ -103,12 +103,12 @@ Deno.test({
         const fileName = "src/a.ts";
         const source = `export * as X from "./x.ts"`;
         const exportSpecifiers: Record<string, string> = {};
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const transformedSource = removeModifiers(
           fileName,
           source,
           exportSpecifiers,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(
@@ -125,12 +125,12 @@ Deno.test({
         const fileName = "src/a.ts";
         const source = `export function x() {}`;
         const exportSpecifiers: Record<string, string> = {};
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const transformedSource = removeModifiers(
           fileName,
           source,
           exportSpecifiers,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(
@@ -147,12 +147,12 @@ Deno.test({
         const fileName = "src/a.ts";
         const source = `export default function x() {}`;
         const exportSpecifiers: Record<string, string> = {};
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const transformedSource = removeModifiers(
           fileName,
           source,
           exportSpecifiers,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(
@@ -169,12 +169,12 @@ Deno.test({
         const fileName = "src/a.ts";
         const source = `export class X {}`;
         const exportSpecifiers: Record<string, string> = {};
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const transformedSource = removeModifiers(
           fileName,
           source,
           exportSpecifiers,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(transformedSource, `class X {\n}\n`);
@@ -188,12 +188,12 @@ Deno.test({
         const fileName = "src/a.ts";
         const source = `export default class X {}`;
         const exportSpecifiers: Record<string, string> = {};
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const transformedSource = removeModifiers(
           fileName,
           source,
           exportSpecifiers,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(transformedSource, `class X {\n}\n`);
@@ -205,20 +205,20 @@ Deno.test({
       name: "enum",
       fn() {
         const fileName = "src/a.ts";
-        const source = `console.log("OK"); export enum X {}`;
+        const source = `console.info("OK"); export enum X {}`;
         const exportSpecifiers: Record<string, string> = {};
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const transformedSource = removeModifiers(
           fileName,
           source,
           exportSpecifiers,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           transformedSource,
-          `console.log("OK");\nenum X {\n}\n`,
+          `console.info("OK");\nenum X {\n}\n`,
         );
         assertEquals(exportSpecifiers, { X: "X" });
       },

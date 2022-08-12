@@ -1,6 +1,24 @@
-import { ts } from "../../../../deps.ts";
-import { DependencyFormat } from "../../../plugin.ts";
-import { Exports } from "../modifiers/remove_modifiers.ts";
+import { ts } from "../../deps.ts";
+import { DependencyFormat } from "../plugin.ts";
+import { Exports } from "./remove_modifiers.ts";
+
+const regex = /^(?<identifier>.+?)(?<number>\d+)?$/;
+export function createNextIdentifier(
+  identifier: string,
+  denyListIdentifiers: Set<string>,
+) {
+  const groups = regex.exec(identifier)?.groups || {};
+  let number = groups.number ? parseInt(groups.number) : 0;
+  const rawIdentifier = groups.identifier;
+  let newIdentifier = groups.identifier;
+
+  while (denyListIdentifiers.has(newIdentifier)) {
+    number += 1;
+    newIdentifier = rawIdentifier + number;
+  }
+
+  return newIdentifier;
+}
 
 export function getAssertTypeFromAssertClause(assertClause: ts.AssertClause) {
   const typeValue = assertClause.elements.find((element) =>
@@ -186,4 +204,129 @@ export function createJsonSourceStatement(name: string, source: string) {
         ts.NodeFlags.Const,
       ),
     );
+}
+
+function readFile(filePath: string) {
+  return Deno.readTextFileSync(filePath);
+}
+function fileExists(filePath: string) {
+  try {
+    Deno.lstatSync(filePath);
+    return true;
+  } catch (err) {
+    if (err instanceof Deno.errors.NotFound) {
+      return false;
+    }
+    throw err;
+  }
+}
+
+export function transpile(
+  input: string,
+  ast: ts.SourceFile,
+  options: ts.CompilerOptions = {},
+) {
+  let outputText: string | undefined;
+  // let sourceMapText: string | undefined
+
+  function getSourceFile(filePath: string, languageVersion: ts.ScriptTarget) {
+    if (filePath === input) return ast;
+    const sourceText = ts.sys.readFile(filePath);
+
+    return sourceText !== undefined
+      ? ts.createSourceFile(filePath, sourceText, languageVersion)
+      : undefined;
+  }
+
+  const compilerHost: ts.CompilerHost = {
+    getSourceFile,
+    getDefaultLibFileName() {
+      return ts.getDefaultLibFilePath(ts.getDefaultCompilerOptions());
+    },
+    writeFile(_name, content) {
+      outputText = content;
+    },
+    getCurrentDirectory() {
+      return ts.sys.getCurrentDirectory();
+    },
+    getDirectories(path) {
+      return ts.sys.getDirectories(path);
+    },
+    getCanonicalFileName(filePath) {
+      return ts.sys.useCaseSensitiveFileNames
+        ? filePath
+        : filePath.toLowerCase();
+    },
+    getNewLine() {
+      return ts.sys.newLine;
+    },
+    useCaseSensitiveFileNames() {
+      return ts.sys.useCaseSensitiveFileNames;
+    },
+    fileExists,
+    directoryExists() {
+      return true;
+    },
+    readFile,
+  };
+
+  const program = ts.createProgram([input], options, compilerHost);
+
+  program.emit();
+
+  if (outputText === undefined) {
+    throw new Error(
+      ts.formatDiagnostics(
+        [
+          ...program.getGlobalDiagnostics(),
+          ...program.getOptionsDiagnostics(),
+          ...program.getSemanticDiagnostics(),
+          ...program.getSyntacticDiagnostics(),
+          ...program.getDeclarationDiagnostics(),
+          ...program.getConfigFileParsingDiagnostics(),
+        ],
+        compilerHost,
+      ),
+    );
+  }
+
+  return outputText;
+}
+
+export function parse(source: string) {
+  return ts.createSourceFile(
+    "file.ts",
+    source,
+    ts.ScriptTarget.ESNext,
+    false,
+    ts.ScriptKind.Unknown,
+  );
+}
+
+export function stringify(
+  ast: ts.SourceFile,
+  { newLine = ts.NewLineKind.LineFeed }: { newLine?: ts.NewLineKind } = {},
+) {
+  const printer: ts.Printer = ts.createPrinter({
+    removeComments: false,
+    newLine,
+  });
+  return printer.printFile(ast);
+}
+
+export async function walk(
+  sourceFile: ts.SourceFile,
+  reviver: (node: ts.Node) => Promise<void> | void,
+) {
+  async function visit(
+    node: ts.Node,
+    reviver: (node: ts.Node) => Promise<void> | void,
+  ) {
+    await reviver(node);
+    const children = node.getChildren(sourceFile);
+    for (const child of children) {
+      await visit(child, reviver);
+    }
+  }
+  await visit(sourceFile, reviver);
 }

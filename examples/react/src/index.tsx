@@ -1,11 +1,10 @@
 /// <reference lib="dom" />
 
-import ReactDOM from "https://cdn.skypack.dev/react-dom";
-import React from "https://cdn.skypack.dev/react";
+import ReactDOM from "https://esm.sh/react-dom";
+import React from "https://esm.sh/react";
 
 import { App } from "./App.tsx";
 
-ReactDOM.render(
-  <App />,
-  document.getElementById("root"),
-);
+const root = ReactDOM.createRoot(document.body);
+
+root.render(<App />);

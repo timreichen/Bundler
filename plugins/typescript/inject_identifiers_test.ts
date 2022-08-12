@@ -1,5 +1,5 @@
-import { ts } from "../../../../deps.ts";
-import { assertEquals } from "../../../../test_deps.ts";
+import { ts } from "../../deps.ts";
+import { assertEquals } from "../../test_deps.ts";
 import { injectIdentifiers } from "./inject_identifiers.ts";
 
 const compilerOptions: ts.CompilerOptions = {
@@ -14,13 +14,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `const a = "a", b = "b"`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set();
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -35,13 +35,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `const a = "a", b = "b"`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a", "b"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a", "b"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -57,13 +57,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `let a = "a", b = "b"`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set();
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -78,13 +78,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `let a = "a", b = "b"`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a", "b"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a", "b"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -100,13 +100,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `var a = "a", b = "b"`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set();
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -121,13 +121,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `var a = "a", b = "b"`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a", "b"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a", "b"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -142,22 +142,22 @@ Deno.test({
       name: "array binding pattern",
       fn() {
         const fileName = "a.ts";
-        const sourceText = `const [a] = y; console.log(a);`;
+        const sourceText = `const [a] = y; console.info(a);`;
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
-          `const [a] = y;\nconsole.log(a);\n`,
+          `const [a] = y;\nconsole.info(a);\n`,
         );
       },
     });
@@ -165,20 +165,66 @@ Deno.test({
       name: "array binding pattern blacklist",
       fn() {
         const fileName = "a.ts";
-        const sourceText = `const [a] = y; console.log(a);`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const sourceText = `const [a] = y; console.info(a);`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
-          `const [a1] = y;\nconsole.log(a1);\n`,
+          `const [a1] = y;\nconsole.info(a1);\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "nested array binding pattern",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `const [[a]] = y; console.info(a);`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const [[a]] = y;\nconsole.info(a);\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "nested array binding pattern blacklist",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `const [[a]] = y; console.info(a);`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const [[a1]] = y;\nconsole.info(a1);\n`,
         );
       },
     });
@@ -187,43 +233,182 @@ Deno.test({
       name: "object binding pattern",
       fn() {
         const fileName = "a.ts";
-        const sourceText = `const { x: a } = y; console.log(a);`;
+        const sourceText = `const { x: a } = y; console.info(a);`;
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
-          `const { x: a } = y;\nconsole.log(a);\n`,
+          `const { x: a } = y;\nconsole.info(a);\n`,
         );
       },
     });
+
     await t.step({
       name: "object binding pattern blacklist",
       fn() {
         const fileName = "a.ts";
-        const sourceText = `const { x: a } = y; console.log(a);`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const sourceText = `const { x: a } = y; console.info(a);`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
-          `const { x: a1 } = y;\nconsole.log(a1);\n`,
+          `const { x: a1 } = y;\nconsole.info(a1);\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "nested object binding pattern",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `const { x: { a } } = y; console.info(a);`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const { x: { a } } = y;\nconsole.info(a);\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "nested object binding pattern blacklist",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `const { x: { a } } = y; console.info(a);`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const { x: { a: a1 } } = y;\nconsole.info(a1);\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "nested alias object binding pattern",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `const { x: { y: a } } = z; console.info(a);`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const { x: { y: a } } = z;\nconsole.info(a);\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "nested alias object binding pattern blacklist",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `const { x: { y: a } } = z; console.info(a);`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const { x: { y: a1 } } = z;\nconsole.info(a1);\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "dotdotdot object binding pattern",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `const { x, ...a } = y; console.info(a);`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const { x, ...a } = y;\nconsole.info(a);\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "dotdotdot object binding pattern blacklist",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `const { x, ...a } = y; console.info(a);`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const { x, ...a1 } = y;\nconsole.info(a1);\n`,
         );
       },
     });
@@ -236,12 +421,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ b: "b1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -251,18 +436,19 @@ Deno.test({
         );
       },
     });
+
     await t.step({
       name: "assignment blacklist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `let a = b`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["b"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["b"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -286,12 +472,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -306,13 +492,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `function a() {}`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -327,22 +513,22 @@ Deno.test({
       name: "parameter",
       fn() {
         const fileName = "a.ts";
-        const sourceText = `function x(a) { console.log(a); }`;
+        const sourceText = `function x(a) { console.info(a); }`;
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
-          `function x(a) { console.log(a); }\n`,
+          `function x(a) { console.info(a); }\n`,
         );
       },
     });
@@ -350,20 +536,68 @@ Deno.test({
       name: "parameter blacklist",
       fn() {
         const fileName = "a.ts";
-        const sourceText = `function x(a) { console.log(a); }`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const sourceText = `function x(a) { console.info(a); }`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
-          `function x(a1) { console.log(a1); }\n`,
+          `function x(a1) { console.info(a1); }\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "argument",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText =
+          `function x(a) { console.info(a); } const a = "a"; fn(a);`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `function x(a) { console.info(a); }\nconst a = "a";\nfn(a);\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "argument blacklist",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText =
+          `function x(a) { console.info(a); } const a = "a"; fn(a);`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `function x(a1) { console.info(a1); }\nconst a1 = "a";\nfn(a1);\n`,
         );
       },
     });
@@ -381,12 +615,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -401,13 +635,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `const fn = (a) => { return a; }`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -424,13 +658,13 @@ Deno.test({
         const fileName = "a.ts";
         const sourceText =
           `const fn = (a) => { const b = (a) => a; return a; };`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set();
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -446,13 +680,13 @@ Deno.test({
         const fileName = "a.ts";
         const sourceText =
           `const fn = (a) => { const b = (a) => a; return a; }`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -471,12 +705,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -494,12 +728,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -523,12 +757,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -543,13 +777,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `class a {}`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -567,12 +801,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ B: "B1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -590,12 +824,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ B: "B1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -613,12 +847,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ b: "b1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -636,18 +870,41 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ b: "b1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
           `class A {\n    @b1()\n    method() { }\n}\n`,
+        );
+      },
+    });
+    await t.step({
+      name: "static method decorator",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `class A { @b() static method() { } }`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ b: "b1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `class A {\n    @b1()\n    static method() { }\n}\n`,
         );
       },
     });
@@ -659,18 +916,41 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ b: "b1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
           `class A {\n    @b1()\n    property = true;\n}\n`,
+        );
+      },
+    });
+    await t.step({
+      name: "method code",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `class A { method() { return b } }`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ b: "b1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `class A {\n    method() { return b1; }\n}\n`,
         );
       },
     });
@@ -682,12 +962,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ b: "b1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -705,12 +985,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ b: "b1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -734,12 +1014,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(
@@ -756,12 +1036,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -776,13 +1056,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `const x  = { x(a) { return a; } }`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -806,12 +1086,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(
@@ -828,12 +1108,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -848,13 +1128,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `const x  = { get x(a) { return a; } }`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -878,12 +1158,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
         assertEquals(
@@ -900,12 +1180,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -920,13 +1200,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `const x  = { set x(a) { return a; } }`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -950,12 +1230,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ b: "b1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -973,12 +1253,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ b: "b1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -993,13 +1273,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `class A { constructor(b) { this.b = b } }`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["b"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["b"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1023,12 +1303,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1052,12 +1332,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1072,13 +1352,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `export enum a { }`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1102,12 +1382,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1122,22 +1402,22 @@ Deno.test({
       name: "object literal",
       fn() {
         const fileName = "a.ts";
-        const sourceText = `console.log({ a, A: a, b, c })`;
+        const sourceText = `console.info({ a, A: a, b, c })`;
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
-          `console.log({ a1, A: a1, b, c });\n`,
+          `console.info({ a1, A: a1, b, c });\n`,
         );
       },
     });
@@ -1146,22 +1426,22 @@ Deno.test({
       name: "property access dot",
       fn() {
         const fileName = "a.ts";
-        const sourceText = `const x = a.b`;
+        const sourceText = `const x = a.a`;
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
-          `const x = a1.b;\n`,
+          `const x = a1.a;\n`,
         );
       },
     });
@@ -1170,22 +1450,22 @@ Deno.test({
       name: "property access dot",
       fn() {
         const fileName = "a.ts";
-        const sourceText = `console.log(log)`;
+        const sourceText = `console.info(log)`;
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ log: "log1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
-          `console.log(log1);\n`,
+          `console.info(log1);\n`,
         );
       },
     });
@@ -1198,18 +1478,41 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
           `const x = [a1];\n`,
+        );
+      },
+    });
+    await t.step({
+      name: "element access variable",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `const x = b[a]`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const x = b[a1];\n`,
         );
       },
     });
@@ -1222,12 +1525,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1246,12 +1549,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1269,12 +1572,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1292,12 +1595,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1315,12 +1618,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1", b: "b1", c: "c1", d: "d1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1338,12 +1641,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1361,12 +1664,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1384,12 +1687,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1408,12 +1711,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1432,12 +1735,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1456,12 +1759,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1484,12 +1787,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1507,18 +1810,65 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
           `x(a1);\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "property access parameter",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText =
+          `function x(a) { console.info(a); } const a = { a: "a" }; fn(a.a);`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `function x(a) { console.info(a); }\nconst a = { a: "a" };\nfn(a.a);\n`,
+        );
+      },
+    });
+    await t.step({
+      name: "property access parameter blacklist",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText =
+          `function x(a) { console.info(a); } const a = { a: "a" }; fn(a.a);`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `function x(a1) { console.info(a1); }\nconst a1 = { a: "a" };\nfn(a1.a);\n`,
         );
       },
     });
@@ -1531,12 +1881,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1554,12 +1904,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1574,22 +1924,22 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText =
-          `const a = "a"; ((a1) => { console.log(a); return a1; })(a)`;
+          `const a = "a"; ((a1) => { console.info(a); return a1; })(a)`;
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
-          `const a1 = "a";\n((a2) => { console.log(a1); return a2; })(a1);\n`,
+          `const a1 = "a";\n((a2) => { console.info(a1); return a2; })(a1);\n`,
         );
       },
     });
@@ -1607,18 +1957,41 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
         assertEquals(
           source,
           `return a1;\n`,
+        );
+      },
+    });
+    await t.step({
+      name: "nested return statement",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `return [a]`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `return [a1];\n`,
         );
       },
     });
@@ -1630,12 +2003,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1653,12 +2026,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1676,12 +2049,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1700,12 +2073,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1724,12 +2097,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1748,12 +2121,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1768,13 +2141,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `for (let a = 0; a < a; a++) { }`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1793,12 +2166,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1", a1: "a2" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1817,12 +2190,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1", a1: "a2" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1846,12 +2219,12 @@ Deno.test({
         const identifierMap: Map<string, string> = new Map(
           Object.entries({ a: "a1" }),
         );
-        const blacklistIdentifiers: Set<string> = new Set();
+        const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 
@@ -1866,13 +2239,13 @@ Deno.test({
       fn() {
         const fileName = "a.ts";
         const sourceText = `export { a }`;
-        const identifierMap: Map<string, string> = new Map(Object.entries({}));
-        const blacklistIdentifiers: Set<string> = new Set(["a"]);
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
         const source = injectIdentifiers(
           fileName,
           sourceText,
           identifierMap,
-          blacklistIdentifiers,
+          denyListIdentifiers,
           compilerOptions,
         );
 

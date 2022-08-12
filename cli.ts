@@ -18,7 +18,7 @@ import {
   resolveImportMap,
   ts,
 } from "./deps.ts";
-import { parse, Program } from "./program.ts";
+import { parse, Program } from "./program/program.ts";
 import {
   createSha256,
   formatBytes,
@@ -55,6 +55,23 @@ async function writeBundles(bundler: Bundler, bundles: Bundle[]) {
       "Files",
       colors.dim(`${length} file${length === 1 ? "" : "s"}`),
       colors.dim(colors.italic(`(${timestamp(time)})`)),
+    );
+  }
+}
+
+async function writeCacheAssets(
+  cachedAssets: Record<string, Asset>,
+  cacheAssetsDir: string,
+) {
+  for (const [input, cachedAsset] of Object.entries(cachedAssets)) {
+    Deno.mkdir(cacheAssetsDir, { recursive: true });
+    const cachedAssetFilepath = path.join(
+      cacheAssetsDir,
+      await createSha256(input),
+    );
+    await Deno.writeTextFile(
+      cachedAssetFilepath,
+      JSON.stringify(cachedAsset),
     );
   }
 }
@@ -111,9 +128,6 @@ function parseBundleArgs(args: flags.Args) {
   };
 }
 
-const cacheDir = path.resolve(Deno.cwd(), ".bundler");
-const cacheAssetsDir = path.join(cacheDir, "assets");
-
 async function exists(filename: string) {
   try {
     await Deno.stat(filename);
@@ -139,6 +153,9 @@ async function bundleCommand(args: flags.Args) {
     importMapPath,
     config,
   } = parseBundleArgs(args);
+
+  const cacheDir = path.resolve(root, ".bundler");
+  const cacheAssetsDir = path.join(cacheDir, "assets");
 
   let compilerOptions: ts.CompilerOptions = {};
   let importMap: ImportMap;
@@ -241,11 +258,6 @@ async function bundleCommand(args: flags.Args) {
 
       if (!cacheExpired) {
         try {
-          if (asset.source === null) {
-            asset.source = await Deno.readFileSync(
-              path.fromFileUrl(asset.input),
-            ).buffer;
-          }
           cachedAssets[asset.input] = asset;
           continue;
         } catch (error) {
@@ -298,7 +310,7 @@ async function bundleCommand(args: flags.Args) {
       colors.green(`Done`),
       `${assets.length} asset${assets.length > 1 ? "s" : ""},`,
       `${chunks.length} chunk${chunks.length > 1 ? "s" : ""},`,
-      `${bundles.length} bundle${bundle.length > 1 ? "s" : ""}`,
+      `${bundles.length} bundle${bundles.length > 1 ? "s" : ""}`,
       colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
 
@@ -355,24 +367,7 @@ async function bundleCommand(args: flags.Args) {
           }
         }
       }
-    }
-
-    for (const [input, cachedAsset] of Object.entries(cachedAssets)) {
-      const source = cachedAsset.source instanceof ArrayBuffer
-        ? null
-        : cachedAsset.source;
-      Deno.mkdir(cacheAssetsDir, { recursive: true });
-      const cachedAssetFilepath = path.join(
-        cacheAssetsDir,
-        await createSha256(input),
-      );
-      await Deno.writeTextFile(
-        cachedAssetFilepath,
-        JSON.stringify({
-          ...cachedAsset,
-          source,
-        }),
-      );
+      await writeCacheAssets(cachedAssets, cacheAssetsDir);
     }
   }
 

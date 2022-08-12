@@ -1,4 +1,4 @@
-import { flags } from "./deps.ts";
+import { flags } from "../deps.ts";
 
 export interface Option {
   name: string;

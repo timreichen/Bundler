@@ -1,10 +1,15 @@
+import { Bundler } from "../../bundler.ts";
+import {
+  CreateAssetOptions,
+  CreateBundleOptions,
+  CreateChunkOptions,
+} from "../plugin.ts";
 import {
   Asset,
   Chunk,
-  CreateAssetContext,
-  CreateBundleContext,
   DependencyFormat,
   DependencyType,
+  Source,
 } from "../plugin.ts";
 import { createRelativeOutput, getChunk, resolveDependency } from "../_util.ts";
 import { JSONPlugin } from "./json_plugin.ts";
@@ -17,10 +22,17 @@ export class WebManifestPlugin extends JSONPlugin {
   async createAsset(
     input: string,
     type: DependencyType,
-    context: CreateAssetContext,
+    bundler: Bundler,
+    options: CreateAssetOptions = {},
   ) {
-    const asset = await super.createAsset(input, type, context);
-    const json = JSON.parse(asset.source as string);
+    const asset = await super.createAsset(input, type, bundler, options);
+    const json = await bundler.createSource(
+      input,
+      type,
+      asset.format,
+      bundler,
+      options,
+    );
     const icons = json.icons || [];
     for (const icon of icons) {
       const resolvedUrl = resolveDependency(input, icon.src);
@@ -33,7 +45,11 @@ export class WebManifestPlugin extends JSONPlugin {
     return asset;
   }
 
-  splitAssetDependencies(asset: Asset) {
+  splitDependencies(
+    asset: Asset,
+    _bundler: Bundler,
+    _options: CreateChunkOptions,
+  ) {
     const items = [];
 
     for (const dependency of asset.dependencies) {
@@ -47,26 +63,32 @@ export class WebManifestPlugin extends JSONPlugin {
     return items;
   }
 
-  createBundle(chunk: Chunk, context: CreateBundleContext) {
-    const json = JSON.parse(chunk.item.source as string);
-    const icons = json.icons || [];
+  async createBundle(
+    chunk: Chunk,
+    source: Source,
+    bundler: Bundler,
+    { chunks = [], root = ".", importMap, optimize }: CreateBundleOptions = {},
+  ) {
+    const icons = source.icons || [];
 
     for (const icon of icons) {
       const resolvedUrl = resolveDependency(chunk.item.input, icon.src);
+
       const dependencyChunk = getChunk(
-        context.chunks,
+        chunks,
         resolvedUrl,
         DependencyType.Fetch,
         DependencyFormat.Binary,
       );
 
-      icon.src = createRelativeOutput(dependencyChunk.output, context.root);
+      icon.src = createRelativeOutput(dependencyChunk.output, root);
     }
 
-    const source = JSON.stringify(json, null, " ");
-
-    const clonedChunk: Chunk = { ...chunk, item: { ...chunk.item, source } };
-
-    return super.createBundle(clonedChunk, context);
+    return await super.createBundle(chunk, source, bundler, {
+      chunks,
+      root,
+      importMap,
+      optimize,
+    });
   }
 }

@@ -7,9 +7,9 @@ import { TypescriptPlugin } from "./plugins/typescript/typescript_plugin.ts";
 import { TerserPlugin } from "./plugins/typescript/terser_plugin.ts";
 import { FilePlugin } from "./plugins/file/file.ts";
 import {
-  CreateAssetsContext,
-  CreateBundlesContext,
-  CreateChunksContext,
+  CreateAssetOptions,
+  CreateBundleOptions,
+  CreateChunkOptions,
 } from "./plugins/plugin.ts";
 
 export {
@@ -26,7 +26,7 @@ export {
 export function bundle(
   inputs: string[],
   options?: Partial<
-    CreateAssetsContext & CreateChunksContext & CreateBundlesContext
+    CreateAssetOptions & CreateChunkOptions & CreateBundleOptions
   >,
 ) {
   const plugins = [

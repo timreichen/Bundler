@@ -3,7 +3,7 @@ import { assertArrayIncludes, assertEquals } from "./test_deps.ts";
 
 const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "testdata");
-const testDir = path.join(moduleDir, ".test");
+const testDir = path.join(testdataDir, ".cli_test");
 
 function runBundle(...cmds: string[]) {
   fs.ensureDirSync(testDir);
@@ -36,6 +36,7 @@ Deno.test({
       process.output(),
       process.stderrOutput(),
     ]);
+
     process.close();
 
     assertEquals(
@@ -48,6 +49,7 @@ Deno.test({
     );
   },
 });
+
 Deno.test({
   name: "custom output",
   async fn() {
@@ -92,6 +94,7 @@ Deno.test({
     Deno.removeSync(testDir, { recursive: true });
   },
 });
+
 Deno.test({
   name: "custom output split",
   async fn() {
@@ -124,6 +127,7 @@ Deno.test({
 
     const entries = [...Deno.readDirSync(distDir)]
       .map((entry) => entry.name);
+
     assertArrayIncludes(
       entries,
       [
@@ -140,7 +144,7 @@ Deno.test({
 Deno.test({
   name: "watch",
   async fn() {
-    // wait instead of using file watcher (issue https://github.com/denoland/deno/issues/14684)
+    // wait instead of using Deno.watchFs (issue https://github.com/denoland/deno/issues/14684)
 
     fs.emptyDirSync(testDir);
 
@@ -156,12 +160,7 @@ Deno.test({
 
     Deno.writeTextFileSync(
       indexTypescriptFilePath,
-      `console.log("initial");`,
-    );
-
-    Deno.writeTextFileSync(
-      indexJavascriptFilePath,
-      `exists for fs watch. Must be overwritten.`,
+      `console.info("initial");`,
     );
 
     const process = runBundle(
@@ -170,18 +169,18 @@ Deno.test({
       `${indexTypescriptFilePath}=index.js`,
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     Deno.writeTextFileSync(
       indexTypescriptFilePath,
-      `console.log("overwrite");`,
+      `console.info("overwrite");`,
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     assertEquals(
-      await Deno.readTextFile(path.join(testDir, "index.js")),
-      `console.log("overwrite");\n`,
+      await Deno.readTextFile(indexJavascriptFilePath),
+      `console.info("overwrite");\n`,
     );
 
     await process.stdout?.close();
@@ -223,7 +222,7 @@ Deno.test({
 
     assertEquals(
       Deno.readTextFileSync(path.join(testDir, "index.js")),
-      `const world = "World";\nconsole.log(world);\n`,
+      `const world = "World";\nconsole.info(world);\n`,
     );
 
     await process.close();
@@ -289,7 +288,7 @@ Deno.test({
 
     assertEquals(
       Deno.readTextFileSync(path.join(testDir, "index.js")),
-      `const world = "World";\nconsole.log(world);\n`,
+      `const world = "World";\nconsole.info(world);\n`,
     );
 
     Deno.removeSync(testDir, { recursive: true });

@@ -1,3 +1,3 @@
 import { world } from "./world.ts";
 
-console.log(world);
+console.info(world);

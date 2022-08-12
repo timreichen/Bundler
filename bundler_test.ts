@@ -33,25 +33,25 @@ const bundler = new Bundler({
   quiet: true,
 });
 
+const root = "dist";
+
 Deno.test({
   name: "createAssets",
   async fn(t) {
     await t.step({
       name: "simple",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/simple/a.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
+        const assets = await bundler.createAssets([inputA]);
 
         assertEquals(assets, [
           {
-            input: a,
+            input: inputA,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             dependencies: [],
-            exports: {},
-            source: `console.log("hello world");\n`,
           },
         ]);
       },
@@ -60,40 +60,31 @@ Deno.test({
     await t.step({
       name: "linear",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/linear/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/linear/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
+        const assets = await bundler.createAssets([inputA]);
         assertEquals(assets, [
           {
-            input: a,
+            input: inputA,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             dependencies: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                specifiers: { b: "b" },
               },
             ],
-            exports: {},
-            source: `import { b } from "./b.ts";\nconsole.log(b);\n`,
           },
           {
             dependencies: [],
-            exports: {
-              specifiers: {
-                b: "b",
-              },
-            },
-            input: b,
+            input: inputB,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
-            source: `export const b = "b";\n`,
           },
         ]);
       },
@@ -102,54 +93,39 @@ Deno.test({
     await t.step({
       name: "circular a to b",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/circular/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/circular/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
+        const assets = await bundler.createAssets([inputA]);
 
         assertEquals(assets, [
           {
             dependencies: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                specifiers: { b: "b" },
               },
             ],
-            exports: {
-              specifiers: {
-                a: "a",
-              },
-            },
-            input: a,
+
+            input: inputA,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
-            source:
-              `import { b } from "./b.ts";\nconsole.log(b);\nexport const a = "a";\n`,
           },
           {
             dependencies: [
               {
-                input: a,
+                input: inputA,
                 type: DependencyType.ImportExport,
-                specifiers: { a: "a" },
                 format: DependencyFormat.Script,
               },
             ],
-            exports: {
-              specifiers: {
-                b: "b",
-              },
-            },
-            input: b,
+            input: inputB,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
-            source:
-              `import { a } from "./a.ts";\nconsole.log(a);\nexport const b = "b";\n`,
           },
         ]);
       },
@@ -158,53 +134,38 @@ Deno.test({
     await t.step({
       name: "circular b to a",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/circular/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/circular/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([b]);
+        const assets = await bundler.createAssets([inputB]);
 
         assertEquals(assets, [
           {
             dependencies: [
               {
-                input: a,
+                input: inputA,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                specifiers: { a: "a" },
               },
             ],
-            exports: {
-              specifiers: {
-                b: "b",
-              },
-            },
-            input: b,
+
+            input: inputB,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
-            source:
-              `import { a } from "./a.ts";\nconsole.log(a);\nexport const b = "b";\n`,
           },
           {
             dependencies: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
-                specifiers: { b: "b" },
+
                 format: DependencyFormat.Script,
               },
             ],
-            exports: {
-              specifiers: {
-                a: "a",
-              },
-            },
-            input: a,
-            source:
-              `import { b } from "./b.ts";\nconsole.log(b);\nexport const a = "a";\n`,
-
+            input: inputA,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
           },
@@ -215,38 +176,32 @@ Deno.test({
     await t.step({
       name: "json module",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/json_module/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/json_module/b.json"),
         ).href;
-        const assets = await bundler.createAssets([a]);
+        const assets = await bundler.createAssets([inputA]);
 
         assertEquals(assets, [
           {
             dependencies: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Json,
-                default: "b",
               },
             ],
-            input: a,
+            input: inputA,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
-            exports: {},
-            source:
-              `import b from "./b.json" assert { type: "json" };\nconsole.log(b);\n`,
           },
           {
             dependencies: [],
-            input: b,
+            input: inputB,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Json,
-            exports: {},
-            source: `{\n  "foo": "bar"\n}\n`,
           },
         ]);
       },
@@ -255,38 +210,32 @@ Deno.test({
     await t.step({
       name: "css module",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/css_module/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/css_module/b.css"),
         ).href;
-        const assets = await bundler.createAssets([a]);
+        const assets = await bundler.createAssets([inputA]);
 
         assertEquals(assets, [
           {
             dependencies: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Style,
-                default: "b",
               },
             ],
-            input: a,
+            input: inputA,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
-            exports: {},
-            source:
-              `import b from "./b.css" assert { type: "css" };\nconsole.log(b);\n`,
           },
           {
             dependencies: [],
-            input: b,
+            input: inputB,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Style,
-            exports: {},
-            source: `h1 {\n  font-family: Helvetica;\n}`,
           },
         ]);
       },
@@ -295,10 +244,10 @@ Deno.test({
     await t.step({
       name: "importmap",
       async fn() {
-        const a =
+        const inputA =
           path.toFileUrl(path.join(testdataDir, "typescript/importmap/a.ts"))
             .href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/importmap/b.ts"),
         ).href;
         const importmapPath = path.join(
@@ -311,34 +260,26 @@ Deno.test({
           path.toFileUrl(importmapPath),
         );
 
-        const asset = await bundler.createAssets([a], { importMap });
+        const asset = await bundler.createAssets([inputA], { importMap });
         assertEquals(asset, [
           {
-            input: a,
+            input: inputA,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
             dependencies: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                specifiers: { b: "b" },
               },
             ],
-            exports: {},
-            source: `import { b } from "b";\nconsole.log(b);\n`,
           },
           {
             dependencies: [],
-            exports: {
-              specifiers: {
-                b: "b",
-              },
-            },
-            input: b,
+
+            input: inputB,
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
-            source: `export const b = "b";\n`,
           },
         ]);
       },
@@ -352,32 +293,30 @@ Deno.test({
     await t.step({
       name: "linear",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/linear/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/linear/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
 
         assertEquals(chunks, [
           {
             item: {
-              input: a,
+              input: inputA,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source: `import { b } from "./b.ts";\nconsole.log(b);\n`,
             },
             dependencyItems: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const b = "b";\n`,
               },
             ],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
         ]);
       },
@@ -386,34 +325,34 @@ Deno.test({
     await t.step({
       name: "linear split",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/linear/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/linear/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a, b], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA, inputB], assets, {
+          root,
+        });
         assertEquals(chunks, [
           {
             item: {
-              input: a,
+              input: inputA,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source: `import { b } from "./b.ts";\nconsole.log(b);\n`,
             },
             dependencyItems: [],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
           {
             item: {
               format: DependencyFormat.Script,
-              input: b,
-              source: `export const b = "b";\n`,
+              input: inputB,
               type: DependencyType.ImportExport,
             },
             dependencyItems: [],
-            output: await typescriptPlugin.createOutput(b, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputB, root, ".js"),
           },
         ]);
       },
@@ -422,33 +361,29 @@ Deno.test({
     await t.step({
       name: "circular a to b",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/circular/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/circular/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
         assertEquals(chunks, [
           {
             item: {
               format: DependencyFormat.Script,
-              input: a,
-              source:
-                `import { b } from "./b.ts";\nconsole.log(b);\nexport const a = "a";\n`,
+              input: inputA,
               type: DependencyType.ImportExport,
             },
             dependencyItems: [
               {
-                source:
-                  `import { a } from "./a.ts";\nconsole.log(a);\nexport const b = "b";\n`,
                 format: DependencyFormat.Script,
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
               },
             ],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
         ]);
       },
@@ -457,33 +392,29 @@ Deno.test({
     await t.step({
       name: "circular b to a",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/circular/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/circular/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([b]);
-        const chunks = await bundler.createChunks([b], assets);
+        const assets = await bundler.createAssets([inputB]);
+        const chunks = await bundler.createChunks([inputB], assets, { root });
         assertEquals(chunks, [
           {
             item: {
               format: DependencyFormat.Script,
-              input: b,
-              source:
-                `import { a } from "./a.ts";\nconsole.log(a);\nexport const b = "b";\n`,
+              input: inputB,
               type: DependencyType.ImportExport,
             },
             dependencyItems: [
               {
-                source:
-                  `import { b } from "./b.ts";\nconsole.log(b);\nexport const a = "a";\n`,
                 format: DependencyFormat.Script,
-                input: a,
+                input: inputA,
                 type: DependencyType.ImportExport,
               },
             ],
-            output: await typescriptPlugin.createOutput(b, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputB, root, ".js"),
           },
         ]);
       },
@@ -492,36 +423,34 @@ Deno.test({
     await t.step({
       name: "circular split",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/circular/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/circular/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a, b], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA, inputB], assets, {
+          root,
+        });
         assertEquals(chunks, [
           {
             item: {
-              input: a,
+              input: inputA,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `import { b } from "./b.ts";\nconsole.log(b);\nexport const a = "a";\n`,
             },
             dependencyItems: [],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
           {
             dependencyItems: [],
             item: {
-              input: b,
+              input: inputB,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `import { a } from "./a.ts";\nconsole.log(a);\nexport const b = "b";\n`,
             },
-            output: await typescriptPlugin.createOutput(b, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputB, root, ".js"),
           },
         ]);
       },
@@ -530,33 +459,30 @@ Deno.test({
     await t.step({
       name: "double import",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/double/import.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/double/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
 
         assertEquals(chunks, [
           {
             item: {
               format: DependencyFormat.Script,
-              input: a,
-              source:
-                `import { b } from "./b.ts";\nimport { b as c } from "./b.ts";\nconsole.log(b, c);\n`,
+              input: inputA,
               type: DependencyType.ImportExport,
             },
             dependencyItems: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const b = "b";\n`,
               },
             ],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
         ]);
       },
@@ -564,32 +490,29 @@ Deno.test({
     await t.step({
       name: "double export",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/double/export.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/double/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
         assertEquals(chunks, [
           {
             item: {
-              input: a,
+              input: inputA,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `export { b } from "./b.ts";\nexport { b as c } from "./b.ts";\n`,
             },
             dependencyItems: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const b = "b";\n`,
               },
             ],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
         ]);
       },
@@ -597,32 +520,29 @@ Deno.test({
     await t.step({
       name: "double mixed",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/double/mixed.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/double/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
         assertEquals(chunks, [
           {
             item: {
-              input: a,
+              input: inputA,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `import { b } from "./b.ts";\nexport { b as c } from "./b.ts";\nconsole.log(b);\n`,
             },
             dependencyItems: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const b = "b";\n`,
               },
             ],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
         ]);
       },
@@ -631,41 +551,37 @@ Deno.test({
     await t.step({
       name: "chain",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/chain/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/chain/b.ts"),
         ).href;
         const c = path.toFileUrl(
           path.join(testdataDir, "typescript/chain/c.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
         assertEquals(chunks, [
           {
             item: {
               format: DependencyFormat.Script,
-              input: a,
-              source: `import { b } from "./b.ts";\nconsole.log(b);\n`,
+              input: inputA,
               type: DependencyType.ImportExport,
             },
             dependencyItems: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source:
-                  `import { c } from "./c.ts";\nconsole.log(c);\nexport const b = "b";\n`,
               },
               {
                 input: c,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const c = "c";\n`,
               },
             ],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
         ]);
       },
@@ -674,42 +590,37 @@ Deno.test({
     await t.step({
       name: "shared inline",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/shared/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/shared/b.ts"),
         ).href;
         const c = path.toFileUrl(
           path.join(testdataDir, "typescript/shared/c.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
         assertEquals(chunks, [
           {
             item: {
-              input: a,
+              input: inputA,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `import { b } from "./b.ts";\nimport { c } from "./c.ts";\nconsole.log(b, c);\n`,
             },
             dependencyItems: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source:
-                  `import { c } from "./c.ts";\nconsole.log(c);\nexport const b = "b";\n`,
               },
               {
                 input: c,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const c = "c";\n`,
               },
             ],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
         ]);
       },
@@ -718,49 +629,46 @@ Deno.test({
     await t.step({
       name: "shared split",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/shared/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/shared/b.ts"),
         ).href;
         const c = path.toFileUrl(
           path.join(testdataDir, "typescript/shared/c.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a, b], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA, inputB], assets, {
+          root,
+        });
         assertEquals(chunks, [
           {
             item: {
-              input: a,
+              input: inputA,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `import { b } from "./b.ts";\nimport { c } from "./c.ts";\nconsole.log(b, c);\n`,
             },
             dependencyItems: [],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
           {
             item: {
-              input: b,
+              input: inputB,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source:
-                `import { c } from "./c.ts";\nconsole.log(c);\nexport const b = "b";\n`,
             },
             dependencyItems: [],
-            output: await typescriptPlugin.createOutput(b, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputB, root, ".js"),
           },
           {
             item: {
               input: c,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source: `export const c = "c";\n`,
             },
             dependencyItems: [],
-            output: await typescriptPlugin.createOutput(c, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(c, root, ".js"),
           },
         ]);
       },
@@ -769,34 +677,32 @@ Deno.test({
     await t.step({
       name: "manual split fetch dependencies",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/fetch/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/fetch/b.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
         assertEquals(chunks, [
           {
             item: {
-              input: a,
+              input: inputA,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source: `const b = await fetch("./b.ts");\nconsole.log(b);\n`,
             },
             dependencyItems: [],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
           {
             item: {
-              input: b,
+              input: inputB,
               type: DependencyType.Fetch,
               format: DependencyFormat.Script,
-              source: `export const b = "b";\n`,
             },
             dependencyItems: [],
-            output: await typescriptPlugin.createOutput(b, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputB, root, ".js"),
           },
         ]);
       },
@@ -805,10 +711,10 @@ Deno.test({
     await t.step({
       name: "importmap",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/importmap/a.ts"),
         ).href;
-        const b = path.toFileUrl(
+        const inputB = path.toFileUrl(
           path.join(testdataDir, "typescript/importmap/b.ts"),
         ).href;
 
@@ -822,26 +728,24 @@ Deno.test({
           path.toFileUrl(importmapPath),
         );
 
-        const assets = await bundler.createAssets([a], { importMap });
-        const chunks = await bundler.createChunks([a], assets, { importMap });
+        const assets = await bundler.createAssets([inputA], { importMap });
+        const chunks = await bundler.createChunks([inputA], assets, { root });
 
         assertEquals(chunks, [
           {
             item: {
-              input: a,
+              input: inputA,
               type: DependencyType.ImportExport,
               format: DependencyFormat.Script,
-              source: `import { b } from "b";\nconsole.log(b);\n`,
             },
             dependencyItems: [
               {
-                input: b,
+                input: inputB,
                 type: DependencyType.ImportExport,
                 format: DependencyFormat.Script,
-                source: `export const b = "b";\n`,
               },
             ],
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           },
         ]);
       },
@@ -855,17 +759,17 @@ Deno.test({
     await t.step({
       name: "linear",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/linear/a.ts"),
         ).href;
 
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
-        const bundles = await bundler.createBundles(chunks);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
+        const bundles = await bundler.createBundles(chunks, { root });
 
         assertEquals(bundles, [{
-          output: await typescriptPlugin.createOutput(a, "dist", ".js"),
-          source: `const b = "b";\nconsole.log(b);\n`,
+          output: await typescriptPlugin.createOutput(inputA, root, ".js"),
+          source: `const b = "b";\nconsole.info(b);\n`,
         }]);
       },
     });
@@ -873,19 +777,19 @@ Deno.test({
     await t.step({
       name: "css module",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/css_module/a.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
 
-        const bundles = await bundler.createBundles(chunks);
+        const bundles = await bundler.createBundles(chunks, { root });
 
         assertEquals(bundles, [
           {
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
             source:
-              `const b = new CSSStyleSheet();\nb.replaceSync(\`h1 {\n  font-family: Helvetica;\n}\`);\nconsole.log(b);\n`,
+              `const b = new CSSStyleSheet();\nb.replaceSync(\`h1 {\n  font-family: Helvetica;\n}\`);\nconsole.info(b);\n`,
           },
         ]);
       },
@@ -894,19 +798,19 @@ Deno.test({
     await t.step({
       name: "json module",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/json_module/a.ts"),
         ).href;
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
 
-        const bundles = await bundler.createBundles(chunks);
+        const bundles = await bundler.createBundles(chunks, { root });
 
         assertEquals(bundles, [
           {
-            output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
             source:
-              `const b = JSON.parse(\`{\n  "foo": "bar"\n}\n\`);\nconsole.log(b);\n`,
+              `const b = JSON.parse(\`{"foo":"bar"}\`);\nconsole.info(b);\n`,
           },
         ]);
       },
@@ -915,25 +819,25 @@ Deno.test({
     await t.step({
       name: "webmanifest",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "html/webmanifest/index.html"),
         ).href;
-        const output = await htmlPlugin.createOutput(a, "dist", ".html");
-        const b = path.toFileUrl(path.join(
+        const output = await htmlPlugin.createOutput(inputA, root, ".html");
+        const inputB = path.toFileUrl(path.join(
           testdataDir,
           "html/webmanifest/manifest.webmanifest",
         )).href;
         const manifestOutput = await webManifestPlugin.createOutput(
-          b,
-          "dist",
+          inputB,
+          root,
           ".webmanifest",
         );
 
-        const assets = await bundler.createAssets([a]);
+        const assets = await bundler.createAssets([inputA]);
 
-        const chunks = await bundler.createChunks([a], assets);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
 
-        const bundles = await bundler.createBundles(chunks);
+        const bundles = await bundler.createBundles(chunks, { root });
 
         assertEquals(bundles[0], {
           output: output,
@@ -947,7 +851,7 @@ Deno.test({
             path.toFileUrl(
               path.join(testdataDir, "html/webmanifest/icon-192x192.png"),
             ).href,
-            "dist",
+            root,
             ".png",
           );
         const imageOutput2 = await filePlugin
@@ -955,7 +859,7 @@ Deno.test({
             path.toFileUrl(
               path.join(testdataDir, "html/webmanifest/icon-256x256.png"),
             ).href,
-            "dist",
+            root,
             ".png",
           );
         const imageOutput3 = await filePlugin
@@ -963,7 +867,7 @@ Deno.test({
             path.toFileUrl(
               path.join(testdataDir, "html/webmanifest/icon-384x384.png"),
             ).href,
-            "dist",
+            root,
             ".png",
           );
         const imageOutput4 = await filePlugin
@@ -971,14 +875,14 @@ Deno.test({
             path.toFileUrl(
               path.join(testdataDir, "html/webmanifest/icon-512x512.png"),
             ).href,
-            "dist",
+            root,
             ".png",
           );
 
         assertEquals(bundles[1], {
           output: await webManifestPlugin.createOutput(
-            b,
-            "dist",
+            inputB,
+            root,
             ".webmanifest",
           ),
           source:
@@ -998,51 +902,51 @@ Deno.test({
     await t.step({
       name: "chain",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/chain/a.ts"),
         ).href;
 
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
-        const bundles = await bundler.createBundles(chunks);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
+        const bundles = await bundler.createBundles(chunks, { root });
 
         assertEquals(bundles, [{
-          output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+          output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           source:
-            `const c = "c";\nconsole.log(c);\nconst b = "b";\nconsole.log(b);\n`,
+            `const c = "c";\nconsole.info(c);\nconst b = "b";\nconsole.info(b);\n`,
         }]);
       },
     });
     await t.step({
       name: "double import",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/double/import.ts"),
         ).href;
 
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
-        const bundles = await bundler.createBundles(chunks);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
+        const bundles = await bundler.createBundles(chunks, { root });
 
         assertEquals(bundles, [{
-          output: await typescriptPlugin.createOutput(a, "dist", ".js"),
-          source: `const b = "b";\nconsole.log(b, b);\n`,
+          output: await typescriptPlugin.createOutput(inputA, root, ".js"),
+          source: `const b = "b";\nconsole.info(b, b);\n`,
         }]);
       },
     });
     await t.step({
       name: "double export",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/double/export.ts"),
         ).href;
 
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
-        const bundles = await bundler.createBundles(chunks);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
+        const bundles = await bundler.createBundles(chunks, { root });
 
         assertEquals(bundles, [{
-          output: await typescriptPlugin.createOutput(a, "dist", ".js"),
+          output: await typescriptPlugin.createOutput(inputA, root, ".js"),
           source: `const b = "b";\nexport { b, b as c };\n`,
         }]);
       },
@@ -1050,17 +954,17 @@ Deno.test({
     await t.step({
       name: "double mixed",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/double/mixed.ts"),
         ).href;
 
-        const assets = await bundler.createAssets([a]);
-        const chunks = await bundler.createChunks([a], assets);
-        const bundles = await bundler.createBundles(chunks);
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
+        const bundles = await bundler.createBundles(chunks, { root });
 
         assertEquals(bundles, [{
-          output: await typescriptPlugin.createOutput(a, "dist", ".js"),
-          source: `const b = "b";\nconsole.log(b);\nexport { b as c };\n`,
+          output: await typescriptPlugin.createOutput(inputA, root, ".js"),
+          source: `const b = "b";\nconsole.info(b);\nexport { b as c };\n`,
         }]);
       },
     });
@@ -1068,7 +972,7 @@ Deno.test({
     await t.step({
       name: "importmap",
       async fn() {
-        const a = path.toFileUrl(
+        const inputA = path.toFileUrl(
           path.join(testdataDir, "typescript/importmap/a.ts"),
         ).href;
         const importmapPath = path.join(
@@ -1080,13 +984,13 @@ Deno.test({
           JSON.parse(await Deno.readTextFile(importmapPath)),
           path.toFileUrl(importmapPath),
         );
-        const assets = await bundler.createAssets([a], { importMap });
-        const chunks = await bundler.createChunks([a], assets, { importMap });
+        const assets = await bundler.createAssets([inputA], { importMap });
+        const chunks = await bundler.createChunks([inputA], assets, { root });
         const bundles = await bundler.createBundles(chunks, { importMap });
 
         assertEquals(bundles, [{
-          output: await typescriptPlugin.createOutput(a, "dist", ".js"),
-          source: `const b = "b";\nconsole.log(b);\n`,
+          output: await typescriptPlugin.createOutput(inputA, root, ".js"),
+          source: `const b = "b";\nconsole.info(b);\n`,
         }]);
       },
     });

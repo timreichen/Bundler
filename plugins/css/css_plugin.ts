@@ -1,27 +1,24 @@
-import { postcss, postcssPresetEnv } from "../../deps.ts";
+import { Bundler } from "../../bundler.ts";
+import { colors } from "../../deps.ts";
+import { timestamp } from "../../_util.ts";
 import { TextFilePlugin } from "../file/text_file.ts";
+import {
+  CreateAssetOptions,
+  CreateBundleOptions,
+  CreateChunkOptions,
+} from "../plugin.ts";
 import {
   Asset,
   Chunk,
-  ChunkItem,
-  CreateAssetContext,
-  CreateBundleContext,
-  CreateChunkContext,
   DependencyFormat,
   DependencyType,
   Item,
+  Source,
 } from "../plugin.ts";
 import { getAsset, getDependencyFormat } from "../_util.ts";
-import { extractDependencies } from "./postcss/extract_dependencies.ts";
-import {
-  postcssInjectDependenciesPlugin,
-} from "./postcss/inject_dependencies.ts";
-import { postcssInjectSourcesPlugin } from "./postcss/inject_sources.ts";
-
-const postcssPresetEnvPlugin = postcssPresetEnv({
-  stage: 2,
-  features: { "nesting-rules": true },
-}) as postcss.Plugin;
+import { extractDependencies } from "./extract_dependencies.ts";
+import { injectDependencies } from "./inject_dependencies.ts";
+import { parse, stringify, transpile } from "./_util.ts";
 
 export class CSSPlugin extends TextFilePlugin {
   test(input: string, _type: DependencyType, format: DependencyFormat) {
@@ -35,37 +32,70 @@ export class CSSPlugin extends TextFilePlugin {
     }
   }
 
+  async createSource(
+    input: string,
+    bundler?: Bundler,
+    { importMap }: CreateAssetOptions = {},
+  ) {
+    const source = await super.createSource(input, bundler, { importMap });
+    const time = performance.now();
+    let ast = parse(source);
+    ast = await transpile(ast);
+    bundler?.logger.debug(
+      colors.yellow("Transpile"),
+      `postcss → css`,
+      input,
+      colors.dim(colors.italic(`(${timestamp(time)})`)),
+    );
+    return ast;
+  }
+
   async createAsset(
     input: string,
     type: DependencyType,
-    context: CreateAssetContext,
-  ) {
-    let source = await this.createSource(input, context) as string;
-    const { dependencies, exports } = await extractDependencies(
-      input,
-      source,
-      context.importMap,
-    );
+    bundler?: Bundler,
+    options: CreateAssetOptions = {},
+  ): Promise<Asset> {
+    const format = DependencyFormat.Style;
 
-    const processor = postcss.default([
-      postcssPresetEnvPlugin,
-    ]);
-    const { css: result } = await processor.process(source, { from: input });
-    source = result;
+    const source = await this.createSource(input, bundler, options);
+
+    const dependencies = await this.createDependencies(
+      input,
+      type,
+      format,
+      source,
+      options,
+    );
 
     return {
       input,
       type,
-      format: DependencyFormat.Style,
-      dependencies: dependencies,
-      exports: exports,
-      source,
+      format,
+      dependencies,
     };
   }
 
-  splitAssetDependencies(
+  async createDependencies(
+    input: string,
+    _type: DependencyType,
+    _format: DependencyFormat,
+    source: Source,
+    { importMap }: CreateAssetOptions = {},
+  ) {
+    const dependencies = await extractDependencies(
+      input,
+      source,
+      { importMap },
+    );
+
+    return dependencies;
+  }
+
+  splitDependencies(
     asset: Asset,
-    _context: CreateChunkContext,
+    _bundler: Bundler,
+    _options: CreateChunkOptions,
   ) {
     const items: Item[] = [];
     for (const dependency of asset.dependencies) {
@@ -86,9 +116,10 @@ export class CSSPlugin extends TextFilePlugin {
   async createChunk(
     asset: Asset,
     chunkAssets: Set<Asset>,
-    context: CreateChunkContext,
+    _bundler?: Bundler,
+    { assets = [], root = ".", outputMap }: CreateChunkOptions = {},
   ) {
-    const dependencyItems: ChunkItem[] = [];
+    const dependencyItems: Item[] = [];
     const dependencies = [...asset.dependencies];
     const checkedAssets = new Set();
     for (const dependency of dependencies) {
@@ -96,7 +127,7 @@ export class CSSPlugin extends TextFilePlugin {
       switch (dependency.format) {
         case DependencyFormat.Style: {
           const dependencyAsset = await getAsset(
-            context.assets,
+            assets,
             input,
             type,
             format,
@@ -108,7 +139,6 @@ export class CSSPlugin extends TextFilePlugin {
               input: dependencyAsset.input,
               type: dependencyAsset.type,
               format: dependencyAsset.format,
-              source: dependencyAsset.source,
             });
             dependencies.push(...dependencyAsset.dependencies);
           }
@@ -121,23 +151,41 @@ export class CSSPlugin extends TextFilePlugin {
         input: asset.input,
         type: asset.type,
         format: asset.format,
-        source: asset.source,
       },
       dependencyItems,
-      output: context.outputMap[asset.input] ??
-        await this.createOutput(asset.input, context.root, ".css"),
+      output: outputMap?.[asset.input] ??
+        await this.createOutput(asset.input, root, ".css"),
     };
   }
 
-  async createBundle(chunk: Chunk, context: CreateBundleContext) {
-    const { input, source } = chunk.item;
-    const processor = postcss.default([
-      postcssInjectSourcesPlugin(chunk, context),
-      postcssInjectDependenciesPlugin(input, context),
-    ]);
-    const { css: result } = await processor.process(source, { from: input });
+  async createBundle(
+    chunk: Chunk,
+    ast: Source,
+    bundler: Bundler,
+    { chunks = [], root, importMap }: CreateBundleOptions,
+  ) {
+    const { input, type, format } = chunk.item;
+
+    const time = performance.now();
+    ast = await injectDependencies(
+      input,
+      ast,
+      chunk.dependencyItems,
+      chunks,
+      bundler,
+      { importMap, root },
+    );
+
+    bundler?.logger.debug(
+      colors.yellow("Inject Dependencies"),
+      input,
+      colors.dim(type),
+      colors.dim(format),
+      colors.dim(colors.italic(`(${timestamp(time)})`)),
+    );
+
     return {
-      source: result,
+      source: stringify(ast),
       output: chunk.output,
     };
   }

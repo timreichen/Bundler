@@ -1,1 +1,2 @@
-export const b = "b";
+// deno-lint-ignore no-inferrable-types
+export const b: string = "b";

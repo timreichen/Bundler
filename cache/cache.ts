@@ -4,68 +4,12 @@ import {
   ImportMap,
   path,
   resolveImportMap,
-  resolveModuleSpecifier,
+  resolveImportMapModuleSpecifier,
   Sha256,
-  ts,
 } from "../deps.ts";
 import { isURL } from "../_util.ts";
 
 const { green } = colors;
-
-type Options = { compilerOptions?: ts.CompilerOptions };
-
-function typescriptExtractDependenciesTransformer(
-  dependencies: Set<string>,
-) {
-  return (context: ts.TransformationContext) => {
-    const visitor: ts.Visitor = (node: ts.Node) => {
-      if (ts.isImportDeclaration(node)) {
-        const importClause = node.importClause;
-        const moduleSpecifier = node.moduleSpecifier;
-        if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
-          const filePath = moduleSpecifier.text;
-          dependencies.add(filePath);
-          if (importClause) {
-            if (ts.isNamespaceImport(importClause)) {
-              // import * as x from "./x.ts"
-              dependencies.add(filePath);
-            }
-            if (ts.isNamedImports(importClause)) {
-              // import { x } from "./x.ts"
-              dependencies.add(filePath);
-            }
-            if (ts.isIdentifier(importClause)) {
-              // import x from "./x.ts"
-              dependencies.add(filePath);
-            }
-          }
-        }
-        return node;
-      } else if (ts.isExportDeclaration(node)) {
-        const moduleSpecifier = node.moduleSpecifier;
-        if (moduleSpecifier && ts.isStringLiteral(moduleSpecifier)) {
-          const filePath = moduleSpecifier.text;
-          const exportClause = node.exportClause;
-          if (exportClause) {
-            if (ts.isNamespaceExport(exportClause)) {
-              // export * as x from "./x.ts"
-              dependencies.add(filePath);
-            } else if (ts.isNamedExports(exportClause)) {
-              // export { x } from "./x.ts"
-              dependencies.add(filePath);
-            }
-          } else {
-            // export * from "./x.ts"
-            dependencies.add(filePath);
-          }
-        }
-        return node;
-      }
-      return ts.visitEachChild(node, visitor, context);
-    };
-    return (node: ts.Node) => ts.visitNode(node, visitor);
-  };
-}
 
 export function resolveDependency(
   filePath: string,
@@ -73,7 +17,7 @@ export function resolveDependency(
   importMap?: ImportMap,
 ) {
   if (importMap) {
-    return resolveModuleSpecifier(
+    return resolveImportMapModuleSpecifier(
       moduleSpecifier,
       importMap,
       new URL(filePath),
@@ -84,29 +28,6 @@ export function resolveDependency(
 
   return new URL(moduleSpecifier, base).href;
 }
-
-export function extractDependencies(
-  input: string,
-  source: string,
-  { compilerOptions = {} }: Options = {},
-): Set<string> {
-  const sourceFile = ts.createSourceFile(
-    input,
-    source,
-    ts.ScriptTarget.Latest,
-  );
-
-  const dependencies: Set<string> = new Set();
-
-  ts.transform(
-    sourceFile,
-    [typescriptExtractDependenciesTransformer(dependencies)],
-    compilerOptions,
-  );
-
-  return dependencies;
-}
-
 /**
  * API for rust cache_dir
  */
@@ -181,7 +102,7 @@ async function exists(filePath: string) {
     if (error instanceof Deno.errors.NotFound) {
       return false;
     } else {
-      throw error;
+      throw new Error();
     }
   }
 }
@@ -196,13 +117,9 @@ export async function cache(
     importMap = { imports: {} },
     importMapPath,
     reload = false,
-    recursive = true,
-    compilerOptions = {},
   }: {
     importMap?: ImportMap;
     reload?: boolean | string[];
-    recursive?: boolean;
-    compilerOptions?: ts.CompilerOptions;
     importMapPath?: URL;
   } = {},
 ) {
@@ -214,16 +131,13 @@ export async function cache(
 
   const baseURL = new URL(import.meta.url);
 
-  const resolvedSpecifier = resolveModuleSpecifier(
+  const resolvedSpecifier = resolveImportMapModuleSpecifier(
     filePath,
     importMap,
     baseURL,
   );
-  const checkedFilePaths = new Set();
 
   async function request(filePath: string): Promise<void> {
-    if (checkedFilePaths.has(filePath)) return;
-    checkedFilePaths.add(filePath);
     const cachedFilePath = createCacheModulePathForURL(filePath);
 
     let source: string;
@@ -263,18 +177,6 @@ export async function cache(
         filePaths.add(response.url);
       }
 
-      if (recursive) {
-        const dependencies = await extractDependencies(
-          filePath,
-          source,
-          { compilerOptions },
-        );
-        dependencies.forEach((dependencyFilePath) =>
-          filePaths.add(
-            resolveDependency(filePath, dependencyFilePath),
-          )
-        );
-      }
       await Promise.all(
         [...filePaths].map(async (filePath) => await request(filePath)),
       );

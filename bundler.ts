@@ -47,7 +47,6 @@ export class Bundler {
     input: string,
     type: DependencyType,
     format: DependencyFormat,
-    bundler?: Bundler,
     { reload, importMap }: { reload?: boolean; importMap?: ImportMap } = {},
   ) {
     if (!this.sourceMap.has(input, type, format)) {
@@ -56,7 +55,7 @@ export class Bundler {
           plugin.createSource instanceof Function &&
           await plugin.test(input, type, format)
         ) {
-          const source = await plugin.createSource(input, bundler, {
+          const source = await plugin.createSource(input, this, {
             importMap,
             reload,
           });
@@ -105,11 +104,11 @@ export class Bundler {
   }
   async createAssets(
     inputs: string[],
-    { importMap, reload }: CreateAssetOptions = {},
+    { importMap, reload, assets = [] }: CreateAssetOptions = {},
   ) {
     const time = performance.now();
 
-    const assets: Asset[] = [];
+    assets = [...assets];
 
     const newAssets: Asset[] = [];
 
@@ -236,7 +235,7 @@ export class Bundler {
   async createChunks(
     inputs: string[],
     assets: Asset[],
-    { root = ".", outputMap = {} }: CreateChunkOptions = {},
+    { root = ".", outputMap = {}, chunks = [] }: CreateChunkOptions = {},
   ): Promise<Chunk[]> {
     const chunkItems: Item[] = inputs.map((input) => ({
       input: new URL(input, "file://").href,
@@ -341,7 +340,7 @@ export class Bundler {
 
     const time = performance.now();
 
-    const chunks: Chunk[] = [];
+    chunks = [...chunks];
     const newChunks: Chunk[] = [];
 
     for (const asset of chunkAssets) {
@@ -433,19 +432,22 @@ export class Bundler {
 
   async createBundles(
     chunks: Chunk[],
-    { root = ".", importMap, reload, optimize }: CreateBundleOptions = {},
+    { root = ".", importMap, reload, optimize, chunks: cachedChunks = [] }:
+      CreateBundleOptions = {},
   ) {
     const time = performance.now();
     const bundles = [];
 
     for (const chunk of chunks) {
       const { input, type, format } = chunk.item;
-      const source = await this.createSource(input, type, format, this, {
+
+      const source = await this.createSource(input, type, format, {
         importMap,
         reload,
       });
+
       const bundle = await this.createBundle(chunk, source, this, {
-        chunks,
+        chunks: [...chunks, ...cachedChunks],
         root,
         importMap,
         optimize,
@@ -470,18 +472,30 @@ export class Bundler {
       & CreateChunkOptions
       & CreateBundleOptions = {},
   ) {
-    const newAssets = await this.createAssets(inputs, { importMap, reload });
+    const newAssets = await this.createAssets(inputs, {
+      importMap,
+      reload,
+      assets,
+    });
 
-    const newChunks = await this.createChunks(
-      inputs,
-      [...assets, ...newAssets],
-      { root, outputMap },
-    );
+    let newChunks: Chunk[] = [];
+    let newBundles: Bundle[] = [];
 
-    const newBundles = await this.createBundles(
-      [...chunks, ...newChunks],
-      { root, importMap, optimize, reload },
-    );
+    if (newAssets.length) {
+      assets = [...assets, ...newAssets];
+      newChunks = await this.createChunks(
+        inputs,
+        assets,
+        { root, outputMap, chunks },
+      );
+
+      if (newChunks.length) {
+        newBundles = await this.createBundles(
+          newChunks,
+          { root, importMap, optimize, reload, chunks },
+        );
+      }
+    }
 
     return {
       assets: newAssets,

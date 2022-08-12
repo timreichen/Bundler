@@ -17,7 +17,13 @@ import {
   Item,
   resolveDependency,
 } from "../_util.ts";
-import { visitEachChild, visitNode, Visitor } from "./_util.ts";
+import {
+  parse,
+  stringify,
+  visitEachChild,
+  visitNode,
+  Visitor,
+} from "./_util.ts";
 
 export async function injectDependencies(
   input: string,
@@ -27,6 +33,12 @@ export async function injectDependencies(
   bundler: Bundler,
   { root = ".", importMap }: { root?: string; importMap?: ImportMap } = {},
 ) {
+  // avoid original ast mutations
+  /* @timreichen make more efficient
+   * ast = structuredClone(ast) does not work as intended (circular references?)
+  */
+  ast = parse(stringify(ast));
+
   const visitor: Visitor = async (node) => {
     switch (node.type) {
       case "atrule": {

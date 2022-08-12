@@ -52,7 +52,12 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "/css/linear/b.css")).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         assertEquals(asset, {
           input: a,
@@ -76,7 +81,12 @@ Deno.test({
           import.meta.url,
         );
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         assertEquals(asset, {
           input: a,
@@ -96,7 +106,12 @@ Deno.test({
         const a =
           path.toFileUrl(path.join(testdataDir, "css/nesting/a.css")).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         assertEquals(asset, {
           input: a,

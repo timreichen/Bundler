@@ -1,5 +1,4 @@
 import { DependencyFormat, DependencyType, Source } from "./_util.ts";
-
 export class SourceMap {
   #sourceMap: Map<string, Source>;
 

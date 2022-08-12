@@ -42,13 +42,14 @@ export class HTMLPlugin extends TextFilePlugin {
   async createAsset(
     input: string,
     type: DependencyType,
-    bundler?: Bundler,
+    bundler: Bundler,
     { importMap }: CreateAssetOptions = {},
   ) {
     const format = DependencyFormat.Html;
 
-    const source = await this.createSource(input, bundler, { importMap });
-
+    const source = await bundler.createSource(input, type, format, {
+      importMap,
+    });
     const dependencies = await this.createDependencies(input, source, {
       importMap,
     });

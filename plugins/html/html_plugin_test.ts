@@ -46,7 +46,12 @@ Deno.test({
           path.join(testdataDir, "html/script/index.html"),
         ).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         const b = path.toFileUrl(
           path.join(testdataDir, "html/script/index.ts"),
@@ -83,7 +88,12 @@ Deno.test({
         const b =
           path.toFileUrl(path.join(testdataDir, "html/link/style.css")).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         assertEquals(
           stringify(
@@ -148,7 +158,12 @@ Deno.test({
           path.join(testdataDir, "html/link/index.html"),
         ).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
 
         const chunkAssets: Set<Asset> = new Set();
         const chunk = await plugin.createChunk(asset, chunkAssets, undefined, {
@@ -181,7 +196,12 @@ Deno.test({
           path.join(testdataDir, "html/script/index.ts"),
         ).href;
 
-        const asset = await plugin.createAsset(a, DependencyType.ImportExport);
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
         const chunkAssets: Set<Asset> = new Set();
         const chunk = await plugin.createChunk(asset, chunkAssets, undefined, {
           root: "dist",
@@ -195,7 +215,6 @@ Deno.test({
           output: "file:///dist/index.js",
           dependencyItems: [],
         };
-        const bundler = new Bundler({ plugins: [plugin], quiet: true });
         const { input, type, format } = chunk.item;
         const ast = await bundler.createSource(input, type, format);
 

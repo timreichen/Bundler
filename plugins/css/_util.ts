@@ -12,6 +12,11 @@ export function parse(source: string) {
 }
 export function stringify(ast: postcss.Root) {
   return ast.toString();
+  // let result = "";
+  // postcss.stringify(ast, (part) => {
+  //   result += part;
+  // });
+  // return result;
 }
 export async function transpile(ast: postcss.Root) {
   return await processor.process(ast).then((ast) => ast.root as postcss.Root);

@@ -316,6 +316,8 @@ async function bundleCommand(args: flags.Args) {
       colors.dim(colors.italic(`(${timestamp(time)})`)),
     );
 
+    await writeCacheAssets(cachedAssets, cacheAssetsDir);
+
     if (watch) {
       const paths = Object.values(cachedAssets)
         .map((asset) => new URL(asset.input).pathname)
@@ -377,7 +379,6 @@ async function bundleCommand(args: flags.Args) {
         }
       }
     }
-    await writeCacheAssets(cachedAssets, cacheAssetsDir);
   }
 
   await bundle();

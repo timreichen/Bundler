@@ -401,7 +401,7 @@ export class Bundler {
           colors.dim(plugin.constructor.name),
           timestamp(time),
         );
-        bundle = await this.optimizeBundle(chunk, bundle);
+        if (options.optimize) bundle = await this.optimizeBundle(chunk, bundle);
         return bundle;
       }
     }

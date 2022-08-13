@@ -222,6 +222,25 @@ Deno.test({
   },
 });
 Deno.test({
+  name: "Audio",
+  async fn() {
+    const input = "/src/a.ts";
+    const source = `const audio = new Audio("./b.ts")`;
+    const ast = parse(source);
+    const dependencies = await extractDependencies(
+      input,
+      ast,
+    );
+    assertEquals(dependencies, [
+      {
+        input: "file:///src/b.ts",
+        format: DependencyFormat.Binary,
+        type: DependencyType.ImportExport,
+      },
+    ]);
+  },
+});
+Deno.test({
   name: "fetch",
   async fn() {
     const input = "/src/a.ts";

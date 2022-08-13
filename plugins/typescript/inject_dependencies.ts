@@ -250,6 +250,36 @@ function updateWebWorkerExpression(
   );
 }
 
+// replace new Audio(path) path with chunk output
+function updateAudioExpression(
+  node: ts.NewExpression,
+  resolvedModuleSpecifier: string,
+  chunks: Chunk[],
+  { root }: { root: string },
+) {
+  const chunk = getChunk(
+    chunks,
+    resolvedModuleSpecifier,
+    DependencyType.ImportExport,
+    DependencyFormat.Binary,
+  );
+
+  const args = [...node.arguments!];
+  args.splice(
+    0,
+    1,
+    ts.factory.createStringLiteral(
+      createRelativeOutput(chunk.output, root),
+    ),
+  );
+  return ts.factory.updateNewExpression(
+    node,
+    node.expression,
+    node.typeArguments,
+    args,
+  );
+}
+
 function createInlineStyleVariableDeclaration(name: string, source: string) {
   return [
     ts.factory.createVariableStatement(
@@ -757,22 +787,34 @@ export async function injectDependencies(
               }
             }
           } else if (
-            ts.isNewExpression(node) && ts.isIdentifier(node.expression) &&
-            node.expression.text === "Worker"
+            ts.isNewExpression(node) && ts.isIdentifier(node.expression)
           ) {
             const argument = node.arguments?.[0];
             if (argument && ts.isStringLiteral(argument)) {
               const moduleSpecifier = argument.text;
-              const resolvedModuleSpecifier = resolveModuleSpecifier(
+              const resolvedModuleSpecifier = resolveSpecifier(
                 input,
                 moduleSpecifier,
+                importMap,
               );
-              return updateWebWorkerExpression(
-                node,
-                resolvedModuleSpecifier,
-                chunks,
-                { root },
-              );
+              switch (node.expression.text) {
+                case "Worker": {
+                  return updateWebWorkerExpression(
+                    node,
+                    resolvedModuleSpecifier,
+                    chunks,
+                    { root },
+                  );
+                }
+                case "Audio": {
+                  return updateAudioExpression(
+                    node,
+                    resolvedModuleSpecifier,
+                    chunks,
+                    { root },
+                  );
+                }
+              }
             }
           }
           return ts.visitEachChild(node, visitor, context);

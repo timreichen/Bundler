@@ -2910,6 +2910,53 @@ Deno.test({
   },
 });
 Deno.test({
+  name: "Audio",
+  async fn() {
+    const root = "dist";
+
+    const inputA = "file:///src/a.ts";
+    const sourceA = `const worker = new Audio("./b.ts")`;
+    const astA = parse(sourceA);
+
+    const inputB = "file:///src/b.ts";
+    const itemB = {
+      input: inputB,
+      type: DependencyType.ImportExport,
+      format: DependencyFormat.Binary,
+    };
+    const sourceB = `console.info("hello world");`;
+    const astB = parse(sourceB);
+
+    const dependencyItems: Item[] = [];
+
+    const chunks: Chunk[] = [
+      {
+        item: itemB,
+        dependencyItems: [],
+        output: "file:///dist/b.js",
+      },
+    ];
+
+    const bundler = new Bundler({ plugins: [], quiet: true });
+    bundler.sourceMap.set(
+      inputB,
+      DependencyType.ImportExport,
+      DependencyFormat.Script,
+      astB,
+    );
+
+    const result = await injectDependencies(
+      inputA,
+      dependencyItems,
+      astA,
+      chunks,
+      bundler,
+      { root, compilerOptions },
+    );
+    assertEquals(stringify(result), `const worker = new Audio("/b.js");\n`);
+  },
+});
+Deno.test({
   name: "fetch",
   async fn() {
     const root = "dist";

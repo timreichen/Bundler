@@ -170,8 +170,7 @@ export async function extractDependencies(
         }
       }
     } else if (
-      ts.isNewExpression(node) && ts.isIdentifier(node.expression) &&
-      node.expression.text === "Worker"
+      ts.isNewExpression(node) && ts.isIdentifier(node.expression)
     ) {
       const argument = node.arguments?.[0];
       if (argument && ts.isStringLiteral(argument)) {
@@ -181,11 +180,24 @@ export async function extractDependencies(
           moduleSpecifier,
           importMap,
         );
-        dependencies.push({
-          input: resolvedModuleSpecifier,
-          type: DependencyType.WebWorker,
-          format: DependencyFormat.Script,
-        });
+        switch (node.expression.text) {
+          case "Worker": {
+            dependencies.push({
+              input: resolvedModuleSpecifier,
+              type: DependencyType.WebWorker,
+              format: DependencyFormat.Script,
+            });
+            break;
+          }
+          case "Audio": {
+            dependencies.push({
+              input: resolvedModuleSpecifier,
+              type: DependencyType.ImportExport,
+              format: DependencyFormat.Binary,
+            });
+            break;
+          }
+        }
       }
     }
   });

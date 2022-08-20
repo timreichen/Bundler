@@ -1,6 +1,6 @@
 import { ImportMap, resolveImportMapModuleSpecifier, ts } from "../../deps.ts";
 import { DependencyFormat, DependencyType, Item } from "../plugin.ts";
-import { resolveModuleSpecifier } from "../_util.ts";
+import { getDependencyFormat, resolveModuleSpecifier } from "../_util.ts";
 import { getDepdendencyFormatFromAssertType, walk } from "./_util.ts";
 
 export async function extractDependencies(
@@ -105,10 +105,12 @@ export async function extractDependencies(
           moduleSpecifier,
           importMap,
         );
+        const format = getDependencyFormat(resolvedModuleSpecifier) ||
+          DependencyFormat.Script;
         dependencies.push({
           input: resolvedModuleSpecifier,
           type: DependencyType.Fetch,
-          format: DependencyFormat.Script,
+          format,
         });
       } else if (
         node.expression.kind === ts.SyntaxKind.ImportKeyword &&

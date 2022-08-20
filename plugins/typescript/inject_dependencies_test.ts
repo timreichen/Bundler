@@ -1,6 +1,7 @@
 import { Bundler } from "../../bundler.ts";
 import { ts } from "../../deps.ts";
 import { assertEquals } from "../../test_deps.ts";
+import { CSSPlugin } from "../css/css_plugin.ts";
 import { Chunk, DependencyFormat, DependencyType, Item } from "../plugin.ts";
 import { injectDependencies } from "./inject_dependencies.ts";
 import { parse, stringify } from "./_util.ts";
@@ -41,7 +42,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -50,8 +51,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -89,7 +90,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -98,8 +99,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -137,7 +138,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -146,8 +147,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -185,7 +186,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -194,8 +195,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -236,7 +237,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -245,8 +246,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -284,7 +285,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -293,8 +294,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -332,7 +333,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.DynamicImport,
           DependencyFormat.Script,
@@ -341,8 +342,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -380,7 +381,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.DynamicImport,
           DependencyFormat.Script,
@@ -389,8 +390,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -427,7 +428,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -436,8 +437,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -469,7 +470,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -478,8 +479,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -519,13 +520,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -534,8 +535,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -567,7 +568,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -576,8 +577,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -609,7 +610,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -618,8 +619,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -662,13 +663,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -677,8 +678,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -720,13 +721,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -735,8 +736,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -779,13 +780,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -794,8 +795,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -838,13 +839,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -853,8 +854,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -889,7 +890,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -898,8 +899,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -934,7 +935,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -943,8 +944,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -979,7 +980,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -988,8 +989,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1032,13 +1033,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1047,8 +1048,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1091,13 +1092,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1106,8 +1107,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1142,7 +1143,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1151,8 +1152,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1195,13 +1196,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1210,8 +1211,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1254,13 +1255,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1269,8 +1270,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1313,13 +1314,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1328,8 +1329,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1363,7 +1364,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1372,8 +1373,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1407,7 +1408,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1416,8 +1417,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1451,7 +1452,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1460,8 +1461,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1497,7 +1498,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1506,8 +1507,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1543,7 +1544,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1552,8 +1553,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1597,13 +1598,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1612,8 +1613,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1653,7 +1654,7 @@ Deno.test({
         }];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.DynamicImport,
           DependencyFormat.Script,
@@ -1662,8 +1663,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1699,7 +1700,7 @@ Deno.test({
         }];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.DynamicImport,
           DependencyFormat.Script,
@@ -1708,8 +1709,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1743,7 +1744,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1752,8 +1753,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1790,7 +1791,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1799,8 +1800,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1835,8 +1836,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1862,8 +1863,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1892,8 +1893,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1934,7 +1935,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1943,8 +1944,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -1982,7 +1983,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -1991,8 +1992,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2030,7 +2031,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2039,8 +2040,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2078,7 +2079,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2087,8 +2088,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2126,7 +2127,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2135,8 +2136,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2171,7 +2172,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2180,8 +2181,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2213,7 +2214,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2222,8 +2223,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2258,7 +2259,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2267,8 +2268,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2303,7 +2304,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2312,8 +2313,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2348,7 +2349,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2357,8 +2358,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2401,13 +2402,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2416,8 +2417,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2452,7 +2453,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2461,8 +2462,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2497,7 +2498,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2506,8 +2507,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2550,13 +2551,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2565,8 +2566,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2609,13 +2610,13 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
           astB,
         );
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputC,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2624,8 +2625,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2660,7 +2661,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2669,8 +2670,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2705,7 +2706,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2714,8 +2715,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2749,7 +2750,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2758,8 +2759,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2793,7 +2794,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2802,8 +2803,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2837,7 +2838,7 @@ Deno.test({
         const chunks: Chunk[] = [];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -2846,8 +2847,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -2891,7 +2892,7 @@ Deno.test({
     ];
 
     const bundler = new Bundler({ plugins: [], quiet: true });
-    bundler.sourceMap.set(
+    bundler.cacheMap.set(
       inputB,
       DependencyType.ImportExport,
       DependencyFormat.Script,
@@ -2900,8 +2901,8 @@ Deno.test({
 
     const result = await injectDependencies(
       inputA,
-      dependencyItems,
       astA,
+      dependencyItems,
       chunks,
       bundler,
       { root, compilerOptions },
@@ -2938,7 +2939,7 @@ Deno.test({
     ];
 
     const bundler = new Bundler({ plugins: [], quiet: true });
-    bundler.sourceMap.set(
+    bundler.cacheMap.set(
       inputB,
       DependencyType.ImportExport,
       DependencyFormat.Script,
@@ -2947,8 +2948,8 @@ Deno.test({
 
     const result = await injectDependencies(
       inputA,
-      dependencyItems,
       astA,
+      dependencyItems,
       chunks,
       bundler,
       { root, compilerOptions },
@@ -2985,7 +2986,7 @@ Deno.test({
     ];
 
     const bundler = new Bundler({ plugins: [], quiet: true });
-    bundler.sourceMap.set(
+    bundler.cacheMap.set(
       inputB,
       DependencyType.ImportExport,
       DependencyFormat.Script,
@@ -2994,8 +2995,8 @@ Deno.test({
 
     const result = await injectDependencies(
       inputA,
-      dependencyItems,
       astA,
+      dependencyItems,
       chunks,
       bundler,
       { root, compilerOptions },
@@ -3033,7 +3034,7 @@ Deno.test({
     ];
 
     const bundler = new Bundler({ plugins: [], quiet: true });
-    bundler.sourceMap.set(
+    bundler.cacheMap.set(
       inputB,
       DependencyType.ImportExport,
       DependencyFormat.Script,
@@ -3042,8 +3043,8 @@ Deno.test({
 
     const result = await injectDependencies(
       inputA,
-      dependencyItems,
       astA,
+      dependencyItems,
       chunks,
       bundler,
       { root, compilerOptions },
@@ -3085,7 +3086,7 @@ Deno.test({
         ];
 
         const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Script,
@@ -3094,8 +3095,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -3126,8 +3127,11 @@ Deno.test({
         const dependencyItems: Item[] = [itemB];
         const chunks: Chunk[] = [];
 
-        const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        const bundler = new Bundler({
+          plugins: [],
+          quiet: true,
+        });
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Json,
@@ -3136,8 +3140,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -3180,8 +3184,9 @@ Deno.test({
           },
         ];
 
-        const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        const cssPlugin = new CSSPlugin();
+        const bundler = new Bundler({ plugins: [cssPlugin], quiet: true });
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Style,
@@ -3190,8 +3195,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },
@@ -3222,8 +3227,11 @@ Deno.test({
         const dependencyItems: Item[] = [itemB];
         const chunks: Chunk[] = [];
 
-        const bundler = new Bundler({ plugins: [], quiet: true });
-        bundler.sourceMap.set(
+        const bundler = new Bundler({
+          plugins: [],
+          quiet: true,
+        });
+        bundler.cacheMap.set(
           inputB,
           DependencyType.ImportExport,
           DependencyFormat.Style,
@@ -3232,8 +3240,8 @@ Deno.test({
 
         const result = await injectDependencies(
           inputA,
-          dependencyItems,
           astA,
+          dependencyItems,
           chunks,
           bundler,
           { root, compilerOptions },

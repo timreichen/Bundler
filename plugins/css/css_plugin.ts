@@ -113,6 +113,22 @@ export class CSSPlugin extends TextFilePlugin {
     return items;
   }
 
+  async injectDependencies(
+    item: Item,
+    ast: Source,
+    dependencyItems: Item[],
+    bundler: Bundler,
+    { chunks = [], importMap, root }: CreateBundleOptions,
+  ) {
+    return await injectDependencies(
+      item.input,
+      ast,
+      dependencyItems,
+      chunks,
+      bundler,
+      { importMap, root },
+    );
+  }
   async createChunk(
     asset: Asset,
     chunkAssets: Set<Asset>,
@@ -164,24 +180,15 @@ export class CSSPlugin extends TextFilePlugin {
     bundler: Bundler,
     { chunks = [], root, importMap }: CreateBundleOptions,
   ) {
-    const { input, type, format } = chunk.item;
-
-    const time = performance.now();
-    ast = await injectDependencies(
-      input,
+    ast = await bundler.injectDependencies(
+      chunk.item,
       ast,
       chunk.dependencyItems,
-      chunks,
-      bundler,
-      { importMap, root },
-    );
-
-    bundler?.logger.debug(
-      colors.yellow("Inject Dependencies"),
-      input,
-      colors.dim(type),
-      colors.dim(format),
-      colors.dim(colors.italic(`(${timestamp(time)})`)),
+      {
+        chunks,
+        root,
+        importMap,
+      },
     );
 
     return {

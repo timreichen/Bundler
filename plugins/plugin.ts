@@ -83,6 +83,14 @@ export abstract class Plugin {
     return [];
   }
 
+  injectDependencies?(
+    item: Item,
+    ast: Source,
+    dependencyItems: Item[],
+    bundler?: Bundler,
+    options?: CreateBundleOptions,
+  ): Promise<Source>;
+
   createAsset?(
     input: string,
     type: DependencyType,

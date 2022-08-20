@@ -586,6 +586,99 @@ Deno.test({
         ]);
       },
     });
+    await t.step({
+      name: "chain chain fetch",
+      async fn() {
+        const root = "dist";
+        const inputA = path.toFileUrl(
+          path.join(testdataDir, "typescript/chain_chain_fetch/a.ts"),
+        ).href;
+        const inputB = path.toFileUrl(
+          path.join(testdataDir, "typescript/chain_chain_fetch/b.ts"),
+        ).href;
+        const inputC = path.toFileUrl(
+          path.join(testdataDir, "typescript/chain_chain_fetch/c.ts"),
+        ).href;
+        const inputD = path.toFileUrl(
+          path.join(testdataDir, "typescript/chain_chain_fetch/d.ts"),
+        ).href;
+
+        const assets = await bundler.createAssets([inputA]);
+
+        const chunks = await bundler.createChunks([inputA], assets, { root });
+
+        assertEquals(chunks, [
+          {
+            dependencyItems: [
+              {
+                format: DependencyFormat.Script,
+                input: inputB,
+                type: DependencyType.ImportExport,
+              },
+              {
+                format: DependencyFormat.Script,
+                input: inputC,
+                type: DependencyType.ImportExport,
+              },
+            ],
+            item: {
+              format: DependencyFormat.Script,
+              input: inputA,
+              type: DependencyType.ImportExport,
+            },
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
+          },
+          {
+            dependencyItems: [],
+            item: {
+              format: DependencyFormat.Script,
+              input: inputD,
+              type: DependencyType.Fetch,
+            },
+            output: await typescriptPlugin.createOutput(inputD, root, ".js"),
+          },
+        ]);
+      },
+    });
+    await t.step({
+      name: "css chain",
+      async fn() {
+        const inputA = path.toFileUrl(
+          path.join(testdataDir, "typescript/css_chain/a.ts"),
+        ).href;
+        const inputB = path.toFileUrl(
+          path.join(testdataDir, "typescript/css_chain/b.css"),
+        ).href;
+        const c = path.toFileUrl(
+          path.join(testdataDir, "typescript/css_chain/c.css"),
+        ).href;
+
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
+        assertEquals(chunks, [
+          {
+            item: {
+              format: DependencyFormat.Script,
+              input: inputA,
+              type: DependencyType.ImportExport,
+            },
+            dependencyItems: [
+              {
+                input: inputB,
+                type: DependencyType.ImportExport,
+                format: DependencyFormat.Style,
+              },
+              {
+                input: c,
+                type: DependencyType.ImportExport,
+                format: DependencyFormat.Style,
+              },
+            ],
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
+          },
+        ]);
+      },
+    });
 
     await t.step({
       name: "shared inline",
@@ -789,7 +882,7 @@ Deno.test({
           {
             output: await typescriptPlugin.createOutput(inputA, root, ".js"),
             source:
-              `const b = new CSSStyleSheet();\nb.replaceSync(\`h1 {\n  font-family: Helvetica;\n}\`);\nconsole.info(b);\n`,
+              `const b = new CSSStyleSheet();\nb.replaceSync(\`h1 {\n  background-color: red;\n}\`);\nconsole.info(b);\n`,
           },
         ]);
       },
@@ -834,9 +927,7 @@ Deno.test({
         );
 
         const assets = await bundler.createAssets([inputA]);
-
         const chunks = await bundler.createChunks([inputA], assets, { root });
-
         const bundles = await bundler.createBundles(chunks, { root });
 
         assertEquals(bundles[0], {
@@ -917,6 +1008,92 @@ Deno.test({
         }]);
       },
     });
+
+    await t.step({
+      name: "chain fetch",
+      async fn() {
+        const root = "dist";
+        const inputA =
+          path.toFileUrl(path.join(testdataDir, "typescript/chain_fetch/a.ts"))
+            .href;
+        const inputC =
+          path.toFileUrl(path.join(testdataDir, "typescript/chain_fetch/c.ts"))
+            .href;
+
+        const assets = await bundler.createAssets([inputA]);
+
+        const chunks = await bundler.createChunks([inputA], assets, { root });
+        const bundles = await bundler.createBundles(chunks, { root });
+
+        assertEquals(bundles, [
+          {
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
+            source: `const c = await fetch("${
+              path.fromFileUrl(
+                await typescriptPlugin.createOutput(inputC, "", ".js"),
+              )
+            }");\nconsole.info(c);\n`,
+          },
+          {
+            output: await typescriptPlugin.createOutput(inputC, root, ".js"),
+            source: `const c = "c";\nexport { c };\n`,
+          },
+        ]);
+      },
+    });
+
+    await t.step({
+      name: "chain chain fetch",
+      async fn() {
+        const root = "dist";
+        const inputA = path.toFileUrl(
+          path.join(testdataDir, "typescript/chain_chain_fetch/a.ts"),
+        ).href;
+        const inputD = path.toFileUrl(
+          path.join(testdataDir, "typescript/chain_chain_fetch/d.ts"),
+        ).href;
+
+        const assets = await bundler.createAssets([inputA]);
+
+        const chunks = await bundler.createChunks([inputA], assets, { root });
+        const bundles = await bundler.createBundles(chunks, { root });
+
+        assertEquals(bundles, [
+          {
+            output: await typescriptPlugin.createOutput(inputA, root, ".js"),
+            source: `const d = await fetch("${
+              path.fromFileUrl(
+                await typescriptPlugin.createOutput(inputD, "", ".js"),
+              )
+            }");\nconsole.info(d);\n`,
+          },
+          {
+            output: await typescriptPlugin.createOutput(inputD, root, ".js"),
+            source: `const d = "d";\nexport { d };\n`,
+          },
+        ]);
+      },
+    });
+
+    await t.step({
+      name: "css inline chain",
+      async fn() {
+        const inputA = path.toFileUrl(
+          path.join(testdataDir, "typescript/css_chain/a.ts"),
+        ).href;
+
+        const assets = await bundler.createAssets([inputA]);
+        const chunks = await bundler.createChunks([inputA], assets, { root });
+        const bundles = await bundler.createBundles(chunks, { root });
+
+        assertEquals(bundles, [{
+          output: await typescriptPlugin.createOutput(inputA, root, ".js"),
+          source:
+            `const b = new CSSStyleSheet();\nb.replaceSync(\`h1 {\n  background-color: red;\n}\n\nh1 {\n  color: red;\n}\`);\nconsole.info(b);\n`,
+        }]);
+      },
+    });
+
     await t.step({
       name: "double import",
       async fn() {

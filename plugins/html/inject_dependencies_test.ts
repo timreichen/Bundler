@@ -41,8 +41,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      [],
       ast,
+      [],
       chunks,
       bundler,
       { root, importMap },
@@ -90,8 +90,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      [],
       ast,
+      [],
       chunks,
       bundler,
       { root, importMap },
@@ -138,8 +138,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      [],
       ast,
+      [],
       chunks,
       bundler,
       { root, importMap },
@@ -197,8 +197,8 @@ Deno.test({
         });
         const result = await injectDependencies(
           input,
-          [],
           ast,
+          [],
           chunks,
           bundler,
           { root },
@@ -252,8 +252,8 @@ Deno.test({
         });
         const result = await injectDependencies(
           input,
-          [],
           ast,
+          [],
           chunks,
           bundler,
           { root },
@@ -322,8 +322,8 @@ Deno.test({
         });
         const result = await injectDependencies(
           input,
-          [],
           ast,
+          [],
           chunks,
           bundler,
           { root },
@@ -384,8 +384,8 @@ Deno.test({
         });
         const result = await injectDependencies(
           input,
-          [],
           ast,
+          [],
           chunks,
           bundler,
           { root },
@@ -429,8 +429,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      [],
       ast,
+      [],
       chunks,
       bundler,
       { root },
@@ -473,8 +473,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      [],
       ast,
+      [],
       chunks,
       bundler,
       { root },
@@ -516,8 +516,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      [],
       ast,
+      [],
       chunks,
       bundler,
       { root },
@@ -551,8 +551,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      [],
       ast,
+      [],
       chunks,
       bundler,
       { root },
@@ -598,8 +598,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      [],
       ast,
+      [],
       chunks,
       bundler,
       { root },
@@ -639,7 +639,7 @@ Deno.test({
       plugins: [typescriptPlugin, cssPlugin],
       quiet: true,
     });
-    bundler.sourceMap.set(
+    bundler.cacheMap.set(
       inputB,
       DependencyType.ImportExport,
       DependencyFormat.Script,
@@ -648,8 +648,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      dependencyItems,
       ast,
+      dependencyItems,
       chunks,
       bundler,
       { root },
@@ -691,8 +691,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      [],
       ast,
+      [],
       chunks,
       bundler,
       { root },
@@ -734,8 +734,8 @@ Deno.test({
 
     const result = await injectDependencies(
       input,
-      [],
       ast,
+      [],
       chunks,
       bundler,
       { root },

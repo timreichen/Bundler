@@ -9,7 +9,7 @@ import { HTMLPlugin } from "./plugins/html/html_plugin.ts";
 import { FilePlugin } from "./plugins/file/file.ts";
 import { path, resolveImportMap, ts } from "./deps.ts";
 
-const moduleDir = path.dirname(path.posix.fromFileUrl(import.meta.url));
+const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "testdata");
 
 const typescriptPlugin = new TypescriptPlugin({

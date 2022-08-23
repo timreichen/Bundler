@@ -664,5 +664,123 @@ Deno.test({
         });
       },
     });
+
+    await t.step({
+      name: "chain",
+      async fn() {
+        const root = "dist";
+        const a =
+          path.toFileUrl(path.join(testdataDir, "typescript/chain/a.ts")).href;
+        const b =
+          path.toFileUrl(path.join(testdataDir, "typescript/chain/b.ts")).href;
+        const c =
+          path.toFileUrl(path.join(testdataDir, "typescript/chain/c.ts")).href;
+        const chunk: Chunk = {
+          item: {
+            input: a,
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Script,
+          },
+          dependencyItems: [{
+            input: b,
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Script,
+          }, {
+            input: c,
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Script,
+          }],
+          output: await plugin.createOutput(a, "dist", ".js"),
+        };
+        const chunks: Chunk[] = [];
+
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const { input, type, format } = chunk.item;
+        const ast = await bundler.createSource(input, type, format);
+
+        const bundle = await plugin.createBundle(
+          chunk,
+          ast,
+          bundler,
+          {
+            chunks,
+            root,
+          },
+        );
+
+        assertEquals(bundle, {
+          source:
+            `const c = "c";\nconsole.info(c);\nconst b = "b";\nconsole.info(b);\n`,
+          output: await plugin.createOutput(a, "dist", ".js"),
+        });
+      },
+    });
+
+    await t.step({
+      name: "chain fetch",
+      async fn() {
+        const root = "dist";
+        const a =
+          path.toFileUrl(path.join(testdataDir, "typescript/chain_fetch/a.ts"))
+            .href;
+        const b =
+          path.toFileUrl(path.join(testdataDir, "typescript/chain_fetch/b.ts"))
+            .href;
+        const c =
+          path.toFileUrl(path.join(testdataDir, "typescript/chain_fetch/c.ts"))
+            .href;
+        const chunk: Chunk = {
+          item: {
+            input: a,
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Script,
+          },
+          dependencyItems: [{
+            input: b,
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Script,
+          }],
+          output: await plugin.createOutput(a, "dist", ".js"),
+        };
+        const chunks: Chunk[] = [
+          {
+            item: {
+              input: c,
+              type: DependencyType.Fetch,
+              format: DependencyFormat.Script,
+            },
+            dependencyItems: [],
+            output: await plugin.createOutput(c, "dist", ".js"),
+          },
+        ];
+
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const { input, type, format } = chunk.item;
+        const ast = await bundler.createSource(input, type, format);
+
+        const bundle = await plugin.createBundle(
+          chunk,
+          ast,
+          bundler,
+          {
+            chunks,
+            root,
+          },
+        );
+
+        assertEquals(bundle, {
+          source: `const c = await fetch("${
+            path.posix.fromFileUrl(
+              await plugin.createOutput(
+                c,
+                "",
+                ".js",
+              ),
+            )
+          }");\nconsole.info(c);\n`,
+          output: await plugin.createOutput(a, "dist", ".js"),
+        });
+      },
+    });
   },
 });

@@ -77,3 +77,26 @@ export function parsePaths(paths: (string | number)[], root: string) {
   });
   return { inputs, outputMap };
 }
+
+export async function exists(filename: string) {
+  try {
+    await Deno.stat(filename);
+    return true;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      return false;
+    }
+    throw error;
+  }
+}
+export function existsSync(filename: string) {
+  try {
+    Deno.statSync(filename);
+    return true;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      return false;
+    }
+    throw error;
+  }
+}

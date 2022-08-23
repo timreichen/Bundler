@@ -1,6 +1,6 @@
 import { Bundler } from "../../bundler.ts";
 import { ImportMap, resolveImportMapModuleSpecifier, ts } from "../../deps.ts";
-import { SourceMap } from "../source_map.ts";
+import { CacheMap } from "../cache_map.ts";
 import {
   Chunk,
   createRelativeOutput,
@@ -21,6 +21,7 @@ import {
 } from "./_util.ts";
 import * as css from "../css/mod.ts";
 import { extractIdentifiersTransformer } from "./extract_identifiers.ts";
+import { Source } from "../plugin.ts";
 
 function getModName(
   modNameMap: Record<string, string>,
@@ -388,26 +389,42 @@ const printer = ts.createPrinter({ removeComments: false });
 
 export async function injectDependencies(
   input: string,
-  dependencyItems: Item[],
   ast: ts.SourceFile,
+  dependencyItems: Item[],
   chunks: Chunk[],
   bundler: Bundler,
-  { root, importMap, compilerOptions }: {
+  options: {
     root: string;
     importMap?: ImportMap;
+    reload?: boolean;
+    optimize?: boolean;
     compilerOptions?: ts.CompilerOptions;
   },
 ) {
+  const { root, importMap, compilerOptions } = options;
   // cache sources before transform since ts.transform is sync and cannot get sources asynchronously
-  const sourceMap = new SourceMap();
+  const cacheMap = new CacheMap<Source>();
+
   for (const dependencyItem of dependencyItems) {
-    const source = await bundler.createSource(
+    let source = await bundler.createSource(
       dependencyItem.input,
       dependencyItem.type,
       dependencyItem.format,
     );
 
-    sourceMap.set(
+    switch (dependencyItem.format) {
+      case DependencyFormat.Style: {
+        source = await bundler.injectDependencies(
+          dependencyItem,
+          source,
+          dependencyItems,
+          { chunks, root, importMap },
+        );
+        break;
+      }
+    }
+
+    cacheMap.set(
       dependencyItem.input,
       dependencyItem.type,
       dependencyItem.format,
@@ -483,7 +500,7 @@ export async function injectDependencies(
               if (importClause && importClause.name) {
                 // import name from "./x.ts"
                 const name = importClause.name.text;
-                const dependencySource = sourceMap.get(
+                const dependencySource = cacheMap.get(
                   dependencyItem.input,
                   dependencyItem.type,
                   dependencyItem.format,
@@ -507,7 +524,7 @@ export async function injectDependencies(
               }
 
               if (!dependencyMods[dependencyItem.input]) {
-                const dependencySourceFile = sourceMap.get(
+                const dependencySourceFile = cacheMap.get(
                   dependencyItem.input,
                   dependencyItem.type,
                   dependencyItem.format,
@@ -631,7 +648,7 @@ export async function injectDependencies(
 
             if (dependencyItem) {
               if (!dependencyMods[dependencyItem.input]) {
-                const dependencySourceFile = sourceMap.get(
+                const dependencySourceFile = cacheMap.get(
                   dependencyItem.input,
                   dependencyItem.type,
                   dependencyItem.format,

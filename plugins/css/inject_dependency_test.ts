@@ -223,7 +223,7 @@ Deno.test({
     const chunks: Chunk[] = [];
 
     const bundler = new Bundler({ plugins: [], quiet: true });
-    bundler.sourceMap.set(
+    bundler.cacheMap.set(
       inputB,
       DependencyType.ImportExport,
       DependencyFormat.Style,
@@ -260,7 +260,7 @@ Deno.test({
     const dependencyItems = [itemB];
 
     const bundler = new Bundler({ plugins: [], quiet: true });
-    bundler.sourceMap.set(
+    bundler.cacheMap.set(
       inputB,
       DependencyType.ImportExport,
       DependencyFormat.Style,

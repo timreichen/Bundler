@@ -15,8 +15,8 @@ import { createRelativeOutput, getChunk, resolveDependency } from "../_util.ts";
 
 export async function injectDependencies(
   input: string,
-  dependencyItems: Item[],
   ast: posthtml.Node[],
+  dependencyItems: Item[],
   chunks: Chunk[],
   bundler: Bundler,
   { importMap, root }: {

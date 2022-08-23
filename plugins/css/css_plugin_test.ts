@@ -273,7 +273,7 @@ Deno.test({
         assertEquals(bundle, {
           output: await plugin.createOutput(inputA, "dist", ".css"),
           source:
-            `h1 {\n  color: green;\n}\n\nh1 {\n  font-family: Helvetica;\n}`,
+            `h1 {\n  color: green;\n}\n\nh1 {\n  background-color: red;\n}`,
         });
       },
     });
@@ -328,7 +328,7 @@ Deno.test({
         assertEquals(bundle, {
           output: await plugin.createOutput(inputA, "dist", ".css"),
           source:
-            `h1 {\n  color: green;\n}\n\nh1 {\n  font-family: Helvetica;\n}`,
+            `h1 {\n  color: green;\n}\n\nh1 {\n  background-color: red;\n}`,
         });
       },
     });

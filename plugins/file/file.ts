@@ -32,20 +32,17 @@ export class FilePlugin extends Plugin {
     }
   }
 
-  async createAsset(
+  createAsset(
     input: string,
     type: DependencyType,
-    bundler: Bundler,
-    options: CreateAssetOptions,
+    _bundler: Bundler,
+    _options: CreateAssetOptions,
   ) {
-    const source = await this.createSource(input, bundler, options);
     return {
       input: input,
       type,
       format: DependencyFormat.Binary,
       dependencies: [],
-      exports: {},
-      source,
     };
   }
 

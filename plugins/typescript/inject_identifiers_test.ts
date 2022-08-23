@@ -1417,7 +1417,7 @@ Deno.test({
 
         assertEquals(
           source,
-          `console.info({ a1, A: a1, b, c });\n`,
+          `console.info({ a: a1, A: a1, b, c });\n`,
         );
       },
     });

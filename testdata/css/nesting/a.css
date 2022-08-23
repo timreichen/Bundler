@@ -1,5 +1,5 @@
 div {
   & > h1 {
-    font-family: Helvetica;
+    background-color: red;
   }
 }

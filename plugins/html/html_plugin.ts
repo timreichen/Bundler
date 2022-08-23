@@ -120,8 +120,8 @@ export class HTMLPlugin extends TextFilePlugin {
     const { input } = chunk.item;
     const result = await injectDependencies(
       input,
-      chunk.dependencyItems,
       ast,
+      chunk.dependencyItems,
       chunks,
       bundler,
       { root, importMap },

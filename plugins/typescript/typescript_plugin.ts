@@ -172,8 +172,10 @@ export class TypescriptPlugin extends TextFilePlugin {
     _options: CreateChunkOptions,
   ) {
     const items = [];
-    for (const dependency of asset.dependencies) {
+    const dependencies = [...asset.dependencies];
+    for (const dependency of dependencies) {
       const { input, type, format } = dependency;
+
       switch (format) {
         case DependencyFormat.Script: {
           switch (type) {
@@ -255,6 +257,7 @@ export class TypescriptPlugin extends TextFilePlugin {
       const dependencyAsset = getAsset(assets, input, type, format);
       if (checkedAssets.has(dependencyAsset)) continue;
       checkedAssets.add(dependencyAsset);
+
       if (!chunkAssets.has(dependencyAsset) && dependencyAsset !== asset) {
         dependencyItems.push({
           input: dependencyAsset.input,
@@ -286,19 +289,38 @@ export class TypescriptPlugin extends TextFilePlugin {
     };
   }
 
+  async injectDependencies(
+    item: Item,
+    ast: Source,
+    dependencyItems: Item[],
+    bundler: Bundler,
+    { chunks = [], root = ".", importMap }: CreateBundleOptions = {},
+  ) {
+    return await injectDependencies(
+      item.input,
+      ast,
+      dependencyItems,
+      chunks,
+      bundler,
+      { root, importMap, compilerOptions: this.#compilerOptions },
+    );
+  }
+
   async createBundle(
     chunk: Chunk,
     ast: Source,
     bundler: Bundler,
     { chunks = [], root = ".", importMap }: CreateBundleOptions = {},
   ) {
-    ast = await injectDependencies(
-      chunk.item.input,
-      chunk.dependencyItems,
+    ast = await bundler.injectDependencies(
+      chunk.item,
       ast,
-      chunks,
-      bundler,
-      { root, importMap, compilerOptions: this.#compilerOptions },
+      chunk.dependencyItems,
+      {
+        chunks,
+        root,
+        importMap,
+      },
     );
 
     const source = stringify(ast);

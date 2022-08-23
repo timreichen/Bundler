@@ -9,7 +9,7 @@ import { HTMLPlugin } from "./plugins/html/html_plugin.ts";
 import { FilePlugin } from "./plugins/file/file.ts";
 import { path, resolveImportMap, ts } from "./deps.ts";
 
-const moduleDir = path.dirname(path.fromFileUrl(import.meta.url));
+const moduleDir = path.dirname(path.posix.fromFileUrl(import.meta.url));
 const testdataDir = path.resolve(moduleDir, "testdata");
 
 const typescriptPlugin = new TypescriptPlugin({
@@ -1029,7 +1029,7 @@ Deno.test({
           {
             output: await typescriptPlugin.createOutput(inputA, root, ".js"),
             source: `const c = await fetch("${
-              path.fromFileUrl(
+              path.posix.fromFileUrl(
                 await typescriptPlugin.createOutput(inputC, "", ".js"),
               )
             }");\nconsole.info(c);\n`,
@@ -1062,7 +1062,7 @@ Deno.test({
           {
             output: await typescriptPlugin.createOutput(inputA, root, ".js"),
             source: `const d = await fetch("${
-              path.fromFileUrl(
+              path.posix.fromFileUrl(
                 await typescriptPlugin.createOutput(inputD, "", ".js"),
               )
             }");\nconsole.info(d);\n`,

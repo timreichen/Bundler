@@ -770,7 +770,7 @@ Deno.test({
 
         assertEquals(bundle, {
           source: `const c = await fetch("${
-            path.fromFileUrl(
+            path.posix.fromFileUrl(
               await plugin.createOutput(
                 c,
                 "",

@@ -769,8 +769,15 @@ Deno.test({
         );
 
         assertEquals(bundle, {
-          source:
-            `const c = await fetch("/f9df84f7a0b9824bb18dc940904054fc57c0c656b95c21c71d6c99fae8ff1609.js");\nconsole.info(c);\n`,
+          source: `const c = await fetch("${
+            path.fromFileUrl(
+              await plugin.createOutput(
+                c,
+                "",
+                ".js",
+              ),
+            )
+          }");\nconsole.info(c);\n`,
           output: await plugin.createOutput(a, "dist", ".js"),
         });
       },

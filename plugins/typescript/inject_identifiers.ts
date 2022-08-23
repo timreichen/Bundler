@@ -592,6 +592,7 @@ export function injectIdentifiersTransformer(
                 ) {
                   let propertyName = element.propertyName;
                   let name = element.name;
+
                   if (ts.isIdentifier(name)) {
                     const text = name.text;
 
@@ -607,6 +608,7 @@ export function injectIdentifiersTransformer(
                         propertyName = ts.factory.createIdentifier(text);
                       }
                       name = ts.factory.createIdentifier(nextIdentifier);
+
                       identifierMap.set(text, nextIdentifier);
                     } else {
                       identifierMap.delete(text);
@@ -636,6 +638,17 @@ export function injectIdentifiersTransformer(
                 node,
                 elements,
               );
+            } else if (ts.isShorthandPropertyAssignment(node)) {
+              if (ts.isIdentifier(node.name)) {
+                const text = node.name.text;
+                const identifier = identifierMap.get(text) ?? text;
+                if (identifier !== text) {
+                  return ts.factory.createPropertyAssignment(
+                    node.name,
+                    ts.factory.createIdentifier(identifier),
+                  );
+                }
+              }
             } else if (ts.isPropertyAssignment(node)) {
               // prevents object key to change if it is an identifier
               if (ts.isIdentifier(node.name)) {

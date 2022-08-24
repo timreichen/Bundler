@@ -31,7 +31,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "const declaration blacklist",
+      name: "const declaration denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const a = "a", b = "b"`;
@@ -74,7 +74,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "let declaration blacklist",
+      name: "let declaration denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `let a = "a", b = "b"`;
@@ -117,7 +117,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "var declaration blacklist",
+      name: "var declaration denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `var a = "a", b = "b"`;
@@ -162,7 +162,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "array binding pattern blacklist",
+      name: "array binding pattern denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const [a] = y; console.info(a);`;
@@ -208,7 +208,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "nested array binding pattern blacklist",
+      name: "nested array binding pattern denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const [[a]] = y; console.info(a);`;
@@ -254,7 +254,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "object binding pattern blacklist",
+      name: "object binding pattern denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const { x: a } = y; console.info(a);`;
@@ -300,7 +300,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "nested object binding pattern blacklist",
+      name: "nested object binding pattern denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const { x: { a } } = y; console.info(a);`;
@@ -346,7 +346,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "nested alias object binding pattern blacklist",
+      name: "nested alias object binding pattern denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const { x: { y: a } } = z; console.info(a);`;
@@ -392,7 +392,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "dotdotdot object binding pattern blacklist",
+      name: "dotdotdot object binding pattern denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const { x, ...a } = y; console.info(a);`;
@@ -438,7 +438,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "assignment blacklist",
+      name: "assignment denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `let a = b`;
@@ -488,7 +488,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "name blacklist",
+      name: "name denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `function a() {}`;
@@ -533,7 +533,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "parameter blacklist",
+      name: "parameter denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `function x(a) { console.info(a); }`;
@@ -550,6 +550,51 @@ Deno.test({
         assertEquals(
           source,
           `function x(a1) { console.info(a1); }\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "array parameter",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `function x([a]) { console.info(a); }`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `function x([a]) { console.info(a); }\n`,
+        );
+      },
+    });
+    await t.step({
+      name: "array parameter denylist",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `function x([a]) { console.info(a); }`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `function x([a1]) { console.info(a1); }\n`,
         );
       },
     });
@@ -580,7 +625,7 @@ Deno.test({
     });
 
     await t.step({
-      name: "argument blacklist",
+      name: "argument denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText =
@@ -631,7 +676,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "parameter blacklist",
+      name: "parameter denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const fn = (a) => { return a; }`;
@@ -675,7 +720,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "nested block blacklist",
+      name: "nested block denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText =
@@ -693,6 +738,51 @@ Deno.test({
         assertEquals(
           source,
           `const fn = (a1) => { const b = (a2) => a2; return a1; };\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "array parameter",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `([a]) => { console.info(a); }`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `([a]) => { console.info(a); };\n`,
+        );
+      },
+    });
+    await t.step({
+      name: "array parameter denylist",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `([a]) => { console.info(a); }`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `([a1]) => { console.info(a1); };\n`,
         );
       },
     });
@@ -721,7 +811,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "identifier blacklist",
+      name: "identifier denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const fn = (a) => a`;
@@ -773,7 +863,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "name blacklist",
+      name: "name denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `class a {}`;
@@ -1052,7 +1142,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "parameter blacklist",
+      name: "parameter denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const x  = { x(a) { return a; } }`;
@@ -1124,7 +1214,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "parameter blacklist",
+      name: "parameter denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const x  = { get x(a) { return a; } }`;
@@ -1196,7 +1286,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "parameter blacklist",
+      name: "parameter denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const x  = { set x(a) { return a; } }`;
@@ -1269,7 +1359,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "parameter blacklist",
+      name: "parameter denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `class A { constructor(b) { this.b = b } }`;
@@ -1286,6 +1376,51 @@ Deno.test({
         assertEquals(
           source,
           `class A {\n    constructor(b1) { this.b = b1; }\n}\n`,
+        );
+      },
+    });
+
+    await t.step({
+      name: "array parameter",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `class A { constructor([b]) { this.b = b } }`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ b: "b1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `class A {\n    constructor([b]) { this.b = b; }\n}\n`,
+        );
+      },
+    });
+    await t.step({
+      name: "array parameter denylist",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText = `class A { constructor([b]) { this.b = b } }`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["b"]);
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `class A {\n    constructor([b1]) { this.b = b1; }\n}\n`,
         );
       },
     });
@@ -1348,7 +1483,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "name blacklist",
+      name: "name denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `export enum a { }`;
@@ -1851,7 +1986,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "property access parameter blacklist",
+      name: "property access parameter denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText =
@@ -1897,7 +2032,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "iife blacklist",
+      name: "iife denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `const a = "a"; ((a) => { return a; })(a)`;
@@ -1920,7 +2055,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "iife blacklist collision",
+      name: "iife denylist collision",
       fn() {
         const fileName = "a.ts";
         const sourceText =
@@ -2137,7 +2272,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "for statement blacklist",
+      name: "for statement denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `for (let a = 0; a < a; a++) { }`;
@@ -2235,7 +2370,7 @@ Deno.test({
       },
     });
     await t.step({
-      name: "export moduleSpecifier blacklist",
+      name: "export moduleSpecifier denylist",
       fn() {
         const fileName = "a.ts";
         const sourceText = `export { a }`;

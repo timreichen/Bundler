@@ -51,38 +51,39 @@ export function injectIdentifiersTransformer(
                 ),
               );
             } else if (ts.isFunctionDeclaration(node)) {
-              const newBlacklistIdentifiers = new Set(denyListIdentifiers);
+              const newDenyListIdentifiers = new Set(denyListIdentifiers);
               const newIdentifierMap = new Map(identifierMap);
               let name = node.name;
               if (name) {
                 const text = name.text;
-                if (newBlacklistIdentifiers.has(text)) {
+                if (newDenyListIdentifiers.has(text)) {
                   const nextIdentifier = createNextIdentifier(
                     text,
-                    newBlacklistIdentifiers,
+                    newDenyListIdentifiers,
                   );
-                  newBlacklistIdentifiers.add(nextIdentifier);
+                  newDenyListIdentifiers.add(nextIdentifier);
                   denyListIdentifiers.add(nextIdentifier);
                   name = ts.factory.createIdentifier(nextIdentifier);
                   newIdentifierMap.set(text, nextIdentifier);
                   identifierMap.set(text, nextIdentifier);
                 } else {
                   newIdentifierMap.delete(text);
-                  newBlacklistIdentifiers.add(text);
+                  newDenyListIdentifiers.add(text);
                   denyListIdentifiers.add(text);
                 }
               }
 
               const parameters = node.parameters.map((parameter) => {
                 let name = parameter.name;
+
                 if (ts.isIdentifier(name)) {
                   const text = name.text;
-                  if (newBlacklistIdentifiers.has(text)) {
+                  if (newDenyListIdentifiers.has(text)) {
                     const nextIdentifier = createNextIdentifier(
                       text,
-                      newBlacklistIdentifiers,
+                      newDenyListIdentifiers,
                     );
-                    newBlacklistIdentifiers.add(nextIdentifier);
+                    newDenyListIdentifiers.add(nextIdentifier);
                     name = ts.factory.createIdentifier(nextIdentifier);
                     newIdentifierMap.set(text, nextIdentifier);
 
@@ -98,15 +99,19 @@ export function injectIdentifiersTransformer(
                     );
                   } else {
                     newIdentifierMap.delete(text);
-                    newBlacklistIdentifiers.add(text);
+                    newDenyListIdentifiers.add(text);
                   }
+                  return parameter;
                 }
-                return parameter;
+                return ts.visitNode(
+                  parameter,
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
+                );
               });
               const decorators = node.decorators?.map((decorator) =>
                 ts.visitNode(
                   decorator,
-                  visitor(identifierMap, denyListIdentifiers),
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
                 )
               );
 
@@ -121,22 +126,22 @@ export function injectIdentifiersTransformer(
                 node.type,
                 ts.visitNode(
                   node.body,
-                  visitor(newIdentifierMap, newBlacklistIdentifiers),
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
                 ),
               );
             } else if (ts.isArrowFunction(node)) {
-              const newBlacklistIdentifiers = new Set(denyListIdentifiers);
+              const newDenyListIdentifiers = new Set(denyListIdentifiers);
               const newIdentifierMap = new Map(identifierMap);
               const parameters = node.parameters.map((parameter) => {
                 let name = parameter.name;
                 if (ts.isIdentifier(name)) {
                   const text = name.text;
-                  if (newBlacklistIdentifiers.has(text)) {
+                  if (newDenyListIdentifiers.has(text)) {
                     const nextIdentifier = createNextIdentifier(
                       text,
-                      newBlacklistIdentifiers,
+                      newDenyListIdentifiers,
                     );
-                    newBlacklistIdentifiers.add(nextIdentifier);
+                    newDenyListIdentifiers.add(nextIdentifier);
                     name = ts.factory.createIdentifier(nextIdentifier);
                     newIdentifierMap.set(text, nextIdentifier);
 
@@ -152,10 +157,14 @@ export function injectIdentifiersTransformer(
                     );
                   } else {
                     newIdentifierMap.delete(text);
-                    newBlacklistIdentifiers.add(text);
+                    newDenyListIdentifiers.add(text);
                   }
+                  return parameter;
                 }
-                return parameter;
+                return ts.visitNode(
+                  parameter,
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
+                );
               });
 
               let body = node.body;
@@ -174,7 +183,7 @@ export function injectIdentifiersTransformer(
                 node.equalsGreaterThanToken,
                 ts.visitNode(
                   body,
-                  visitor(newIdentifierMap, newBlacklistIdentifiers),
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
                 ),
               );
             } else if (ts.isClassDeclaration(node)) {
@@ -245,18 +254,18 @@ export function injectIdentifiersTransformer(
               const newIdentifierMap: Map<string, string> = new Map(
                 identifierMap,
               );
-              const newBlacklistIdentifiers = new Set(denyListIdentifiers);
+              const newDenyListIdentifiers = new Set(denyListIdentifiers);
 
               const parameters = node.parameters.map((parameter) => {
                 let name = parameter.name;
                 if (ts.isIdentifier(name)) {
                   const text = name.text;
-                  if (newBlacklistIdentifiers.has(text)) {
+                  if (newDenyListIdentifiers.has(text)) {
                     const nextIdentifier = createNextIdentifier(
                       text,
-                      newBlacklistIdentifiers,
+                      newDenyListIdentifiers,
                     );
-                    newBlacklistIdentifiers.add(nextIdentifier);
+                    newDenyListIdentifiers.add(nextIdentifier);
                     name = ts.factory.createIdentifier(nextIdentifier);
                     newIdentifierMap.set(text, nextIdentifier);
 
@@ -272,10 +281,14 @@ export function injectIdentifiersTransformer(
                     );
                   } else {
                     newIdentifierMap.delete(text);
-                    newBlacklistIdentifiers.add(text);
+                    newDenyListIdentifiers.add(text);
                   }
+                  return parameter;
                 }
-                return parameter;
+                return ts.visitNode(
+                  parameter,
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
+                );
               });
               const decorators = node.decorators?.map((decorator) => {
                 return ts.visitNode(
@@ -291,25 +304,25 @@ export function injectIdentifiersTransformer(
                 parameters,
                 ts.visitNode(
                   node.body,
-                  visitor(newIdentifierMap, newBlacklistIdentifiers),
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
                 ),
               );
             } else if (ts.isMethodDeclaration(node)) {
               const newIdentifierMap: Map<string, string> = new Map(
                 identifierMap,
               );
-              const newBlacklistIdentifiers = new Set(denyListIdentifiers);
+              const newDenyListIdentifiers = new Set(denyListIdentifiers);
 
               const parameters = node.parameters.map((parameter) => {
                 let name = parameter.name;
                 if (ts.isIdentifier(name)) {
                   const text = name.text;
-                  if (newBlacklistIdentifiers.has(text)) {
+                  if (newDenyListIdentifiers.has(text)) {
                     const nextIdentifier = createNextIdentifier(
                       text,
-                      newBlacklistIdentifiers,
+                      newDenyListIdentifiers,
                     );
-                    newBlacklistIdentifiers.add(nextIdentifier);
+                    newDenyListIdentifiers.add(nextIdentifier);
                     name = ts.factory.createIdentifier(nextIdentifier);
                     newIdentifierMap.set(text, nextIdentifier);
 
@@ -325,10 +338,14 @@ export function injectIdentifiersTransformer(
                     );
                   } else {
                     newIdentifierMap.delete(text);
-                    newBlacklistIdentifiers.add(text);
+                    newDenyListIdentifiers.add(text);
                   }
+                  return parameter;
                 }
-                return parameter;
+                return ts.visitNode(
+                  parameter,
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
+                );
               });
 
               const decorators = node.decorators?.map((decorator) =>
@@ -350,7 +367,7 @@ export function injectIdentifiersTransformer(
                 node.type,
                 ts.visitNode(
                   node.body,
-                  visitor(newIdentifierMap, newBlacklistIdentifiers),
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
                 ),
               );
             } else if (ts.isPropertyDeclaration(node)) {
@@ -377,18 +394,18 @@ export function injectIdentifiersTransformer(
               const newIdentifierMap: Map<string, string> = new Map(
                 identifierMap,
               );
-              const newBlacklistIdentifiers = new Set(denyListIdentifiers);
+              const newDenyListIdentifiers = new Set(denyListIdentifiers);
 
               const parameters = node.parameters.map((parameter) => {
                 let name = parameter.name;
                 if (ts.isIdentifier(name)) {
                   const text = name.text;
-                  if (newBlacklistIdentifiers.has(text)) {
+                  if (newDenyListIdentifiers.has(text)) {
                     const nextIdentifier = createNextIdentifier(
                       text,
-                      newBlacklistIdentifiers,
+                      newDenyListIdentifiers,
                     );
-                    newBlacklistIdentifiers.add(nextIdentifier);
+                    newDenyListIdentifiers.add(nextIdentifier);
                     name = ts.factory.createIdentifier(nextIdentifier);
                     newIdentifierMap.set(text, nextIdentifier);
 
@@ -404,10 +421,14 @@ export function injectIdentifiersTransformer(
                     );
                   } else {
                     newIdentifierMap.delete(text);
-                    newBlacklistIdentifiers.add(text);
+                    newDenyListIdentifiers.add(text);
                   }
+                  return parameter;
                 }
-                return parameter;
+                return ts.visitNode(
+                  parameter,
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
+                );
               });
 
               const decorators = node.decorators?.map((decorator) =>
@@ -426,25 +447,25 @@ export function injectIdentifiersTransformer(
                 node.type,
                 ts.visitNode(
                   node.body,
-                  visitor(newIdentifierMap, newBlacklistIdentifiers),
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
                 ),
               );
             } else if (ts.isSetAccessor(node)) {
               const newIdentifierMap: Map<string, string> = new Map(
                 identifierMap,
               );
-              const newBlacklistIdentifiers = new Set(denyListIdentifiers);
+              const newDenyListIdentifiers = new Set(denyListIdentifiers);
 
               const parameters = node.parameters.map((parameter) => {
                 let name = parameter.name;
                 if (ts.isIdentifier(name)) {
                   const text = name.text;
-                  if (newBlacklistIdentifiers.has(text)) {
+                  if (newDenyListIdentifiers.has(text)) {
                     const nextIdentifier = createNextIdentifier(
                       text,
-                      newBlacklistIdentifiers,
+                      newDenyListIdentifiers,
                     );
-                    newBlacklistIdentifiers.add(nextIdentifier);
+                    newDenyListIdentifiers.add(nextIdentifier);
                     name = ts.factory.createIdentifier(nextIdentifier);
                     newIdentifierMap.set(text, nextIdentifier);
 
@@ -460,10 +481,14 @@ export function injectIdentifiersTransformer(
                     );
                   } else {
                     newIdentifierMap.delete(text);
-                    newBlacklistIdentifiers.add(text);
+                    newDenyListIdentifiers.add(text);
                   }
+                  return parameter;
                 }
-                return parameter;
+                return ts.visitNode(
+                  parameter,
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
+                );
               });
               const decorators = node.decorators?.map((decorator) =>
                 ts.visitNode(
@@ -480,22 +505,22 @@ export function injectIdentifiersTransformer(
                 parameters,
                 ts.visitNode(
                   node.body,
-                  visitor(newIdentifierMap, newBlacklistIdentifiers),
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
                 ),
               );
             } else if (ts.isFunctionExpression(node)) {
-              const newBlacklistIdentifiers = new Set(denyListIdentifiers);
+              const newDenyListIdentifiers = new Set(denyListIdentifiers);
               const newIdentifierMap = new Map(identifierMap);
               const parameters = node.parameters.map((parameter) => {
                 let name = parameter.name;
                 if (ts.isIdentifier(name)) {
                   const text = name.text;
-                  if (newBlacklistIdentifiers.has(text)) {
+                  if (newDenyListIdentifiers.has(text)) {
                     const nextIdentifier = createNextIdentifier(
                       text,
-                      newBlacklistIdentifiers,
+                      newDenyListIdentifiers,
                     );
-                    newBlacklistIdentifiers.add(nextIdentifier);
+                    newDenyListIdentifiers.add(nextIdentifier);
                     name = ts.factory.createIdentifier(nextIdentifier);
                     newIdentifierMap.set(text, nextIdentifier);
 
@@ -511,10 +536,14 @@ export function injectIdentifiersTransformer(
                     );
                   } else {
                     newIdentifierMap.delete(text);
-                    newBlacklistIdentifiers.add(text);
+                    newDenyListIdentifiers.add(text);
                   }
+                  return parameter;
                 }
-                return parameter;
+                return ts.visitNode(
+                  parameter,
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
+                );
               });
               return ts.factory.updateFunctionExpression(
                 node,
@@ -526,7 +555,7 @@ export function injectIdentifiersTransformer(
                 node.type,
                 ts.visitNode(
                   node.body,
-                  visitor(newIdentifierMap, newBlacklistIdentifiers),
+                  visitor(newIdentifierMap, newDenyListIdentifiers),
                 ),
               );
             } else if (ts.isPropertyAccessExpression(node)) {

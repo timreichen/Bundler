@@ -1450,9 +1450,9 @@ Deno.test({
       name: "property access dot",
       fn() {
         const fileName = "a.ts";
-        const sourceText = `console.info(log)`;
+        const sourceText = `console.info(info)`;
         const identifierMap: Map<string, string> = new Map(
-          Object.entries({ log: "log1" }),
+          Object.entries({ info: "info1" }),
         );
         const denyListIdentifiers: Set<string> = new Set();
         const source = injectIdentifiers(
@@ -1465,7 +1465,7 @@ Deno.test({
 
         assertEquals(
           source,
-          `console.info(log1);\n`,
+          `console.info(info1);\n`,
         );
       },
     });
@@ -2252,6 +2252,58 @@ Deno.test({
         assertEquals(
           source,
           `export { a };\n`,
+        );
+      },
+    });
+  },
+});
+
+Deno.test({
+  name: "block",
+  async fn(t) {
+    await t.step({
+      name: "block identifier conflict",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText =
+          `const a = 0; { const a = 1; console.info(a); } console.info(a)`;
+        const identifierMap: Map<string, string> = new Map(
+          Object.entries({ a: "a1" }),
+        );
+        const denyListIdentifiers: Set<string> = new Set();
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const a = 0;\n{\n    const a1 = 1;\n    console.info(a1);\n}\nconsole.info(a);\n`,
+        );
+      },
+    });
+    await t.step({
+      name: "block identifier conflict blacklist",
+      fn() {
+        const fileName = "a.ts";
+        const sourceText =
+          `const a = 0; { const a = 1; console.info(a); } console.info(a)`;
+        const identifierMap: Map<string, string> = new Map();
+        const denyListIdentifiers: Set<string> = new Set(["a"]);
+        const source = injectIdentifiers(
+          fileName,
+          sourceText,
+          identifierMap,
+          denyListIdentifiers,
+          compilerOptions,
+        );
+
+        assertEquals(
+          source,
+          `const a1 = 0;\n{\n    const a2 = 1;\n    console.info(a2);\n}\nconsole.info(a1);\n`,
         );
       },
     });

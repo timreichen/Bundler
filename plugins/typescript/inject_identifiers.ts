@@ -690,6 +690,14 @@ export function injectIdentifiersTransformer(
                   ),
                 );
               }
+            } else if (ts.isBlock(node)) {
+              const newIdentifierMap = new Map(identifierMap);
+              const newDenyListIdentifiers = new Set(denyListIdentifiers);
+              return ts.visitEachChild(
+                node,
+                visitor(newIdentifierMap, newDenyListIdentifiers),
+                context,
+              );
             } else if (ts.isIdentifier(node)) {
               const text = node.text;
               const identifier = identifierMap.get(text) ?? text;

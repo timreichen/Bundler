@@ -117,11 +117,13 @@ export async function visitNodes<T extends posthtml.Node[]>(
   nodes: T,
   visitor: Visitor,
 ): Promise<T> {
-  const newNodes: posthtml.NodeTag[] = [];
+  const newNodes: posthtml.Node[] = [];
   for (const node of nodes) {
     if (isNodeTag(node)) {
       const newNode = await visitNode(node, visitor);
       if (newNode) newNodes.push(newNode);
+    } else {
+      newNodes.push(node);
     }
   }
   return newNodes as T;

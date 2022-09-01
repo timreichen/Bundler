@@ -89,7 +89,6 @@ export function injectIdentifiersTransformer(
 
                     parameter = ts.factory.updateParameterDeclaration(
                       parameter,
-                      parameter.decorators,
                       parameter.modifiers,
                       parameter.dotDotDotToken,
                       name,
@@ -108,17 +107,16 @@ export function injectIdentifiersTransformer(
                   visitor(newIdentifierMap, newDenyListIdentifiers),
                 );
               });
-              const decorators = node.decorators?.map((decorator) =>
+              const modifiers = node.modifiers?.map((modifier) =>
                 ts.visitNode(
-                  decorator,
-                  visitor(newIdentifierMap, newDenyListIdentifiers),
+                  modifier,
+                  visitor(identifierMap, denyListIdentifiers),
                 )
               );
 
               return ts.factory.updateFunctionDeclaration(
                 node,
-                decorators,
-                node.modifiers,
+                modifiers,
                 node.asteriskToken,
                 name,
                 node.typeParameters,
@@ -147,7 +145,6 @@ export function injectIdentifiersTransformer(
 
                     parameter = ts.factory.updateParameterDeclaration(
                       parameter,
-                      parameter.decorators,
                       parameter.modifiers,
                       parameter.dotDotDotToken,
                       name,
@@ -204,17 +201,16 @@ export function injectIdentifiersTransformer(
                 }
               }
 
-              const decorators = node.decorators?.map((decorator) =>
+              const modifiers = node.modifiers?.map((modifier) =>
                 ts.visitNode(
-                  decorator,
+                  modifier,
                   visitor(identifierMap, denyListIdentifiers),
                 )
               );
 
               node = ts.factory.updateClassDeclaration(
                 node,
-                decorators,
-                node.modifiers,
+                modifiers,
                 name,
                 node.typeParameters,
                 node.heritageClauses,
@@ -237,16 +233,15 @@ export function injectIdentifiersTransformer(
                   denyListIdentifiers.add(text);
                 }
               }
-              const decorators = node.decorators?.map((decorator) =>
+              const modifiers = node.modifiers?.map((modifier) =>
                 ts.visitNode(
-                  decorator,
+                  modifier,
                   visitor(identifierMap, denyListIdentifiers),
                 )
               );
               node = ts.factory.updateEnumDeclaration(
                 node,
-                decorators,
-                node.modifiers,
+                modifiers,
                 name,
                 node.members,
               );
@@ -271,7 +266,6 @@ export function injectIdentifiersTransformer(
 
                     parameter = ts.factory.updateParameterDeclaration(
                       parameter,
-                      parameter.decorators,
                       parameter.modifiers,
                       parameter.dotDotDotToken,
                       name,
@@ -290,17 +284,16 @@ export function injectIdentifiersTransformer(
                   visitor(newIdentifierMap, newDenyListIdentifiers),
                 );
               });
-              const decorators = node.decorators?.map((decorator) => {
+              const modifiers = node.modifiers?.map((modifier) => {
                 return ts.visitNode(
-                  decorator,
+                  modifier,
                   visitor(identifierMap, denyListIdentifiers),
                 );
               });
 
               return ts.factory.updateConstructorDeclaration(
                 node,
-                decorators,
-                node.modifiers,
+                modifiers,
                 parameters,
                 ts.visitNode(
                   node.body,
@@ -328,7 +321,6 @@ export function injectIdentifiersTransformer(
 
                     parameter = ts.factory.updateParameterDeclaration(
                       parameter,
-                      parameter.decorators,
                       parameter.modifiers,
                       parameter.dotDotDotToken,
                       name,
@@ -348,17 +340,16 @@ export function injectIdentifiersTransformer(
                 );
               });
 
-              const decorators = node.decorators?.map((decorator) =>
+              const modifiers = node.modifiers?.map((modifier) =>
                 ts.visitNode(
-                  decorator,
+                  modifier,
                   visitor(identifierMap, denyListIdentifiers),
                 )
               );
 
               return ts.factory.updateMethodDeclaration(
                 node,
-                decorators,
-                node.modifiers,
+                modifiers,
                 node.asteriskToken,
                 node.name,
                 node.questionToken,
@@ -371,17 +362,16 @@ export function injectIdentifiersTransformer(
                 ),
               );
             } else if (ts.isPropertyDeclaration(node)) {
-              const decorators = node.decorators?.map((decorator) =>
+              const modifiers = node.modifiers?.map((modifier) =>
                 ts.visitNode(
-                  decorator,
+                  modifier,
                   visitor(identifierMap, denyListIdentifiers),
                 )
               );
 
               return ts.factory.updatePropertyDeclaration(
                 node,
-                decorators,
-                node.modifiers,
+                modifiers,
                 node.name,
                 node.questionToken,
                 node.type,
@@ -411,7 +401,6 @@ export function injectIdentifiersTransformer(
 
                     parameter = ts.factory.updateParameterDeclaration(
                       parameter,
-                      parameter.decorators,
                       parameter.modifiers,
                       parameter.dotDotDotToken,
                       name,
@@ -431,17 +420,16 @@ export function injectIdentifiersTransformer(
                 );
               });
 
-              const decorators = node.decorators?.map((decorator) =>
+              const modifiers = node.modifiers?.map((modifier) =>
                 ts.visitNode(
-                  decorator,
+                  modifier,
                   visitor(identifierMap, denyListIdentifiers),
                 )
               );
 
               return ts.factory.updateGetAccessorDeclaration(
                 node,
-                decorators,
-                node.modifiers,
+                modifiers,
                 node.name,
                 parameters,
                 node.type,
@@ -471,7 +459,6 @@ export function injectIdentifiersTransformer(
 
                     parameter = ts.factory.updateParameterDeclaration(
                       parameter,
-                      parameter.decorators,
                       parameter.modifiers,
                       parameter.dotDotDotToken,
                       name,
@@ -490,17 +477,16 @@ export function injectIdentifiersTransformer(
                   visitor(newIdentifierMap, newDenyListIdentifiers),
                 );
               });
-              const decorators = node.decorators?.map((decorator) =>
+              const modifiers = node.modifiers?.map((modifier) =>
                 ts.visitNode(
-                  decorator,
+                  modifier,
                   visitor(identifierMap, denyListIdentifiers),
                 )
               );
 
               return ts.factory.updateSetAccessorDeclaration(
                 node,
-                decorators,
-                node.modifiers,
+                modifiers,
                 node.name,
                 parameters,
                 ts.visitNode(
@@ -526,7 +512,6 @@ export function injectIdentifiersTransformer(
 
                     parameter = ts.factory.updateParameterDeclaration(
                       parameter,
-                      parameter.decorators,
                       parameter.modifiers,
                       parameter.dotDotDotToken,
                       name,

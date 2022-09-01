@@ -2,21 +2,19 @@ import { ts } from "../../deps.ts";
 import { createNextIdentifier } from "./_util.ts";
 
 function hasNodeModifier(
-  modifiers: ts.ModifiersArray,
+  modifiers: ts.NodeArray<ts.ModifierLike>,
   modifier: ts.SyntaxKind,
 ) {
-  return modifiers.find((moduleSpecifier: ts.Modifier) =>
+  return modifiers.find((moduleSpecifier: ts.ModifierLike) =>
     moduleSpecifier.kind === modifier
   );
 }
 function removeNodeModifiers(
-  modifiers: ts.ModifiersArray,
+  modifiers: ts.NodeArray<ts.Modifier>,
   removeModifiers: ts.SyntaxKind[],
-): ts.NodeArray<ts.Modifier> {
-  return ts.factory.createNodeArray(
-    modifiers?.filter((moduleSpecifier: ts.Modifier) =>
-      !removeModifiers.includes(moduleSpecifier.kind)
-    ),
+): ts.Modifier[] {
+  return modifiers?.filter((moduleSpecifier: ts.Modifier) =>
+    !removeModifiers.includes(moduleSpecifier.kind)
   );
 }
 
@@ -186,7 +184,6 @@ export function removeModifiersTransformer(
           exportMap[name] = node.name.text;
           node = ts.factory.updateFunctionDeclaration(
             node,
-            node.decorators,
             removeNodeModifiers(node.modifiers, [
               ts.SyntaxKind.ExportKeyword,
               ts.SyntaxKind.DefaultKeyword,
@@ -212,11 +209,13 @@ export function removeModifiersTransformer(
           exportMap[name] = node.name.text;
           node = ts.factory.updateClassDeclaration(
             node,
-            node.decorators,
-            removeNodeModifiers(node.modifiers, [
-              ts.SyntaxKind.ExportKeyword,
-              ts.SyntaxKind.DefaultKeyword,
-            ]),
+            removeNodeModifiers(
+              ts.factory.createNodeArray(ts.getModifiers(node)),
+              [
+                ts.SyntaxKind.ExportKeyword,
+                ts.SyntaxKind.DefaultKeyword,
+              ],
+            ),
             node.name,
             node.typeParameters,
             node.heritageClauses,
@@ -230,7 +229,6 @@ export function removeModifiersTransformer(
         exportMap[node.name.text] = node.name.text;
         node = ts.factory.updateEnumDeclaration(
           node,
-          node.decorators,
           removeNodeModifiers(node.modifiers, [
             ts.SyntaxKind.ExportKeyword,
           ]),
@@ -244,7 +242,6 @@ export function removeModifiersTransformer(
         exportMap[node.name.text] = node.name.text;
         node = ts.factory.updateInterfaceDeclaration(
           node,
-          node.decorators,
           removeNodeModifiers(node.modifiers, [
             ts.SyntaxKind.ExportKeyword,
           ]),
@@ -260,7 +257,6 @@ export function removeModifiersTransformer(
         exportMap[node.name.text] = node.name.text;
         node = ts.factory.updateTypeAliasDeclaration(
           node,
-          node.decorators,
           removeNodeModifiers(node.modifiers, [
             ts.SyntaxKind.ExportKeyword,
           ]),

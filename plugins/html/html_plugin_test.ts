@@ -265,5 +265,38 @@ Deno.test({
         });
       },
     });
+    await t.step({
+      name: "doctype",
+      async fn() {
+        const a = path.toFileUrl(
+          path.join(testdataDir, "html/doctype/index.html"),
+        ).href;
+
+        const bundler = new Bundler({ plugins: [plugin], quiet: true });
+        const asset = await plugin.createAsset(
+          a,
+          DependencyType.ImportExport,
+          bundler,
+        );
+        const chunkAssets: Set<Asset> = new Set();
+        const chunk = await plugin.createChunk(asset, chunkAssets, undefined, {
+          root: "dist",
+        });
+        const { input, type, format } = chunk.item;
+        const ast = await bundler.createSource(input, type, format);
+
+        const bundle = await plugin.createBundle(
+          chunk,
+          ast,
+          bundler,
+          { root: "dist" },
+        );
+        assertEquals(bundle, {
+          output: await plugin.createOutput(a, "dist", ".html"),
+          source:
+            `<!DOCTYPE html>\n\n<html>\n  <head>\n  </head>\n  <body>\n  </body>\n</html>`,
+        });
+      },
+    });
   },
 });

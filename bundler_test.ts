@@ -932,9 +932,10 @@ Deno.test({
 
         assertEquals(bundles[0], {
           output: output,
-          source: `<html>\n  <head>\n    <link rel="manifest" href="/${
-            path.relative(path.dirname(output), manifestOutput)
-          }">\n  </head>\n  <body>\n  </body>\n</html>`,
+          source:
+            `<!DOCTYPE html><html><head>\n    <link rel="manifest" href="/${
+              path.relative(path.dirname(output), manifestOutput)
+            }">\n  </head>\n  <body>\n  \n</body></html>`,
         });
 
         const imageOutput1 = await filePlugin

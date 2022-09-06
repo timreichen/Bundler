@@ -19,8 +19,6 @@ export * as postcss from "https://esm.sh/postcss";
 export { default as postcssValueParser } from "https://esm.sh/postcss-value-parser";
 export { default as postcssPresetEnv } from "https://esm.sh/postcss-preset-env";
 
-export * as posthtml from "https://esm.sh/posthtml-parser";
-export { parser as posthtmlParser } from "https://esm.sh/posthtml-parser";
-export { render as posthtmlRender } from "https://esm.sh/posthtml-render";
+export * as html from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 
 export * as mediaTypes from "https://deno.land/std@0.152.0/media_types/mod.ts";

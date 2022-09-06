@@ -1,4 +1,4 @@
-import { ImportMap, posthtml } from "../../deps.ts";
+import { html, ImportMap } from "../../deps.ts";
 import { isURL } from "../../_util.ts";
 import * as typescript from "../typescript/mod.ts";
 import * as css from "../css/mod.ts";
@@ -7,7 +7,7 @@ import {
   getBase,
   resolveBase,
   visitEachChild,
-  visitNodes,
+  visitNode,
   Visitor,
 } from "./_util.ts";
 import { Bundler } from "../../bundler.ts";
@@ -15,7 +15,7 @@ import { createRelativeOutput, getChunk, resolveDependency } from "../_util.ts";
 
 export async function injectDependencies(
   input: string,
-  ast: posthtml.Node[],
+  element: html.Element,
   dependencyItems: Item[],
   chunks: Chunk[],
   bundler: Bundler,
@@ -24,43 +24,37 @@ export async function injectDependencies(
     importMap?: ImportMap;
   },
 ) {
-  // avoid original ast mutations
-  ast = structuredClone(ast);
-
-  const base = getBase(ast);
+  const base = getBase(element);
 
   let i = 0;
 
-  const visitor: Visitor = async (node) => {
-    const attrs = node.attrs;
-    const style = attrs?.style;
-    if (attrs) {
-      if (style != null) {
-        const ast = css.parse(String(style));
-        const dependencyInput = `${input}.${i++}.css`;
-        const inlineItem = {
-          input: dependencyInput,
-          type: DependencyType.ImportExport,
-          format: DependencyFormat.Style,
-        };
+  const visitor: Visitor = async (element) => {
+    const style = element.getAttribute("style");
+    if (style) {
+      const ast = css.parse(String(style));
+      const dependencyInput = `${input}.${i++}.css`;
+      const inlineItem = {
+        input: dependencyInput,
+        type: DependencyType.ImportExport,
+        format: DependencyFormat.Style,
+      };
 
-        const bundle = await bundler.createBundle(
-          {
-            item: inlineItem,
-            dependencyItems,
-            output: "inline",
-          },
-          ast,
-          bundler,
-          { chunks, root, importMap },
-        );
-        attrs.style = bundle.source;
-      }
+      const bundle = await bundler.createBundle(
+        {
+          item: inlineItem,
+          dependencyItems,
+          output: "inline",
+        },
+        ast,
+        bundler,
+        { chunks, root, importMap },
+      );
+      element.setAttribute("style", bundle.source);
     }
 
-    switch (node.tag) {
+    switch (element.tagName.toLowerCase()) {
       case "script": {
-        let src = node.attrs?.src;
+        let src = element.getAttribute("src");
         if (src) {
           src = resolveBase(String(src), base);
           if (!isURL(src)) src = resolveDependency(input, src, importMap);
@@ -72,36 +66,32 @@ export async function injectDependencies(
           );
           if (!root.endsWith("/")) root = `${root}/`;
 
-          const attrs = node.attrs as Record<string, string>;
-          attrs.src = createRelativeOutput(chunk.output, root);
-        } else if (Array.isArray(node.content)) {
-          const content = node.content[0];
-          if (content != null) {
-            const ast = typescript.parse(content.toString());
-            const dependencyInput = `${input}.${i++}.ts`;
-            const inlineItem = {
-              input: dependencyInput,
-              type: DependencyType.ImportExport,
-              format: DependencyFormat.Script,
-            };
-            const bundle = await bundler.createBundle(
-              {
-                item: inlineItem,
-                dependencyItems,
-                output: "inline",
-              },
-              ast,
-              bundler,
-              { chunks, root, importMap },
-            );
+          element.setAttribute("src", createRelativeOutput(chunk.output, root));
+        } else if (element.textContent) {
+          const ast = typescript.parse(element.textContent);
+          const dependencyInput = `${input}.${i++}.ts`;
+          const inlineItem = {
+            input: dependencyInput,
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Script,
+          };
+          const bundle = await bundler.createBundle(
+            {
+              item: inlineItem,
+              dependencyItems,
+              output: "inline",
+            },
+            ast,
+            bundler,
+            { chunks, root, importMap },
+          );
 
-            node.content[0] = bundle.source;
-          }
+          element.textContent = bundle.source;
         }
         break;
       }
       case "video": {
-        let poster = node.attrs?.poster;
+        let poster = element.getAttribute("poster");
         if (poster) {
           poster = resolveBase(String(poster), base);
           if (!isURL(poster)) {
@@ -114,14 +104,16 @@ export async function injectDependencies(
             DependencyFormat.Binary,
           );
 
-          const attrs = node.attrs as Record<string, string>;
-          attrs.poster = createRelativeOutput(chunk.output, root);
+          element.setAttribute(
+            "poster",
+            createRelativeOutput(chunk.output, root),
+          );
         }
         break;
       }
       case "img":
       case "source": {
-        let src = node.attrs?.src;
+        let src = element.getAttribute("src");
         if (src) {
           src = resolveBase(String(src), base);
           if (!isURL(src)) src = resolveDependency(input, src, importMap);
@@ -132,10 +124,9 @@ export async function injectDependencies(
             DependencyFormat.Binary,
           );
 
-          const attrs = node.attrs as Record<string, string>;
-          attrs.src = createRelativeOutput(chunk.output, root);
+          element.setAttribute("src", createRelativeOutput(chunk.output, root));
         }
-        const srcset = node.attrs?.srcset;
+        const srcset = element.getAttribute("srcset");
         if (srcset) {
           const set = String(srcset).split(",");
           const string = set.map((string) => {
@@ -150,20 +141,18 @@ export async function injectDependencies(
             return [createRelativeOutput(chunk.output, root), ...fragments]
               .join(" ");
           }).join(", ");
-          const attrs = node.attrs as Record<string, string>;
-          attrs.srcset = string;
+          element.setAttribute("srcset", string);
         }
-
         break;
       }
       case "link": {
-        let href = node.attrs?.href;
+        let href = element.getAttribute("href");
         if (href) {
           href = resolveBase(String(href), base);
           if (!isURL(href)) {
             href = resolveDependency(input, href, importMap);
           }
-          const rel = node.attrs?.rel;
+          const rel = element.getAttribute("rel");
           let type = DependencyType.ImportExport;
           let format = DependencyFormat.Binary;
           switch (rel) {
@@ -190,42 +179,42 @@ export async function injectDependencies(
             type,
             format,
           );
-          const attrs = node.attrs as Record<string, string>;
-          attrs.href = createRelativeOutput(chunk.output, root);
+          element.setAttribute(
+            "href",
+            createRelativeOutput(chunk.output, root),
+          );
         }
         break;
       }
       case "style": {
-        if (Array.isArray(node.content)) {
-          const content = node.content?.[0];
-          if (content != null) {
-            const ast = css.parse(content.toString());
+        if (element.textContent) {
+          const ast = css.parse(element.textContent);
 
-            const dependencyInput = `${input}.${i++}.css`;
-            const inlineItem = {
-              input: dependencyInput,
-              type: DependencyType.ImportExport,
-              format: DependencyFormat.Style,
-            };
+          const dependencyInput = `${input}.${i++}.css`;
+          const inlineItem = {
+            input: dependencyInput,
+            type: DependencyType.ImportExport,
+            format: DependencyFormat.Style,
+          };
 
-            const bundle = await bundler.createBundle(
-              {
-                item: inlineItem,
-                dependencyItems,
-                output: "inline",
-              },
-              ast,
-              bundler,
-              { chunks, root, importMap },
-            );
-            node.content[0] = bundle.source;
-          }
+          const bundle = await bundler.createBundle(
+            {
+              item: inlineItem,
+              dependencyItems,
+              output: "inline",
+            },
+            ast,
+            bundler,
+            { chunks, root, importMap },
+          );
+          element.textContent = bundle.source;
         }
+        break;
       }
     }
 
-    return await visitEachChild(node, visitor);
+    return await visitEachChild(element, visitor);
   };
 
-  return await visitNodes(ast, visitor);
+  return await visitNode(element, visitor);
 }

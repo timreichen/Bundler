@@ -1,4 +1,4 @@
-import { ImportMap, posthtml } from "../../deps.ts";
+import { html, ImportMap } from "../../deps.ts";
 import { isURL } from "../../_util.ts";
 import {
   DependencyFormat,
@@ -10,7 +10,7 @@ import {
   getBase,
   resolveBase,
   visitEachChild,
-  visitNodes,
+  visitNode,
   Visitor,
 } from "./_util.ts";
 import * as css from "../css/mod.ts";
@@ -18,32 +18,29 @@ import * as typescript from "../typescript/mod.ts";
 
 export async function extractDependencies(
   input: string,
-  ast: posthtml.Node[],
+  element: html.Element,
   { importMap }: { importMap?: ImportMap } = {},
 ) {
-  const base = getBase(ast);
+  const base = getBase(element);
   const dependencies: Item[] = [];
 
-  const visitor: Visitor = async (node) => {
-    const attrs = node.attrs;
+  const visitor: Visitor = async (element) => {
+    const style = element.getAttribute("style");
 
-    if (attrs) {
-      const style = attrs.style;
-      if (style != null) {
-        const ast = css.parse(String(style));
-        dependencies.push(
-          ...await css.extractDependencies(
-            input,
-            ast,
-            { importMap },
-          ),
-        );
-      }
+    if (style) {
+      const document = css.parse(style);
+      dependencies.push(
+        ...await css.extractDependencies(
+          input,
+          document,
+          { importMap },
+        ),
+      );
     }
 
-    switch (node.tag) {
+    switch (element.tagName.toLowerCase()) {
       case "script": {
-        let src = node.attrs?.src;
+        let src = element.getAttribute("src");
         if (src) {
           src = resolveBase(String(src), base);
 
@@ -55,18 +52,18 @@ export async function extractDependencies(
             type: DependencyType.ImportExport,
             format: DependencyFormat.Script,
           });
-        } else if (node.content) {
-          const content =
-            (Array.isArray(node.content) ? node.content : [node.content])[0];
-          const ast = typescript.parse(content.toString());
+        } else if (element.textContent) {
+          const document = typescript.parse(element.textContent);
           dependencies.push(
-            ...await typescript.extractDependencies(input, ast, { importMap }),
+            ...await typescript.extractDependencies(input, document, {
+              importMap,
+            }),
           );
         }
         break;
       }
       case "video": {
-        let poster = node.attrs?.poster;
+        let poster = element.getAttribute("poster");
         if (poster) {
           poster = resolveBase(String(poster), base);
           if (!isURL(poster)) {
@@ -82,7 +79,7 @@ export async function extractDependencies(
       }
       case "img":
       case "source": {
-        let src = node.attrs?.src;
+        let src = element.getAttribute("src");
         if (src) {
           src = resolveBase(String(src), base);
           if (!isURL(src)) {
@@ -94,7 +91,7 @@ export async function extractDependencies(
             format: DependencyFormat.Binary,
           });
         }
-        const srcset = node.attrs?.srcset;
+        const srcset = element.getAttribute("srcset");
         if (srcset) {
           const set = String(srcset).split(",");
           const srcs = set.map((string) => string.trim().split(/\s+/)[0]);
@@ -112,10 +109,10 @@ export async function extractDependencies(
         break;
       }
       case "link": {
-        let href = node.attrs?.href;
+        let href = element.getAttribute("href");
         if (href) {
           href = resolveBase(String(href), String(base));
-          const rel = node.attrs?.rel;
+          const rel = element.getAttribute("rel");
           let type = DependencyType.ImportExport;
           let format = DependencyFormat.Binary;
           switch (rel) {
@@ -149,22 +146,20 @@ export async function extractDependencies(
       }
       case "style":
         {
-          if (node.content) {
-            const content =
-              (Array.isArray(node.content) ? node.content : [node.content])[0];
-            const ast = css.parse(content.toString());
+          if (element.textContent) {
+            const document = css.parse(element.textContent);
             dependencies.push(
-              ...await css.extractDependencies(input, ast, { importMap }),
+              ...await css.extractDependencies(input, document, { importMap }),
             );
           }
         }
         break;
     }
 
-    return await visitEachChild(node, visitor);
+    return await visitEachChild(element, visitor);
   };
 
-  await visitNodes(ast, visitor);
+  await visitNode(element, visitor);
 
   return dependencies;
 }

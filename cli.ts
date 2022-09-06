@@ -44,6 +44,20 @@ import { CacheMap } from "./plugins/cache_map.ts";
 import { BundleOptions } from "./bundler.ts";
 import { LiveReloadServer } from "./live_reload_server.ts";
 
+function parseLogLevel(logLevelString: string) {
+  switch (logLevelString) {
+    case "info": {
+      return Logger.logLevels.info;
+    }
+    case "debug": {
+      return Logger.logLevels.debug;
+    }
+    default: {
+      throw Error(`log level not supported: ${logLevelString}`);
+    }
+  }
+}
+
 function parseBundleArgs(args: flags.Args) {
   const {
     _,
@@ -57,30 +71,9 @@ function parseBundleArgs(args: flags.Args) {
     config,
   } = args;
 
-  if (reload) {
-    if (reload && Array.isArray(reload)) {
-      // reload = reload.map((filePath) =>
-      //   filePath = new URL(path.resolve(Deno.cwd(), filePath), "file://").href
-      // );
-    }
-  }
   const root = isFileURL(dist) ? dist : path.resolve(Deno.cwd(), dist);
   const { inputs, outputMap } = parsePaths(_, root);
-
-  let logLevel;
-  switch (logLevelString) {
-    case "info": {
-      logLevel = Logger.logLevels.info;
-      break;
-    }
-    case "debug": {
-      logLevel = Logger.logLevels.debug;
-      break;
-    }
-    default: {
-      throw Error(`log level not supported: ${logLevelString}`);
-    }
-  }
+  const logLevel = parseLogLevel(logLevelString);
 
   return {
     inputs,
@@ -93,6 +86,38 @@ function parseBundleArgs(args: flags.Args) {
     reload,
     importMapPath,
     config,
+  };
+}
+function parseServeArgs(args: flags.Args) {
+  const {
+    _,
+    quiet = false,
+    "log-level": logLevelString = "info",
+    "out-dir": dist = "dist",
+    optimize = false,
+    watch = false,
+    reload = false,
+    "import-map": importMapPath,
+    config,
+    port = 8080,
+  } = args;
+
+  const root = isFileURL(dist) ? dist : path.resolve(Deno.cwd(), dist);
+  const { inputs, outputMap } = parsePaths(_, root);
+  const logLevel = parseLogLevel(logLevelString);
+
+  return {
+    inputs,
+    outputMap,
+    logLevel,
+    quiet,
+    root,
+    optimize,
+    watch,
+    reload,
+    importMapPath,
+    config,
+    port,
   };
 }
 
@@ -600,7 +625,8 @@ const program: Program = {
           reload,
           importMapPath,
           config,
-        } = parseBundleArgs(args);
+          port,
+        } = parseServeArgs(args);
 
         const { compilerOptions, importMap } = await getOptions(
           config,
@@ -629,8 +655,6 @@ const program: Program = {
         const liveReloadPort = 35729;
         const liveReloadServer = new LiveReloadServer();
         liveReloadServer.serve(liveReloadPort);
-
-        const port = 8080;
 
         const server = Deno.listen({ port });
 

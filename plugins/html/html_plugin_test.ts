@@ -61,7 +61,7 @@ Deno.test({
           stringify(
             await plugin.createSource(asset.input),
           ),
-          `<html>\n  <head>\n    <script src="index.ts"></script>\n  </head>\n  <body>\n  </body>\n</html>`,
+          `<!DOCTYPE html><html><head>\n    <script src="index.ts"></script>\n  </head>\n  <body>\n  \n</body></html>`,
         );
         assertEquals(asset, {
           input: a,
@@ -99,7 +99,7 @@ Deno.test({
           stringify(
             await plugin.createSource(asset.input),
           ),
-          `<html>\n  <head>\n    <link rel="stylesheet" href="style.css">\n  </head>\n  <body>\n  </body>\n</html>`,
+          `<!DOCTYPE html><html><head>\n    <link rel="stylesheet" href="style.css">\n  </head>\n  <body>\n  \n</body></html>`,
         );
         assertEquals(asset, {
           input: a,
@@ -224,10 +224,11 @@ Deno.test({
           bundler,
           { chunks: [chunkB], root: "dist" },
         );
+
         assertEquals(bundle, {
           output: await plugin.createOutput(a, "dist", ".html"),
           source:
-            `<html>\n  <head>\n    <script src="/index.js"></script>\n  </head>\n  <body>\n  </body>\n</html>`,
+            `<!DOCTYPE html><html><head>\n    <script src="/index.js"></script>\n  </head>\n  <body>\n  \n</body></html>`,
         });
       },
     });
@@ -260,7 +261,7 @@ Deno.test({
         assertEquals(bundle, {
           output: await plugin.createOutput(a, "dist", ".html"),
           source:
-            `<!DOCTYPE html>\n\n<html>\n  <head>\n  </head>\n  <body>\n  </body>\n</html>`,
+            `<!DOCTYPE html><html><head>\n  </head>\n  <body>\n  \n</body></html>`,
         });
       },
     });

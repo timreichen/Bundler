@@ -50,7 +50,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><body><img src="/b.png"></body></html>`,
+      `<!DOCTYPE html><html><head></head><body><img src="/b.png"></body></html>`,
     );
   },
 });
@@ -99,7 +99,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><head><base href="src/path/"></head><body><img src="/b.png"></body></html>`,
+      `<!DOCTYPE html><html><head><base href="src/path/"></head><body><img src="/b.png"></body></html>`,
     );
   },
 });
@@ -147,7 +147,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><head><base href="src/"></head><body><img src="/b.png"></body></html>`,
+      `<!DOCTYPE html><html><head><base href="src/"></head><body><img src="/b.png"></body></html>`,
     );
   },
 });
@@ -205,7 +205,7 @@ Deno.test({
         );
         assertEquals(
           stringify(result),
-          `<html><head><img src="/output.png"></head></html>`,
+          `<!DOCTYPE html><html><head></head><body><img src="/output.png"></body></html>`,
         );
       },
     });
@@ -215,7 +215,7 @@ Deno.test({
       async fn() {
         const input = "/src/a.html";
         const root = "dist";
-        const source = `<html><head><img srcset="b.png"></head></html>`;
+        const source = `<html><body><img srcset="b.png"></body></html>`;
         const ast = parse(source);
         const chunks: Chunk[] = [
           {
@@ -258,9 +258,10 @@ Deno.test({
           bundler,
           { root },
         );
+
         assertEquals(
           stringify(result),
-          `<html><head><img srcset="/output.png"></head></html>`,
+          `<!DOCTYPE html><html><head></head><body><img srcset="/output.png"></body></html>`,
         );
       },
     });
@@ -271,7 +272,7 @@ Deno.test({
         const input = "/src/a.html";
         const root = "dist";
         const source =
-          `<html><head><img srcset=" b.png 480w, c.png 800w "></head></html>`;
+          `<!DOCTYPE html><html><body><img srcset=" b.png 480w, c.png 800w "></body><body></body></html>`;
         const ast = parse(source);
         const chunks: Chunk[] = [
           {
@@ -331,7 +332,7 @@ Deno.test({
 
         assertEquals(
           stringify(result),
-          `<html><head><img srcset="/outputB.png 480w, /outputC.png 800w"></head></html>`,
+          `<!DOCTYPE html><html><head></head><body><img srcset="/outputB.png 480w, /outputC.png 800w"></body></html>`,
         );
       },
     });
@@ -347,7 +348,7 @@ Deno.test({
         const input = "/src/a.html";
         const root = "dist";
         const source =
-          `<html><head><video poster="b.png"></video></head></html>`;
+          `<!DOCTYPE html><html><head><video poster="b.png"></video></head><body></body></html>`;
         const ast = parse(source);
         const chunks: Chunk[] = [
           {
@@ -390,9 +391,10 @@ Deno.test({
           bundler,
           { root },
         );
+
         assertEquals(
           stringify(result),
-          `<html><head><video poster="/output.png"></video></head></html>`,
+          `<!DOCTYPE html><html><head></head><body><video poster="/output.png"></video></body></html>`,
         );
       },
     });
@@ -438,7 +440,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><head><link rel="stylesheet" href="/b.css"></head></html>`,
+      `<!DOCTYPE html><html><head><link rel="stylesheet" href="/b.css"></head><body></body></html>`,
     );
   },
 });
@@ -482,7 +484,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><head><link rel="manifest" href="/webmanifest.json"></head></html>`,
+      `<!DOCTYPE html><html><head><link rel="manifest" href="/webmanifest.json"></head><body></body></html>`,
     );
   },
 });
@@ -525,7 +527,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><body><script src="/b.js"></script></body></html>`,
+      `<!DOCTYPE html><html><head></head><body><script src="/b.js"></script></body></html>`,
     );
   },
 });
@@ -560,7 +562,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><body><script>console.info("ok");\n</script></body></html>`,
+      `<!DOCTYPE html><html><head></head><body><script>console.info("ok");\n</script></body></html>`,
     );
   },
 });
@@ -607,7 +609,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><body><script type="module">import { b } from "/b.js";\nconsole.info(b);\n</script></body></html>`,
+      `<!DOCTYPE html><html><head></head><body><script type="module">import { b } from "/b.js";\nconsole.info(b);\n</script></body></html>`,
     );
   },
 });
@@ -657,7 +659,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><body><script type="module">const b = "b";\nconsole.info(b);\n</script></body></html>`,
+      `<!DOCTYPE html><html><head></head><body><script type="module">const b = "b";\nconsole.info(b);\n</script></body></html>`,
     );
   },
 });
@@ -666,7 +668,7 @@ Deno.test({
   name: "style",
   async fn() {
     const input = "/src/a.html";
-    const source = `<html><head><style>@import "b.css";</style></head></html>`;
+    const source = `<html><body><style>@import "b.css";</style></body></html>`;
     const ast = parse(source);
     const root = "dist";
     const inputB = "file:///src/b.css";
@@ -700,7 +702,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><head><style>@import "/output.css";</style></head></html>`,
+      `<!DOCTYPE html><html><head></head><body><style>@import "/output.css";</style></body></html>`,
     );
   },
 });
@@ -743,7 +745,7 @@ Deno.test({
 
     assertEquals(
       stringify(result),
-      `<html><body><div style="background: url('/output.png')"></div></body></html>`,
+      `<!DOCTYPE html><html><head></head><body><div style="background: url('/output.png')"></div></body></html>`,
     );
   },
 });
